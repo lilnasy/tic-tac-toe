@@ -1,0 +1,31 @@
+---
+import favicon from "./_favicon.svg"
+import { css } from "astro:emotion"
+---
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<link rel="icon" type="image/svg+xml" href={favicon.src} />
+		<style>
+			@import "../tokens.css";
+		</style>
+		<script>
+			import { h, render } from "preact"
+			import { Menu } from "components/Menu.tsx"
+			
+			document.querySelector("#loading")!.remove()
+			render(h(Menu, {}), document.querySelector("body")!)
+		</script>
+	</head>
+	<body class={css`
+		margin: 0;
+		height: 100vh;
+		display: grid;
+		place-items: center;
+		background-color: var(--background-color);
+	`}>
+		<p id="loading">Loading...</p>
+	</body>
+</html>

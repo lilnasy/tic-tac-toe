@@ -1,0 +1,6 @@
+:root {
+    --background-color: oklch(0.7 0.2 25);
+    --line-color: oklch(0.3 0.2 75);
+    --line-size: 1rem;
+    --square-size: 12rem;
+}

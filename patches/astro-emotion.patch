@@ -1,0 +1,35 @@
+diff --git a/integration.ts b/integration.ts
+index e6b803ae0d60a471a5b6d867700b51b460bf86d8..ce6f17e678399b2994b8a42ab281a8aa71607316 100644
+--- a/integration.ts
++++ b/integration.ts
+@@ -26,26 +26,22 @@ export default function (options: Partial<Options> = {}): AstroIntegration {
+                         walk(ast, visitors, undefined, state)
+                         const stylesheetCount = stylesheets.push(Object.values(cache.inserted).join('\n'))
+                         flush()
+-                        if (ssr) magicString.prepend(`import "astro_emotion_internal_${stylesheetCount - 1}.css"\n`)
++                        magicString.prepend(`import "/astro_emotion_internal_${stylesheetCount - 1}.css"\n`)
+                         const newCode = magicString.toString()
+                         const map = magicString.generateMap({ hires: true })
+                         return { code: newCode, map }
+                     },
+                     resolveId(source) {
+-                        if (source.startsWith("astro_emotion_internal_")) return source
++                        if (source.startsWith("/astro_emotion_internal_")) return source
+                         // HACK: prevent warnings from vite when it scans a file before letting it be transformed
+                         if (source === "astro:emotion") return source
+                     },
+                     load(id) {
+-                        if (id.startsWith("astro_emotion_internal_")) {
+-                            const index = parseInt(id.slice("astro_emotion_internal_".length, -".css".length))
++                        if (id.startsWith("/astro_emotion_internal_")) {
++                            const index = parseInt(id.slice("/astro_emotion_internal_".length, -".css".length))
+                             const sheet = stylesheets[index]
+                             return sheet
+                         }
+-                        // HACK: vite also attempts to import styles for HMR which is not handled by the integration
+-                        if (id.startsWith("/astro_emotion_internal_")) {
+-                            return "/* astro-emotion does not support HMR */"
+-                        }
+                     }
+                 }, {
+                     name: "astro-emotion/vite/types",
