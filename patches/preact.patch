@@ -1,0 +1,160 @@
+diff --git a/package.json b/package.json
+index d68c50da854ae5fa7502d7bf23fc67f87716e084..705db0c709a34ec57681125b57dc07b8c790d852 100644
+--- a/package.json
++++ b/package.json
+@@ -10,58 +10,59 @@
+   "unpkg": "dist/preact.min.js",
+   "source": "src/index.js",
+   "exports": {
++    "./src": "./src",
+     ".": {
+       "types": "./src/index.d.ts",
+-      "browser": "./dist/preact.module.js",
++      "browser": "./src/index.js",
+       "umd": "./dist/preact.umd.js",
+       "import": "./dist/preact.mjs",
+       "require": "./dist/preact.js"
+     },
+     "./compat": {
+       "types": "./compat/src/index.d.ts",
+-      "browser": "./compat/dist/compat.module.js",
++      "browser": "./compat/src/index.js",
+       "umd": "./compat/dist/compat.umd.js",
+       "import": "./compat/dist/compat.mjs",
+       "require": "./compat/dist/compat.js"
+     },
+     "./debug": {
+       "types": "./debug/src/index.d.ts",
+-      "browser": "./debug/dist/debug.module.js",
++      "browser": "./debug/src/index.js",
+       "umd": "./debug/dist/debug.umd.js",
+       "import": "./debug/dist/debug.mjs",
+       "require": "./debug/dist/debug.js"
+     },
+     "./devtools": {
+       "types": "./devtools/src/index.d.ts",
+-      "browser": "./devtools/dist/devtools.module.js",
++      "browser": "./devtools/src/index.js",
+       "umd": "./devtools/dist/devtools.umd.js",
+       "import": "./devtools/dist/devtools.mjs",
+       "require": "./devtools/dist/devtools.js"
+     },
+     "./hooks": {
+       "types": "./hooks/src/index.d.ts",
+-      "browser": "./hooks/dist/hooks.module.js",
++      "browser": "./hooks/src/index.js",
+       "umd": "./hooks/dist/hooks.umd.js",
+       "import": "./hooks/dist/hooks.mjs",
+       "require": "./hooks/dist/hooks.js"
+     },
+     "./test-utils": {
+       "types": "./test-utils/src/index.d.ts",
+-      "browser": "./test-utils/dist/testUtils.module.js",
++      "browser": "./test-utils/src/index.js",
+       "umd": "./test-utils/dist/testUtils.umd.js",
+       "import": "./test-utils/dist/testUtils.mjs",
+       "require": "./test-utils/dist/testUtils.js"
+     },
+     "./jsx-runtime": {
+       "types": "./jsx-runtime/src/index.d.ts",
+-      "browser": "./jsx-runtime/dist/jsxRuntime.module.js",
++      "browser": "./jsx-runtime/src/index.js",
+       "umd": "./jsx-runtime/dist/jsxRuntime.umd.js",
+       "import": "./jsx-runtime/dist/jsxRuntime.mjs",
+       "require": "./jsx-runtime/dist/jsxRuntime.js"
+     },
+     "./jsx-dev-runtime": {
+       "types": "./jsx-runtime/src/index.d.ts",
+-      "browser": "./jsx-runtime/dist/jsxRuntime.module.js",
++      "browser": "./jsx-runtime/src/index.js",
+       "umd": "./jsx-runtime/dist/jsxRuntime.umd.js",
+       "import": "./jsx-runtime/dist/jsxRuntime.mjs",
+       "require": "./jsx-runtime/dist/jsxRuntime.js"
+diff --git a/src/diff/index.js b/src/diff/index.js
+index 287f94344dadeeae11237a9c0ab39544ee7604ac..5172caba83d805297e8ec37a62d541f4e30615c7 100644
+--- a/src/diff/index.js
++++ b/src/diff/index.js
+@@ -462,7 +462,7 @@ function diffElementNodes(
+ 				) {
+ 					continue;
+ 				}
+-				setProperty(dom, i, null, value, namespace);
++				setProperty(dom, newVNode, i, null, value, namespace);
+ 			}
+ 		}
+ 
+@@ -482,7 +482,7 @@ function diffElementNodes(
+ 				(!isHydrating || typeof value == 'function') &&
+ 				oldProps[i] !== value
+ 			) {
+-				setProperty(dom, i, value, oldProps[i], namespace);
++				setProperty(dom, newVNode, i, value, oldProps[i], namespace);
+ 			}
+ 		}
+ 
+@@ -546,12 +546,12 @@ function diffElementNodes(
+ 					// again, which triggers IE11 to re-evaluate the select value
+ 					(nodeType === 'option' && inputValue !== oldProps[i]))
+ 			) {
+-				setProperty(dom, i, inputValue, oldProps[i], namespace);
++				setProperty(dom, newVNode, i, inputValue, oldProps[i], namespace);
+ 			}
+ 
+ 			i = 'checked';
+ 			if (checked !== undefined && checked !== dom[i]) {
+-				setProperty(dom, i, checked, oldProps[i], namespace);
++				setProperty(dom, newVNode, i, checked, oldProps[i], namespace);
+ 			}
+ 		}
+ 	}
+diff --git a/src/diff/props.js b/src/diff/props.js
+index 316146f0fdfb91456047866931a02ba7bd8c0b51..a26016903844158187923f8cc1181f977fdeee70 100644
+--- a/src/diff/props.js
++++ b/src/diff/props.js
+@@ -29,12 +29,13 @@ let eventClock = 0;
+ /**
+  * Set a property value on a DOM node
+  * @param {PreactElement} dom The DOM node to modify
++ * @param {VNode} vnode The VNode corresponding to the DOM node
+  * @param {string} name The name of the property to set
+  * @param {*} value The value to set the property to
+  * @param {*} oldValue The old value the property had
+  * @param {string} namespace Whether or not this DOM node is an SVG node or not
+  */
+-export function setProperty(dom, name, value, oldValue, namespace) {
++export function setProperty(dom, vnode, name, value, oldValue, namespace) {
+ 	let useCapture;
+ 
+ 	o: if (name === 'style') {
+@@ -77,7 +78,17 @@ export function setProperty(dom, name, value, oldValue, namespace) {
+ 		else name = name.slice(2);
+ 
+ 		if (!dom._listeners) dom._listeners = {};
+-		dom._listeners[name + useCapture] = value;
++		let listener, parent = vnode;
++		listener = dom._listeners[name + useCapture] ??= {};
++		listener.f = value
++		
++		while (parent) {
++			if (parent._component && value.name in parent._component && parent._component[value.name] === value) {
++				listener.c = parent._component
++				break
++			}
++			parent = parent._parent
++		}
+ 
+ 		if (value) {
+ 			if (!oldValue) {
+diff --git a/src/diff/props.js b/src/diff/props.js
+index 316146f0fdfb91456047866931a02ba7bd8c0b51..d8e9919b777393bfe9293eb0c08a5d8e8545bbd9 100644
+--- a/src/diff/props.js
++++ b/src/diff/props.js
+@@ -166,7 +166,7 @@ function createEventProxy(useCapture) {
+ 			} else if (e._dispatched < eventHandler._attached) {
+ 				return;
+ 			}
+-			return eventHandler(options.event ? options.event(e) : e);
++			return eventHandler.f.call(eventHandler.c, options.event ? options.event(e) : e);
+ 		}
+ 	};
+ }

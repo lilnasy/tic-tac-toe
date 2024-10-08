@@ -9,6 +9,7 @@ export default defineConfig({
     integrations: [emotion(), preact()],
     adapter: node({ mode: "standalone" }),
     output: "server",
+    devToolbar: { enabled: false },
     vite: {
         build: {
             assetsInlineLimit: 0,

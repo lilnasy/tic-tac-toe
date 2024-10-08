@@ -11,6 +11,9 @@ patchedDependencies:
   astro-emotion:
     hash: 54d3kj6jhm4ybxx2dapxsihtmq
     path: patches/astro-emotion.patch
+  preact:
+    hash: odabzoz3oxpiqbya2hay2ywhfi
+    path: patches/preact.patch
 
 importers:
 
@@ -33,7 +36,7 @@ importers:
         version: 1.9.3
       preact:
         specifier: ^10.24.2
-        version: 10.24.2
+        version: 10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi)
       typescript:
         specifier: ^5.6.2
         version: 5.6.2
@@ -2087,11 +2090,11 @@ snapshots:
     dependencies:
       '@babel/plugin-transform-react-jsx': 7.25.7(@babel/core@7.25.7)
       '@babel/plugin-transform-react-jsx-development': 7.25.7(@babel/core@7.25.7)
-      '@preact/preset-vite': 2.8.2(@babel/core@7.25.7)(preact@10.24.2)(vite@5.4.8(@types/node@22.4.2))
-      '@preact/signals': 1.3.0(preact@10.24.2)
+      '@preact/preset-vite': 2.8.2(@babel/core@7.25.7)(preact@10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi))(vite@5.4.8(@types/node@22.4.2))
+      '@preact/signals': 1.3.0(preact@10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi))
       babel-plugin-transform-hook-names: 1.0.2(@babel/core@7.25.7)
-      preact: 10.24.2
-      preact-render-to-string: 6.5.11(preact@10.24.2)
+      preact: 10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi)
+      preact-render-to-string: 6.5.11(preact@10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi))
     transitivePeerDependencies:
       - '@babel/core'
       - supports-color
@@ -2604,12 +2607,12 @@ snapshots:
 
   '@oslojs/encoding@1.1.0': {}
 
-  '@preact/preset-vite@2.8.2(@babel/core@7.25.7)(preact@10.24.2)(vite@5.4.8(@types/node@22.4.2))':
+  '@preact/preset-vite@2.8.2(@babel/core@7.25.7)(preact@10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi))(vite@5.4.8(@types/node@22.4.2))':
     dependencies:
       '@babel/core': 7.25.7
       '@babel/plugin-transform-react-jsx': 7.25.7(@babel/core@7.25.7)
       '@babel/plugin-transform-react-jsx-development': 7.25.7(@babel/core@7.25.7)
-      '@prefresh/vite': 2.4.6(preact@10.24.2)(vite@5.4.8(@types/node@22.4.2))
+      '@prefresh/vite': 2.4.6(preact@10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi))(vite@5.4.8(@types/node@22.4.2))
       '@rollup/pluginutils': 4.2.1
       babel-plugin-transform-hook-names: 1.0.2(@babel/core@7.25.7)
       debug: 4.3.7
@@ -2626,27 +2629,27 @@ snapshots:
 
   '@preact/signals-core@1.8.0': {}
 
-  '@preact/signals@1.3.0(preact@10.24.2)':
+  '@preact/signals@1.3.0(preact@10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi))':
     dependencies:
       '@preact/signals-core': 1.8.0
-      preact: 10.24.2
+      preact: 10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi)
 
   '@prefresh/babel-plugin@0.5.1': {}
 
-  '@prefresh/core@1.5.2(preact@10.24.2)':
+  '@prefresh/core@1.5.2(preact@10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi))':
     dependencies:
-      preact: 10.24.2
+      preact: 10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi)
 
   '@prefresh/utils@1.2.0': {}
 
-  '@prefresh/vite@2.4.6(preact@10.24.2)(vite@5.4.8(@types/node@22.4.2))':
+  '@prefresh/vite@2.4.6(preact@10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi))(vite@5.4.8(@types/node@22.4.2))':
     dependencies:
       '@babel/core': 7.25.7
       '@prefresh/babel-plugin': 0.5.1
-      '@prefresh/core': 1.5.2(preact@10.24.2)
+      '@prefresh/core': 1.5.2(preact@10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi))
       '@prefresh/utils': 1.2.0
       '@rollup/pluginutils': 4.2.1
-      preact: 10.24.2
+      preact: 10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi)
       vite: 5.4.8(@types/node@22.4.2)
     transitivePeerDependencies:
       - supports-color
@@ -3943,11 +3946,11 @@ snapshots:
       picocolors: 1.1.0
       source-map-js: 1.2.1
 
-  preact-render-to-string@6.5.11(preact@10.24.2):
+  preact-render-to-string@6.5.11(preact@10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi)):
     dependencies:
-      preact: 10.24.2
+      preact: 10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi)
 
-  preact@10.24.2: {}
+  preact@10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi): {}
 
   preferred-pm@4.0.0:
     dependencies:

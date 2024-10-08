@@ -1,6 +1,24 @@
 :root {
-    --background-color: oklch(0.7 0.2 25);
-    --line-color: oklch(0.3 0.2 75);
+    --base-hue: 360;
+    --base-chroma: 0.15;
     --line-size: 1rem;
     --square-size: 12rem;
+}
+
+:root[data-dark] {
+    --primary             : oklch(0.8 var(--base-chroma)             var(--base-hue));
+    --on-primary          : oklch(0.2 var(--base-chroma)             var(--base-hue));
+    --primary-container   : oklch(0.2 var(--base-chroma)             calc(var(--base-hue) - 20));
+    --on-primary-container: oklch(0.8 var(--base-chroma)             calc(var(--base-hue) - 20));
+    --secondary           : oklch(0.7 calc(0.7 * var(--base-chroma)) var(--base-hue));
+    --on-secondary        : oklch(0.2 calc(0.7 * var(--base-chroma)) var(--base-hue));
+}
+
+:root:not([data-dark]) {
+    --primary             : oklch(0.3 var(--base-chroma)             var(--base-hue));
+    --on-primary          : white;
+    --primary-container   : oklch(0.9 var(--base-chroma)             calc(var(--base-hue) + 20));
+    --on-primary-container: oklch(0.1 var(--base-chroma)             calc(var(--base-hue) + 20));
+    --secondary           : oklch(0.4 calc(0.7 * var(--base-chroma)) var(--base-hue));
+    --on-secondary        : white;
 }
