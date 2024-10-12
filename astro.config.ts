@@ -11,9 +11,7 @@ export default defineConfig({
     output: "server",
     devToolbar: { enabled: false },
     vite: {
-        build: {
-            assetsInlineLimit: 0,
-            // minify: false,
-        }
+        ssr: { noExternal: true },
+        build: { assetsInlineLimit: 0 }
     },
 })

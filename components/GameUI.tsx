@@ -12,6 +12,46 @@ export class GameUI extends Component {
     }
 }
 
+const toolButtonClass = css`
+    &:not([disabled]) {
+        cursor: pointer;
+    }
+    &:not(:hover) {
+        background: none;
+        --fill: var(--primary)
+    }
+    &:hover {
+        background: var(--primary);
+        --fill: var(--on-primary);
+    }
+    transition: background 250ms;
+    border: none;
+    padding: 0;
+    border-radius: 1.5rem;
+    height: 3rem;
+    width: 3rem;
+`
+
+const toolButtonIconClass = css`
+    height: 2rem;
+    width: 2rem;
+    fill: var(--fill);
+    transition: fill 250ms;
+`
+
+let baseHueTemp: number | undefined = undefined
+
+function updateBaseHue() {
+    /**
+     * This check ensures that multiple invocations of this function
+     * within the same frame result in only one update to `document`.
+     */
+    if (baseHueTemp) {
+        document.documentElement.style.setProperty("--base-hue", String(baseHueTemp))
+        baseHueTemp = undefined
+    }
+}
+
 class Toolbar extends Component {
 
     colorWheelDialogRef = createRef<HTMLDialogElement>()
@@ -21,6 +61,15 @@ class Toolbar extends Component {
         if (dialog?.open) dialog.close()
         else dialog?.show()
     }
+
+    onColorWheelThumbGrab = ({ x, y }: PointerEvent) => {
+        const rect = this.colorWheelDialogRef.current!.getBoundingClientRect()
+        const centerX = rect.left + rect.width / 2
+        const centerY = rect.top + rect.height / 2
+        const radians = Math.atan2(centerY - y, x - centerX)
+        baseHueTemp = 90 - (180 / Math.PI) * radians
+        requestAnimationFrame(updateBaseHue)
+    }
     
     switchLightDark() {
         document.documentElement.toggleAttribute("data-dark")
@@ -28,70 +77,114 @@ class Toolbar extends Component {
 
     render() {
         return <div class={css`
-                position: absolute;
-                place-self: end;
-                margin: 1rem;
+            display: grid;
+            grid-template-areas:
+                "a b"
+                "c d";
+            position: absolute;
+            place-self: end;
+            margin: 1rem;
+        `}>
+            <button class={[css`grid-area: d;`, toolButtonClass].join(" ")} onClick={this.toggleColorWheel}>
+                <Icons.Palette class={toolButtonIconClass}/>
+            </button>
+            <dialog ref={this.colorWheelDialogRef} class={css`
+                grid-area: a;
+                position: static;
+                width: 10rem;
+                height: 10rem;
+                background: var(--primary-container);
+                outline: solid 0.25rem var(--primary);
+                transition-property: background, outline, scale, translate;
+                transition-duration: 250ms;
+                &[open] {
+                    display: grid;
+                }
+                place-items: center;
+                border: none;
+                margin: 0;
+                padding: 0;
+                @starting-style {
+                    scale: 0.75;
+                    translate: 3rem 3rem;
+                }
             `}>
-            <Tool Icon={Icons.Palette} onClick={this.toggleColorWheel}>
-                <dialog
-                    class={css`background: white;
-                        border: none;
-                        margin: 0;
-                        padding: 0;
-                        translate: -3rem -13rem;`
+                <div class={css`
+                    grid-area: 1/1;
+                    pointer-events: none;
+                    height: 80%;
+                    width: 80%;
+                    background: conic-gradient(in oklch increasing hue, oklch(0.7 0.15 0), oklch(0.7 0.15 359));
+                    mask-image: radial-gradient(circle farthest-side at center, transparent 36%, white 38%, white 98%, transparent 100%);
+                `}/>
+                <button class={[css`grid-area: 1/1;`, toolButtonClass].join(" ")} onClick={this.switchLightDark}>
+                    <Icons.InvertColors class={toolButtonIconClass}/>
+                </button>
+                <GrabbableButton onGrab={this.onColorWheelThumbGrab} class={css`
+                    position: absolute;
+                    --size: 2.5rem;
+                    top: calc(5rem - var(--size) / 2);
+                    left: calc(5rem - var(--size) / 2);
+                    height: var(--size);
+                    width: var(--size);
+                    translate:
+                        calc(sin(var(--base-hue) * 1deg) * 2.75rem)
+                        calc(cos(var(--base-hue) * 1deg) * -2.75rem);
+                    border: none;
+                    padding: 0;
+                    background: var(--primary);
+                    transition: background 250ms;
+                    cursor: grab;
+                    mask-image: radial-gradient(circle farthest-side at center, transparent 74%, white 76%, white 98%, transparent 100%);
+                    [data-dark] & {
+                        mask-image: radial-gradient(circle farthest-side at center, white 97%, transparent 100%);
                     }
-                    ref={this.colorWheelDialogRef}
-                >
-                    <div class={css`
-                        height: 6rem;
-                        width: 6rem;
-                        margin: 2rem;
-                        background: conic-gradient(in oklch increasing hue, oklch(0.7 0.15 0), oklch(0.7 0.15 359));
-                        mask-image: radial-gradient(circle farthest-side at center, transparent 48%, white 50%, white 98%, transparent 100%);
-                    `}/>
-                </dialog>
-            </Tool>
-            <Tool Icon={Icons.InvertColors} onClick={this.switchLightDark}/>
+                    &[data-grabbing] {
+                        cursor: grabbing;
+                    }
+                `}/>
+            </dialog>
         </div>
     }
 }
 
-interface ToolProps extends JSX.HTMLAttributes<HTMLButtonElement> {
-    Icon: typeof Icons[keyof typeof Icons]
+interface GrabbableButtonProps extends JSX.HTMLAttributes<HTMLButtonElement> {
+    onGrab?(event: PointerEvent): unknown
 }
 
-class Tool extends Component<ToolProps> {
+class GrabbableButton extends Component<GrabbableButtonProps> {
+    #ref = createRef<HTMLButtonElement>()
+    #ac: AbortController | undefined = undefined
+    componentDidMount() {
+        this.#ref.current!.addEventListener("pointerdown", this)
+    }
+    handleEvent(event: Event) {
+        if (event instanceof PointerEvent === false) return
+        const button = this.#ref.current!
+        if (event.type === "pointerdown") {
+            const ac = this.#ac ??= new AbortController
+            const options = { signal: ac.signal }
+            document.addEventListener("pointermove", this, options)
+            document.addEventListener("pointerup", this, options)
+            document.addEventListener("pointercancel", this, options)
+            document.addEventListener("pointerleave", this, options)
+            button.toggleAttribute("data-grabbing", true)
+        }
+        else if (
+            event.type === "pointerup" ||
+            event.type === "pointercancel" ||
+            event.type === "pointerleave"
+        ) {
+            this.#ac?.abort()
+            this.#ac = undefined
+            button.toggleAttribute("data-grabbing", false)
+        }
+        else if (event.type === "pointermove") {
+            this.props.onGrab?.(event)
+        }
+    }
     render() {
-        return <button
-            class={css`
-                &:not([disabled]) {
-                    cursor: pointer;
-                }
-                &:not(:hover) {
-                    background: none;
-                    --fill: var(--primary)
-                }
-                &:hover {
-                    background: var(--primary);
-                    --fill: var(--on-primary);
-                }
-                transition: background 250ms;
-                border: none;
-                border-radius: 1.5rem;
-                height: 3rem;
-                width: 3rem;
-                margin: 0.25rem;
-            `}
-            {...this.props}
-        >
-            <this.props.Icon class={css`
-                height: 2rem;
-                width: 2rem;
-                fill: var(--fill);
-                transition: fill 250ms;
-            `}/>
-            {this.props.children}
-        </button>
+        return <button {...this.props} ref={this.#ref}/>
     }
 }
 
@@ -158,7 +251,6 @@ class TitleScreen extends Component {
         if (this.state.inWorld === false) {
             return <div class={css`
                 display: grid;
-                grid-template-areas: "a" "b" "c";
             `}>
                 <p class={css`
                     font-family: "Sue Ellen Francisco";
