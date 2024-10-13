@@ -1,0 +1,42 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Setup PNPM
+      uses: pnpm/action-setup@v4
+    
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: "pnpm"
+    
+    - name: Install dependencies
+      run: pnpm install
+    
+    - name: Build
+      run: pnpm build
+    
+    - name: Upload artifcats
+      id: upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist
+        path: dist
+    
+    - name: Deploy
+      env:
+        DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+      run: |
+        curl --request PATCH --header "Authorization: $DEPLOY_TOKEN" https://sillystring.party/redeploy?artifact_id=${{steps.upload.outputs.artifact-id}}
