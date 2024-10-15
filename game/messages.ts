@@ -1,31 +1,52 @@
 import type { Entity, Line, Place } from "game/entity.ts"
-import type { Player } from "game/server.ts"
+import type { Player } from "game/player.ts"
 
 /**
  * All communication between the systems, and between server and
  * the clients must happen in the form of these messages.
  */
 export interface MessageRegistry {
-    /**
-     * A message telling a player which sign - X or O - they will
-     * be playing as.
-     */
-    Assign: "X" | "O"
+
+    /* GAME-MECHANICS MESSAGES */
+    Assign: Assign
     Mark: Mark
     Switch: Switch
-    PlayerMark: PlayerMark
+    Spawn: Entity
+    Start: Start
+    Sync: Sync
+    Victory: Victory
+
+    /* CLIENT-SENT MATCH-ESTABLISHING MESSAGES */
+    Connected: Connected
     Ready: Ready
+    NewWorld: NewWorld
+    JoinWorld: JoinWorld
+
+    /* SERVER VERSIONS OF CLIENT-SENT MATCH-ESTABLISHING MESSAGES */
+    PlayerMark: PlayerMark
     PlayerReady: PlayerReady
+    PlayerNewWorld: PlayerNewWorld
+    PlayerJoinWorld: PlayerJoinWorld
+    PlayerDisconnected: PlayerDisconnected
+    
+    /* SERVER-SENT MATCH-ESTABLISHING MESSAGES */
+    JoinedWorld: JoinedWorld
+    WorldNotFound: WorldNotFound
+
     /**
      * A unique id sent by the server to each player when they
      * initially connect. Will be used by the player to rejion game
      * after network issues.
      */
     ReconnectId: string
-    Spawn: Entity
-    Start: Start
-    Sync: Sync
-    Victory: Victory
+}
+
+/**
+ * A message from the server telling a player
+ * which sign - X or O - they will be playing as.
+ */
+export interface Assign {
+    sign: "X" | "O"
 }
 
 /**
@@ -51,6 +72,12 @@ export interface PlayerMark extends Mark {
 }
 
 /**
+ * A client-side only message shared when the websocket connection
+ * to the server becomes open.
+ */
+export interface Connected {}
+
+/**
  * A message sent by a player to the server that they are ready
  * to go in game. A precursor to the `PlayerReady` message on the
  * server that also includes the player object corresponding to
@@ -64,6 +91,33 @@ export interface Ready {}
  */
 export interface PlayerReady {
     player: Player
+}
+
+export interface PlayerDisconnected {
+    player: Player
+}
+
+export interface NewWorld {}
+
+export interface PlayerNewWorld {
+    player: Player
+}
+
+export interface JoinWorld {
+    world: string
+}
+
+export interface PlayerJoinWorld {
+    player: Player
+    world: string
+}
+
+export interface JoinedWorld {
+    world: string
+}
+
+export interface WorldNotFound {
+    world: string
 }
 
 /**

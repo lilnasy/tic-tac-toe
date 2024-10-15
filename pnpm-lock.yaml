@@ -14,6 +14,9 @@ patchedDependencies:
   preact:
     hash: odabzoz3oxpiqbya2hay2ywhfi
     path: patches/preact.patch
+  ws:
+    hash: kx7tmpitapmudddeuody7gwvtq
+    path: patches/ws.patch
 
 importers:
 
@@ -42,7 +45,7 @@ importers:
         version: 5.6.3
       ws:
         specifier: ^8.18.0
-        version: 8.18.0
+        version: 8.18.0(patch_hash=kx7tmpitapmudddeuody7gwvtq)
     devDependencies:
       '@babel/plugin-proposal-decorators':
         specifier: ^7.25.7
@@ -2674,7 +2677,7 @@ snapshots:
       astro: 4.16.2(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3)
       send: 0.19.1
       server-destroy: 1.0.1
-      ws: 8.18.0
+      ws: 8.18.0(patch_hash=kx7tmpitapmudddeuody7gwvtq)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -4198,7 +4201,7 @@ snapshots:
       string-width: 7.2.0
       strip-ansi: 7.1.0
 
-  ws@8.18.0: {}
+  ws@8.18.0(patch_hash=kx7tmpitapmudddeuody7gwvtq): {}
 
   xxhash-wasm@1.0.2: {}
 

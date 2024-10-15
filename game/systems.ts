@@ -7,7 +7,7 @@ import { announce, listen } from "game/store.ts"
 import { isServer } from "game/client-server.ts"
 
 export const markerSystemClient: System<"client"> = {
-    onAssign(sign, world) {
+    onAssign({ sign }, world) {
         world.playerSign = sign
     },
     onMark(marked, world) {
@@ -122,8 +122,34 @@ export const syncSystemClient: System<"client"> = {
 }
 
 export const connectSystemClient: System<"client"> = {
-    onReconnectId(id) {
+    onConnected(_, world) {
+        for (const entity of world.entities) {
+            if (entity.Connected !== undefined) {
+                announce(entity, entity.Connected = true)
+            }
+        }
+        const url = new URL(location.href)
+        const [ segment1, segment2 ] = url.pathname.split("/").filter(Boolean)
+        if (segment1 === "world" && typeof segment2 === "string") {
+            world.update("JoinWorld", { world: segment2 })
+        }
+    },
+    onNewWorld(_, world) {
+        world.channel.send("NewWorld", true)
+    },
+    onJoinWorld(data, world) {
+        world.channel.send("JoinWorld", data)
+    },
+    onJoinedWorld({ world }) {
+        history.replaceState(null, "", `/world/${world}`)
+    },
+    onWorldNotFound({ world }) {
+        alert(`World '${world.replace("-", " ")}' does not exist`)
+        history.replaceState(null, "", `/`)
+    },
+    onReconnectId(id, world) {
         localStorage.setItem("ReconnectId", id)
+        world.channel.send("Ready", true)
     }
 }
 
@@ -167,10 +193,10 @@ export const startSystemServer: System<"server"> = {
         const [ sign1, sign2 ] = Math.random() < 0.5 ? [ "X", "O" ] as const : [ "O", "X" ] as const
                 
         player1.sign = sign1
-        player1.send("Assign", sign1)
+        player1.send("Assign", { sign: sign1 })
 
         player2.sign = sign2
-        player2.send("Assign", sign2)
+        player2.send("Assign", { sign: sign2 })
 
         /** randomly give the first turn to a player */
         announce(gamestate, gamestate.Turn = Math.random() < 0.5 ? "X" : "O")

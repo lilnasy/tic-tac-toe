@@ -1,43 +1,49 @@
+import { Component as PreactComponent, createRef, type JSX } from "preact"
 import { css } from "astro:emotion"
-import { Component, createRef, type JSX } from "preact"
-import Game from "./Game.tsx"
+import { Component, WorldContext } from "./component.ts"
+import { Board } from "./Game.tsx"
 import * as Icons from "./Icons.tsx"
+import type { MessageRegistry } from "game/messages.ts"
+import { ClientWorld } from "game/client.ts"
 
-export class GameUI extends Component {
+export class GameUI extends PreactComponent {
+
+    screen: "title" | "ready" | "game" = "title"
+
+    world: ClientWorld
+
+    constructor() {
+        super()
+        const url = new URL(location.href)
+        url.protocol = url.protocol.replace("http", "ws")
+        url.pathname = "/connect"
+        const websocket = new WebSocket(url)
+        const world = this.world = new ClientWorld(websocket)
+        world.channel.subscribe(this)
+    }
+
+    receive(message: keyof MessageRegistry) {
+        if (message === "JoinedWorld") {
+            this.screen = "ready"
+            this.forceUpdate()
+        }
+        if (message === "Start") {
+            this.screen = "game"
+            this.forceUpdate()
+        }
+    }
+
     render() {
-        return <>
-            <TitleScreen/>
+        return <WorldContext.Provider value={this.world}>
+            { 
+                this.screen === "title" ? <TitleScreen/> :
+                this.screen === "ready" ? <ReadyScreen/> :
+                this.screen === "game" ? <Board/> : <></>
+            }
             <Toolbar/>
-        </>
+        </WorldContext.Provider>
     }
 }
-
-const toolButtonClass = css`
-    &:not([disabled]) {
-        cursor: pointer;
-    }
-    &:not(:hover) {
-        background: none;
-        --fill: var(--primary)
-    }
-    &:hover {
-        background: var(--primary);
-        --fill: var(--on-primary);
-    }
-    transition: background 250ms;
-    border: none;
-    padding: 0;
-    border-radius: 1.5rem;
-    height: 3rem;
-    width: 3rem;
-`
-
-const toolButtonIconClass = css`
-    height: 2rem;
-    width: 2rem;
-    fill: var(--fill);
-    transition: fill 250ms;
-`
 
 let baseHueTemp: number | undefined = undefined
 
@@ -148,6 +154,34 @@ class Toolbar extends Component {
     }
 }
 
+
+const toolButtonClass = css`
+    &:not([disabled]) {
+        cursor: pointer;
+    }
+    &:not(:hover) {
+        background: none;
+        --fill: var(--primary)
+    }
+    &:hover {
+        background: var(--primary);
+        --fill: var(--on-primary);
+    }
+    transition: background 250ms;
+    border: none;
+    padding: 0;
+    border-radius: 1.5rem;
+    height: 3rem;
+    width: 3rem;
+`
+
+const toolButtonIconClass = css`
+    height: 2rem;
+    width: 2rem;
+    fill: var(--fill);
+    transition: fill 250ms;
+`
+
 interface GrabbableButtonProps extends JSX.HTMLAttributes<HTMLButtonElement> {
     onGrab?(event: PointerEvent): unknown
 }
@@ -190,118 +224,95 @@ class GrabbableButton extends Component<GrabbableButtonProps> {
 
 class TitleScreen extends Component {
     
-    websocket: WebSocket
+    entity = this.world.spawnEntity({ Connected: false })
 
-    state = {
-        websocketOpen: false,
-        inWorld: false,
+    new() {
+        this.world.update("NewWorld", true)
     }
 
-    /**
-     * The world name in the url path, if it exists.
-     */
-    worldNameInSharedLink?: string
-
-    constructor() {
-        super()
-        const url = new URL(location.href)
-        const path = url.pathname.split("/").filter(Boolean)
-        if (path[0] === "world" && typeof path[1] === "string") this.worldNameInSharedLink = path[1]
-        url.protocol = url.protocol.replace("http", "ws")
-        url.pathname = "/connect"
-        const websocket = this.websocket = new WebSocket(url)
-        websocket.addEventListener("open", this, { once: true })
-        websocket.addEventListener("message", this)
-    }
-
-    handleEvent(event: Event) {
-        if (event.type === "open") {
-            this.setState({ ...this.state, websocketOpen: true })
-            if (this.worldNameInSharedLink) this.joinGame(this.worldNameInSharedLink)
-        }
-        if (
-            event.type === "message" &&
-            "data" in event &&
-            typeof event.data === "string"
-        ) {
-            const { data: message } = event
-            if (message.startsWith("world ")) {
-                history.replaceState(null, "", `/world/${message.slice(6)}`)
-                this.setState({ ...this.state, inWorld: true })
-                this.websocket.removeEventListener("message", this)
-            }
-            if (message.startsWith("worlddoesnotexist ")) {
-                alert(`World ${message.slice(18)} does not exist`)
-                history.replaceState(null, "", `/`)
-            }
-        }
-    }
-
-    newGame() {
-        this.websocket.send("newgame")
-    }
-
-    joinGame(worldName?: unknown) {
-        if (typeof worldName !== "string") worldName ??= prompt("Enter world name")
+    join() {
+        const worldName = prompt("Enter world name")
         if (typeof worldName !== "string") return
-        this.websocket.send(`join ${worldName.replace(" ", "-")}`)
+        this.world.update("JoinWorld", { world: worldName.replace(" ", "-") })
     }
+
+    titleText = ["TIC", "TAC", "TOE"].map((text, i) => <h1 class={css`
+        font-weight: 400;
+        font-size: 5rem;
+        text-align: center;
+        color: var(--primary);
+        line-height: 5rem;
+        margin: 0;
+        pointer-events: none;
+        transition: color 250ms, translate 1s, opacity 1s;
+        transition-delay: calc(var(--stagger) * 250ms);
+        @starting-style {
+            translate: 0 3rem;
+            opacity: 0;
+        }
+    `} aria-hidden style={{ "--stagger": i }}>{text}</h1>)
+
+    connecting = <p class={css`
+        height: 8rem;
+        margin: 0;
+        font-size: 2rem;
+        color: var(--primary);
+        &:after {
+            display: inline-block;
+            width: 0;
+            animation: ellipsis linear 3s infinite;
+            content: "";
+        }
+    `}>connecting</p>
+
+    buttons = [
+        { children: "New Game", onClick: this.new, "data-primary": true },
+        { children: "Join", onClick: this.join, "data-secondary": true }
+    ].map(props => <button {...props} class={css`
+        font-family: 'Sue Ellen Francisco';
+        height: 3rem;
+        width: 8rem;
+        font-size: 2rem;
+        border-radius: 1.5rem;
+        margin: 0.5rem;
+        line-height: 3.4rem;
+        border: none;
+        transition: background 250ms, color 250ms, opacity 1s, scale 250ms;
+        &[data-primary] {
+            background: var(--primary);
+            color: var(--on-primary);
+        }
+        &[data-secondary] {
+            background: var(--secondary);
+            color: var(--on-secondary);
+        }
+        &:not([disabled]) { cursor: pointer; }
+        &:not([disabled]):hover { scale: 1.1; }
+        @starting-style {
+            opacity: 0;
+        }
+    `}></button>)
 
     render() {
-        if (this.state.inWorld === false) {
-            return <div class={css`
-                display: grid;
-            `}>
-                <p class={css`
-                    font-family: "Sue Ellen Francisco";
-                    font-size: 5rem;
-                    text-align: center;
-                    color: var(--primary);
-                    transition: color 250ms;
-                    line-height: 5rem;
-                    margin: 1rem;
-                `}>TIC<br/>TAC<br/>TOE</p>
-                <button
-                    class={titleButtonStyle}
-                    onClick={this.newGame}
-                    disabled={this.state.websocketOpen === false}
-                    data-primary
-                >New Game</button>
-                <button
-                    class={titleButtonStyle}
-                    onClick={this.joinGame}
-                    disabled={this.state.websocketOpen === false}
-                    data-secondary
-                >Join</button>
-            </div>
-        }
-        return <Game websocket={this.websocket}/>
+        return <div class={css`display: grid;`}>
+            <h1 class={css`contain: strict;`}>TIC TAC TOE</h1>
+            {this.titleText}
+            {this.entity.Connected === false ? this.connecting : this.buttons}
+        </div>
     }
 }
 
-const titleButtonStyle = css`
-    &[data-primary] {
-        background: var(--primary);
-        color: var(--on-primary);
+class ReadyScreen extends Component {
+    render() {
+        return <p class={css`
+            font-size: 2rem;
+            color: var(--primary);
+            &:after {
+                display: inline-block;
+                width: 0;
+                animation: ellipsis linear 3s infinite;
+                content: "";
+            }
+        `}>waiting for other player</p>
     }
-    &[data-secondary] {
-        background: var(--secondary);
-        color: var(--on-secondary);
-    }
-    &:not([disabled]) {
-        cursor: pointer;
-    }
-    &:hover {
-        scale: 1.1;
-    }
-    transition-property: background, color, scale;
-    transition-duration: 250ms;
-    font-family: "Sue Ellen Francisco";
-    height: 3rem;
-    width: 8rem;
-    font-size: 2rem;
-    border-radius: 1.5rem;
-    margin: 0.5rem;
-    line-height: 3.4rem;
-    border: none;
-`
+}

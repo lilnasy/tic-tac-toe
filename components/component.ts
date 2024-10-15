@@ -53,7 +53,7 @@ export abstract class Component<P, S> extends Base<P> {
      * invokes this function, which is used to redraw the component with
      * updated data from the entity.
      */
-    handleEvent() {
+    handleEvent(event: Event) {
         this.forceUpdate()
     }
 

@@ -1,0 +1,27 @@
+diff --git a/lib/buffer-util.js b/lib/buffer-util.js
+index f7536e28efa570277e30e9ea001200ee11595fee..63bee17b31a7cf68430e70a8432c1d7304c62abf 100644
+--- a/lib/buffer-util.js
++++ b/lib/buffer-util.js
+@@ -110,22 +110,3 @@ module.exports = {
+   toBuffer,
+   unmask: _unmask
+ };
+-
+-/* istanbul ignore else  */
+-if (!process.env.WS_NO_BUFFER_UTIL) {
+-  try {
+-    const bufferUtil = require('bufferutil');
+-
+-    module.exports.mask = function (source, mask, output, offset, length) {
+-      if (length < 48) _mask(source, mask, output, offset, length);
+-      else bufferUtil.mask(source, mask, output, offset, length);
+-    };
+-
+-    module.exports.unmask = function (buffer, mask) {
+-      if (buffer.length < 32) _unmask(buffer, mask);
+-      else bufferUtil.unmask(buffer, mask);
+-    };
+-  } catch (e) {
+-    // Continue regardless of the error.
+-  }
+-}

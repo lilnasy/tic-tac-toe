@@ -1,56 +1,9 @@
-import { Component as PreactComponent, type JSX } from "preact"
+import type { JSX } from "preact"
 import { css } from "astro:emotion"
-import type { MessageRegistry } from "game/messages.ts"
-import { ClientWorld } from "game/client.ts"
-import { Component, WorldContext } from "./component.ts"
+import { Component } from "./component.ts"
 import type { Place } from "game/entity.ts"
 
-export default class extends PreactComponent<{ websocket: WebSocket }> {
-    render() {
-        return <WorldContext.Provider value={new ClientWorld(this.props.websocket)}>
-            <ReadyScreen>
-                <Board/>
-            </ReadyScreen>
-        </WorldContext.Provider>
-    }
-}
-
-class ReadyScreen extends Component<JSX.HTMLAttributes> {
-
-    readySelf = false
-    readyOther = false
-
-    receive(message: keyof MessageRegistry) {
-        if (message === "Start") {
-            this.readyOther = true
-            this.forceUpdate()
-            this.world.channel.unsubscribe(this)
-        }
-    }
-
-    ready() {
-        this.readySelf = true
-        this.forceUpdate()
-        this.world.channel.send("Ready", true)
-    }
-    
-    render() {
-        if (this.readySelf === false) {
-            return <button onClick={this.ready} {...this.props} class={css`
-                border: none;
-                height: 2rem;
-                width: 6rem;
-                place-self: center;
-            ` + " " + (this.props.class ?? "")}>ready</button>
-        }
-        if (this.readyOther === false) {
-            return <p {...this.props} class={css`place-self: center;` + " " + (this.props.class ?? "")}>waiting for other player...</p>
-        }
-        return this.props.children
-    }
-}
-
-class Board extends Component<JSX.HTMLAttributes> {
+export class Board extends Component<JSX.HTMLAttributes> {
     render() {
         return <div {...this.props} class={css`
             width: calc(var(--square-size) * 3);
@@ -97,7 +50,15 @@ export class Square extends Component<SquareProps, "Place"> {
         Sync: { id: `square${this.props.place}` }
     })
 
+    onClick() {
+        this.world.update("Mark", { place: this.entity.Place })
+    }
+
     render() {
+        const disabled =
+            this.entity.Marked !== false ||
+            this.world.playerSign !== this.world.gamestate.Turn
+        
         return <button
             class={css`
                 background-color: initial;
@@ -111,8 +72,8 @@ export class Square extends Component<SquareProps, "Place"> {
                     cursor: pointer;
                 };
             ` + " " + this.props.class}
-            onClick={() => this.world.update("Mark", { place: this.entity.Place })}
-            disabled={this.entity.Marked !== false || this.world.playerSign !== this.world.gamestate.Turn}
+            onClick={this.onClick}
+            disabled={disabled}
         >{this.entity.Marked === "X" ? X : this.entity.Marked === "O" ? O : null}</button>
     }
 }

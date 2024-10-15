@@ -6,6 +6,7 @@ export interface States {
     Place: Place
     Line: null | Line
     Sync: Sync
+    Connected: boolean
 }
 
 /**

@@ -1,10 +1,10 @@
 import { WebSocket } from "@withastro/node/websocket"
+import type { Entity } from "game/entity.ts"
 import type { Channel, Receiver } from "game/channel.ts"
 import type { MessageRegistry } from "game/messages.ts"
 import { type World, commonSystems, spawnEntity, update } from "game/world.ts"
-import { usher } from "game/usher.ts"
 import { connectSystemServer, markerSystemServer, startSystemServer, type System } from "game/systems.ts"
-import type { Entity } from "game/entity.ts"
+import { Player } from "game/player.ts"
 
 export class ServerWorld implements World, Receiver {
 
@@ -25,12 +25,11 @@ export class ServerWorld implements World, Receiver {
         channel.subscribe(this)
     }
     
-    addPlayer(connection: WebSocket) {
-        const player = new Player(connection)
+    addPlayer(player: Player) {
         this.players.add(player)
+        player.send("JoinedWorld", { world: this.name })
         player.send("ReconnectId", player.id)
-        player.websocket.addEventListener("message", this.channel)
-        player.websocket.addEventListener("close", this.channel, { once: true })
+        player.subscribe(this.channel)
     }
 
     /**
@@ -44,7 +43,7 @@ export class ServerWorld implements World, Receiver {
     }
 }
 
-class ServerToClientsChannel implements Channel {
+class ServerToClientsChannel implements Channel, Receiver {
 
     constructor(
         readonly worldName: string,
@@ -66,69 +65,15 @@ class ServerToClientsChannel implements Channel {
     unsubscribe(receiver: Receiver) {
         return this.#receivers.delete(receiver)
     }
-    
-    handleEvent(event: Event) {
-        if (event.type === "close") {
-            const { target: websocket } = event
-            if (websocket === null) return console.error(
-                new Error("Event handed to a ServerWorld is missing the target websocket.")
-            )
-            this.players.delete(this.#playerFromWebSocket(websocket)!)
-            if (this.players.size === 0) usher.worlds.delete(this.worldName)
-            websocket.removeEventListener("message", this)
-        }
-        
-        if (
-            event.type === "message" &&
-            "data" in event === true &&
-            typeof event.data === "string"
-        ) {
-            const messageAndData = JSON.parse(event.data)
-            for (const message in messageAndData) {
-                const data = messageAndData[message]
-                /*
-                 * Special case the `Ready` and `Mark` message to also
-                 * include the `Player` object corresponding to the sernder.
-                 */
-                if (message === "Ready") this.#sendToAllReceivers("PlayerReady", {
-                    player: this.#playerFromWebSocket(event.target!)!
-                })
-                else if (message === "Mark") this.#sendToAllReceivers("PlayerMark", {
-                    place: data.place,
-                    player: this.#playerFromWebSocket(event.target!)!
-                })
-                else this.#sendToAllReceivers(message as keyof MessageRegistry, data)
+
+    receive<Message extends keyof MessageRegistry>(message: Message, data: MessageRegistry[Message]) {
+        if (message === "PlayerDisconnected") {
+            const { player } = data as MessageRegistry["PlayerDisconnected"]
+            player.unsubscribe(this)
+        } else {
+            for (const receiver of this.#receivers) {
+                receiver.receive(message, data)
             }
         }
-    }
-
-    #sendToAllReceivers<Message extends keyof MessageRegistry>(message: Message, data: MessageRegistry[Message]) {
-        for (const receiver of this.#receivers) {
-            receiver.receive(message, data)
-        }
-    }
-
-    #playerFromWebSocket(websocket: EventTarget) {
-        for (const player of this.players) {
-            if (player.websocket === websocket) return player
-        }
-    }
-}
-
-export class Player {
-    
-    id = crypto.randomUUID()
-
-    sign: "X" | "O" | undefined
-    
-    state: "connected" | "ready" | "ingame" = "connected"
-    
-    constructor(readonly websocket: WebSocket) {}
-
-    send<Message extends keyof MessageRegistry>(message: Message, data: MessageRegistry[Message]): void {
-        if (this.websocket.readyState !== WebSocket.OPEN) {
-            return console.error(new Error(`closed connection not cleaned up`, { cause: this }))
-        }
-        this.websocket.send(JSON.stringify({ [message]: data }))
     }
 }

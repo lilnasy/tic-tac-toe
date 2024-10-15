@@ -12,7 +12,10 @@ export default defineConfig({
     output: "server",
     devToolbar: { enabled: false },
     vite: {
-        ssr: { noExternal: true },
+        ssr: {
+            external: import.meta.env.DEV ? ["cssesc"] : undefined,
+            noExternal: true
+        },
         build: { assetsInlineLimit: 0 }
     },
 })

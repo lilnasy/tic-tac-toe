@@ -26,7 +26,8 @@
         "patchedDependencies": {
             "@astrojs/preact@3.5.3": "patches/@astrojs__preact@3.5.3.patch",
             "astro-emotion": "patches/astro-emotion.patch",
-            "preact": "patches/preact.patch"
+            "preact": "patches/preact.patch",
+            "ws": "patches/ws.patch"
         }
     }
 }

@@ -1,8 +1,8 @@
 import type { APIContext } from "astro"
-import { usher } from "game/usher.ts"
+import { lobby } from "game/lobby.ts"
 
 export async function GET(context: APIContext) {
     const { socket, response } = await context.locals.upgradeWebSocket()
-    usher.usher(socket)
+    lobby.enter(socket)
     return response
 }
