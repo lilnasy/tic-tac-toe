@@ -3,7 +3,7 @@ import type { Entity, Line, Place } from "game/entity.ts"
 import type { World } from "game/world.ts"
 import type { ClientWorld } from "game/client.ts"
 import type { ServerWorld } from "game/server.ts"
-import { announce, listen } from "game/store.ts"
+import { Store } from "game/store.ts"
 import { isServer } from "game/client-server.ts"
 
 export const markerSystemClient: System<"client"> = {
@@ -15,7 +15,7 @@ export const markerSystemClient: System<"client"> = {
         if (world.playerSign !== world.gamestate.Turn) return
         for (const entity of world.entities) {
             if (entity.Place === place && entity.Marked === false) {
-                announce(entity, entity.Marked = world.playerSign)
+                Store.set(entity, "Marked", world.playerSign)
                 world.channel.send("Mark", marked)
                 world.update("Switch", {})
                 return
@@ -30,7 +30,7 @@ export const markerSystemServer: System<"server"> = {
         if (player.sign !== world.gamestate.Turn) return
         for (const entity of world.entities) {
             if (entity.Place === place && entity.Marked === false) {
-                announce(entity, entity.Marked = player.sign)
+                Store.set(entity, "Marked", player.sign)
                 world.update("Switch", {})
                 return
             }
@@ -73,8 +73,7 @@ export const lineCheckSystem: System = {
         }
     }
 }
-
-lineCheckSystem.onPlayerMark = lineCheckSystem.onMark
+if (isServer) lineCheckSystem.onPlayerMark = lineCheckSystem.onMark
 
 function makesLine(line: Line, board: Array<Place>) {
     if (board.includes(line[0]) && board.includes(line[1]) && board.includes(line[2])) return true
@@ -83,15 +82,15 @@ function makesLine(line: Line, board: Array<Place>) {
 
 export const turnSystem: System = {
     onSwitch(_, { gamestate }) {
-        if (gamestate.Turn === "X") announce(gamestate, gamestate.Turn = "O")
-        else if (gamestate.Turn === "O") announce(gamestate, gamestate.Turn = "X")
+        if (gamestate.Turn === "X") Store.set(gamestate, "Turn", "O")
+        else if (gamestate.Turn === "O") Store.set(gamestate, "Turn", "X")
     }
 }
 
 export const victorySystem: System = {
     onVictory({ line }, world) {
         for (const entity of world.entities) {
-            if (entity.Line !== undefined) announce(entity, entity.Line = line)
+            if (entity.Line !== undefined) Store.set(entity, "Line", line)
         }
     }
 }
@@ -105,7 +104,7 @@ export const syncSystem: System = {
             if (networkedEntities.has(entity.Sync.id)) return console.error(new Error("Multiple entities with the same Sync.id"), entity)
             else networkedEntities.add(entity.Sync.id)
             // server announces all mutations done to networked entities to all connected players
-            if (isServer) listen(entity, () => world.channel.send("Sync", entity as Entity<"Sync">))
+            if (isServer) Store.listen(entity, () => world.channel.send("Sync", entity as Entity<"Sync">))
         }
     }
 }
@@ -115,23 +114,29 @@ export const syncSystemClient: System<"client"> = {
         const { Sync: { id } } = updatedEntity
         for (const entity of world.entities) {
             if (entity.Sync !== undefined && entity.Sync.id === id) {
-                announce(entity, Object.assign(entity, updatedEntity))
+                for (const _key in updatedEntity) {
+                    const key = _key as keyof typeof updatedEntity
+                    Store.set(entity, key, updatedEntity[key])
+                }
             }
         }
     }
 }
 
-export const connectSystemClient: System<"client"> = {
+export const connectionSystemClient: System<"client"> = {
     onConnected(_, world) {
         for (const entity of world.entities) {
-            if (entity.Connected !== undefined) {
-                announce(entity, entity.Connected = true)
+            if (entity.Connection !== undefined) {
+                Store.set(entity, "Connection", "connected")
             }
         }
         const url = new URL(location.href)
         const [ segment1, segment2 ] = url.pathname.split("/").filter(Boolean)
         if (segment1 === "world" && typeof segment2 === "string") {
-            world.update("JoinWorld", { world: segment2 })
+            world.update("JoinWorld", {
+                world: segment2,
+                reconnectId: sessionStorage.getItem(`reconnectId:${segment2}`) ?? undefined
+            })
         }
     },
     onNewWorld(_, world) {
@@ -140,20 +145,65 @@ export const connectSystemClient: System<"client"> = {
     onJoinWorld(data, world) {
         world.channel.send("JoinWorld", data)
     },
-    onJoinedWorld({ world }) {
-        history.replaceState(null, "", `/world/${world}`)
+    onJoinedWorld(data, world) {
+        if ("id" in data.reconnect) {            
+            sessionStorage.setItem(`reconnectId:${data.world}`, data.reconnect.id)
+            world.channel.send("Ready", true)
+        } 
+        for (const entity of world.entities) {
+            if (entity.Connection !== undefined) {
+                Store.set(entity, "Connection", "ready")
+            }
+        }
+        history.replaceState(null, "", `/world/${data.world}`)
     },
     onWorldNotFound({ world }) {
-        alert(`World '${world.replace("-", " ")}' does not exist`)
+        alert(`World '${world.replace("-", " ")}' does not exist. The game may have ended, or all the player may have left.`)
         history.replaceState(null, "", `/`)
     },
-    onReconnectId(id, world) {
-        localStorage.setItem("ReconnectId", id)
-        world.channel.send("Ready", true)
+    onWorldOccupied({ world }) {
+        alert(`World '${world.replace("-", " ")}' already has enough players.`)
+        history.replaceState(null, "", `/`)
+    },
+    onStart(_, world) {
+        for (const entity of world.entities) {
+            if (entity.Connection !== undefined) {
+                Store.set(entity, "Connection", "ingame")
+            }
+        }
     }
 }
 
-export const connectSystemServer: System<"server"> = {
+export const connectionSystemServer: System<"server"> = {
+    onPlayerJoinWorld({ player, reconnectId }, world) {
+        if (world.players.has(player)) return
+        if (reconnectId) {
+            for (const dplayer of world.disconnectedPlayers) {
+                if (reconnectId === dplayer.id) {
+                    player.id = reconnectId
+                    player.sign = dplayer.sign
+                    world.disconnectedPlayers.delete(dplayer)
+                    break
+                }
+            }
+        }
+        if (world.players.size < 2) {
+            world.players.add(player)
+            player.send("JoinedWorld", {
+                world: world.name,
+                reconnect: { id: player.id }
+            })
+            /** subscribe the world to the message being sent by the player */
+            player.subscribe(world)
+        } else {
+            player.send("WorldOccupied", { world: world.name })
+        }
+    },
+    onPlayerDisconnected({ player }, world) {
+        world.players.delete(player)
+        world.disconnectedPlayers.add(player)
+        player.unsubscribe(world)
+    },
     onPlayerReady({ player }, world) {
         player.state = "ready"
         if (world.players.size === 2) {
@@ -163,10 +213,7 @@ export const connectSystemServer: System<"server"> = {
             }
             if (allPlayersReady) world.update("Start", true)
         }
-    }
-}
-
-export const startSystemServer: System<"server"> = {
+    },
     onStart(_, world) {
         const { entities, gamestate, players } = world
 
@@ -199,7 +246,7 @@ export const startSystemServer: System<"server"> = {
         player2.send("Assign", { sign: sign2 })
 
         /** randomly give the first turn to a player */
-        announce(gamestate, gamestate.Turn = Math.random() < 0.5 ? "X" : "O")
+        Store.set(gamestate, "Turn", Math.random() < 0.5 ? "X" : "O")
 
         world.channel.send("Start", true)
     }

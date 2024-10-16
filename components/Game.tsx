@@ -1,9 +1,13 @@
-import type { JSX } from "preact"
+import type { JSX, RefObject } from "preact"
 import { css } from "astro:emotion"
 import { Component } from "./component.ts"
 import type { Place } from "game/entity.ts"
 
-export class Board extends Component<JSX.HTMLAttributes> {
+interface BoardProps extends JSX.HTMLAttributes<HTMLDivElement> {
+    ref?: RefObject<any>
+}
+
+export class Board extends Component<BoardProps> {
     render() {
         return <div {...this.props} class={css`
             width: calc(var(--square-size) * 3);
@@ -49,32 +53,31 @@ export class Square extends Component<SquareProps, "Place"> {
         Place: this.props.place,
         Sync: { id: `square${this.props.place}` }
     })
-
-    onClick() {
+    
+    mark() {
         this.world.update("Mark", { place: this.entity.Place })
     }
-
+    
     render() {
         const disabled =
             this.entity.Marked !== false ||
             this.world.playerSign !== this.world.gamestate.Turn
         
         return <button
-            class={css`
+            class={[this.props.class, css`
+                font-family: inherit;
                 background-color: initial;
                 border: initial;
                 padding: initial;
                 color: var(--primary);
-                font-size: calc(var(--square-size) * 0.75);
+                font-size: 7rem;
                 height: var(--square-size);
                 width: var(--square-size);
-                :not([disabled]) {
-                    cursor: pointer;
-                };
-            ` + " " + this.props.class}
-            onClick={this.onClick}
+                :not([disabled]) { cursor: pointer; };
+            `].filter(Boolean).join(" ")}
+            onClick={this.mark}
             disabled={disabled}
-        >{this.entity.Marked === "X" ? X : this.entity.Marked === "O" ? O : null}</button>
+        >{this.entity.Marked || null}</button>
     }
 }
 
@@ -84,15 +87,6 @@ export const lineStroke = css`
     stroke-linecap: round;
     stroke-width: var(--line-size);
 `
-
-const X = <svg viewBox="0 0 192 192" height="192" width="192" xmlns="http://www.w3.org/2000/svg">
-    <line x1={64} y1={64} x2={128} y2={128} class={lineStroke}></line>
-    <line x1={128} y1={64} x2={64} y2={128} class={lineStroke}></line>
-</svg>
-
-const O = <svg viewBox="0 0 192 192" height="192" width="192" xmlns="http://www.w3.org/2000/svg">
-    <circle cx={96} cy={96} r={48} class={lineStroke}></circle>
-</svg>
 
 class Strikethrough extends Component<JSX.SVGAttributes> {
     

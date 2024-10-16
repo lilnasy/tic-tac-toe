@@ -2,7 +2,7 @@ import type { Channel, Receiver } from "game/channel.ts"
 import type { Entity } from "game/entity.ts"
 import type { MessageRegistry } from "game/messages.ts"
 import { type World, commonSystems, spawnEntity, update } from "game/world.ts"
-import { type System, connectSystemClient, markerSystemClient, syncSystemClient } from "game/systems.ts"
+import { type System, connectionSystemClient, markerSystemClient, syncSystemClient } from "game/systems.ts"
 
 export class ClientWorld implements World, Receiver {
 
@@ -10,7 +10,7 @@ export class ClientWorld implements World, Receiver {
     entities = new Set<Entity>
     playerSign: "X" | "O" | undefined = undefined
     spawnEntity = spawnEntity
-    systems: System<"both" | "client">[] = [ markerSystemClient, ...commonSystems, connectSystemClient, syncSystemClient ]
+    systems: System<"both" | "client">[] = [ markerSystemClient, ...commonSystems, connectionSystemClient, syncSystemClient ]
 
     /*
      * The client can be trusting of the server.
@@ -20,7 +20,7 @@ export class ClientWorld implements World, Receiver {
     update = update
 
     gamestate: Entity<"Turn" | "Sync"> = this.spawnEntity({
-        Turn: undefined,
+        Turn: null,
         Sync: { id: "gamestate" }
     })
 
@@ -37,7 +37,7 @@ class ClientToServerChannel implements Channel {
         websocket.addEventListener("message", this)
         websocket.addEventListener("close", this, { once: true })
     }
-
+    
     send<Message extends keyof MessageRegistry>(message: Message, data: MessageRegistry[Message]) {
         const { websocket } = this
         if (websocket.readyState === WebSocket.OPEN) {
@@ -46,23 +46,23 @@ class ClientToServerChannel implements Channel {
             websocket.addEventListener(
                 "open",
                 e => (e.target as WebSocket).send(JSON.stringify({ [message]: data })),
-                { once: true}
+                { once: true }
             )
         } else {
-            console.error(new Error(`server's websocket is an unexpected readyState: ${websocket.readyState}`, { cause: websocket }))
+            console.error(new Error(`Connection to the server is an unexpected readyState: ${websocket.readyState}`, { cause: websocket }))
         }
     }
-
+    
     #receivers = new Set<Receiver>
-
+    
     subscribe(receiver: Receiver) {
         this.#receivers.add(receiver)
     }
-
+    
     unsubscribe(receiver: Receiver) {
         return this.#receivers.delete(receiver)
     }
-
+    
     handleEvent(event: Event) {
         if (event.type === "open") {
             for (const receiver of this.#receivers) {

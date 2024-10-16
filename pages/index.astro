@@ -1,8 +1,7 @@
 ---
 import favicon from "./_favicon.svg"
-export const prerender = true
 ---
-<html lang="en" data-dark>
+<html lang="en">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width" />
@@ -14,7 +13,7 @@ export const prerender = true
 		<style>
 			@import "../tokens.css";
 			@font-face {
-				font-family: 'Sue Ellen Francisco';
+				font-family: "Sue Ellen Francisco";
 				font-style: normal;
 				font-weight: 400;
 				font-display: swap;
@@ -24,7 +23,7 @@ export const prerender = true
 			body {
 				font-family: "Sue Ellen Francisco";
 				margin: 0;
-				height: 100vh;
+				height: 100dvh;
 				display: grid;
 				place-items: center;
 				background: var(--primary-container);
@@ -33,7 +32,9 @@ export const prerender = true
 			p {
 				font-size: 2rem;
 				color: var(--primary);
+				transition: opacity 250ms 250ms;
 			}
+			@starting-style { p { opacity: 0; } }
 			p:after {
 				display: inline-block;
 				width: 0;

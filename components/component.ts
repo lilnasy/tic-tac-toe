@@ -1,5 +1,5 @@
 import { Component as Base, createContext } from "preact"
-import { listen, stop } from "game/store.ts"
+import { Store } from "game/store.ts"
 import type { Entity, States } from "game/entity.ts"
 import type { ClientWorld } from "game/client.ts"
 import type { MessageRegistry } from "game/messages.ts"
@@ -34,14 +34,14 @@ export abstract class Component<P, S> extends Base<P> {
     world = this.context as ClientWorld
 
     componentDidMount() {
-        if (this.entity) listen(this.entity, this)
-        if (this.listen) listen(this.listen, this)
+        if (this.entity) Store.listen(this.entity, this)
+        if (this.listen) Store.listen(this.listen, this)
         if (this.receive !== undefined) this.world.channel.subscribe(this as Receiver)
     }
     
     componentWillUnmount() {
-        if (this.entity) stop(this.entity, this)
-        if (this.listen) stop(this.listen, this)
+        if (this.entity) Store.stopListening(this.entity, this)
+        if (this.listen) Store.stopListening(this.listen, this)
         this.world.channel.unsubscribe(this as any)
     }
 
@@ -49,7 +49,7 @@ export abstract class Component<P, S> extends Base<P> {
      * handleEvent() is called by the entities (stores; derivatives of
      * EventTarget) that the component has been added as an event listener to.
      * 
-     * On each `announce()` (called after each mutation), the entity object
+     * On each `set()` (called after each mutation), the entity object
      * invokes this function, which is used to redraw the component with
      * updated data from the entity.
      */

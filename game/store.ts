@@ -1,26 +1,28 @@
-const weakmap = new WeakMap<{}, EventTarget>
-
-export function store<Data extends {}>(data: Data) {
-    if (weakmap.has(data)) {
-        console.warn(new Error("data is already a store"), data)
-        return data
+export class Store extends class { constructor(x: {}) { return x } } {
+    #et = new EventTarget
+    
+    static create<Store extends {}>(storeData: Store): Store {
+        return new Store(storeData) as unknown as Store
     }
-    const target = new EventTarget
-    weakmap.set(data, target)
-    return data
-}
-
-export function announce<Data extends {}>(data: Data, ...unknown: unknown[]) {
-    const target = weakmap.get(data)!
-    target.dispatchEvent(new Event("update"))
-}
-
-export function listen<Data extends {}>(data: Data, listener: EventListenerOrEventListenerObject, options?: AddEventListenerOptions) {
-    const target = weakmap.get(data)!
-    return target.addEventListener("update", listener, options)
-}
-
-export function stop<Data extends {}>(data: Data, listener: EventListenerOrEventListenerObject) {
-    const target = weakmap.get(data)!
-    return target.removeEventListener("update", listener)
+    
+    static set<
+        Store extends {},
+        Prop extends keyof Store,
+        Value extends Store[Prop]
+    >(store: Store, prop: Prop, value: Value) {
+        if (#et in store === false) return console.log("object is not a store", store)
+         /** @ts-expect-error */
+        store[prop] = value
+        store.#et.dispatchEvent(new Event("update"))
+    }
+    
+    static listen<Store extends {}>(store: Store, listener: EventListenerOrEventListenerObject, options?: AddEventListenerOptions) {
+        if (#et in store === false) return console.log("object is not a store", store)
+        return store.#et.addEventListener("update", listener, options)
+    }
+    
+    static stopListening<Store extends {}>(store: Store, listener: EventListenerOrEventListenerObject) {
+        if (#et in store === false) return console.log("object is not a store", store)
+        return store.#et.removeEventListener("update", listener)
+    }
 }

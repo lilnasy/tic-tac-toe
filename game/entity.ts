@@ -6,14 +6,16 @@ export interface States {
     Place: Place
     Line: null | Line
     Sync: Sync
-    Connected: boolean
+    Connection: Connection
 }
+
+export type Connection = "pending" | "connected" | "ready" | "ingame"
 
 /**
  * The Turn state represents the sign of the player who has
  * the current turn.
  */
-export type Turn = "X" | "O" | undefined
+export type Turn = "X" | "O" | null
 
 /**
  * Marked is one of the states of the squares on the tic

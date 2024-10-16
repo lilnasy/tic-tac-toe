@@ -32,13 +32,7 @@ export interface MessageRegistry {
     /* SERVER-SENT MATCH-ESTABLISHING MESSAGES */
     JoinedWorld: JoinedWorld
     WorldNotFound: WorldNotFound
-
-    /**
-     * A unique id sent by the server to each player when they
-     * initially connect. Will be used by the player to rejion game
-     * after network issues.
-     */
-    ReconnectId: string
+    WorldOccupied: WorldOccupied
 }
 
 /**
@@ -105,18 +99,37 @@ export interface PlayerNewWorld {
 
 export interface JoinWorld {
     world: string
+    reconnectId?: string
 }
 
-export interface PlayerJoinWorld {
+export interface PlayerJoinWorld extends JoinWorld {
     player: Player
-    world: string
 }
 
 export interface JoinedWorld {
     world: string
+    reconnect: {
+        /**
+         * A unique id sent by the server to each player when they
+         * initially connect. Will be used by the player to rejion game
+         * after network issues.
+         */
+        id: string
+    } | Reconnect
 }
 
+export interface Reconnect {}
+
 export interface WorldNotFound {
+    world: string
+}
+
+/**
+ * A message from the server indicating that the world
+ * that the player is atttempting to join already has all
+ * the players to start a game.
+ */
+export interface WorldOccupied {
     world: string
 }
 

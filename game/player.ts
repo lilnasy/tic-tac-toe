@@ -5,19 +5,20 @@ export class Player implements Channel {
     
     id = crypto.randomUUID()
     sign: "X" | "O" | undefined    
-    state: "connected" | "ready" | "ingame" = "connected"
+    state: "pending" | "connected" | "ready" | "ingame" | "disconnected" = "pending"
     #websocket: WebSocket
     
-    constructor(connection: WebSocket) {
-        if (
-            connection.readyState !== WebSocket.OPEN &&
-            connection.readyState !== WebSocket.CONNECTING
-        ) {
-            console.error(new Error(`player's websocket is an unexpected readyState: ${connection.readyState}`, { cause: connection }))
+    constructor(websocket: WebSocket) {
+        if (websocket.readyState === WebSocket.OPEN) {
+            this.state = "connected"
+        } else if (websocket.readyState === WebSocket.CONNECTING) {
+            websocket.addEventListener("open", this, { once: true })
+        } else {
+            console.error(new Error(`Connection to the player is an unexpected readyState: ${websocket.readyState}`, { cause: websocket }))
         }
-        connection.addEventListener("message", this)
-        connection.addEventListener("close", this, { once: true })
-        this.#websocket = connection
+        websocket.addEventListener("message", this)
+        websocket.addEventListener("close", this, { once: true })
+        this.#websocket = websocket
     }
 
     send<Message extends keyof MessageRegistry>(message: Message, data: MessageRegistry[Message]): void {
@@ -39,7 +40,10 @@ export class Player implements Channel {
 
     handleEvent(event: Event) {
         if (event.target !== this.#websocket) return
-        if (event.type === "close") {
+        if (event.type === "open") {
+            this.state = "connected"
+        } else if (event.type === "close") {
+            this.state = "disconnected"
             this.#websocket.removeEventListener("message", this)
             for (const receiver of this.#receivers) {
                 receiver.receive("PlayerDisconnected", { player: this })
@@ -49,7 +53,7 @@ export class Player implements Channel {
             for (const message in messageAndData) {
                 const data = messageAndData[message]
                 /*
-                * Special case message to also include the
+                * Special case some messages to also include the
                 * `Player` object corresponding to the sernder.
                 */
                if (message === "Ready") {

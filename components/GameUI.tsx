@@ -3,15 +3,17 @@ import { css } from "astro:emotion"
 import { Component, WorldContext } from "./component.ts"
 import { Board } from "./Game.tsx"
 import * as Icons from "./Icons.tsx"
-import type { MessageRegistry } from "game/messages.ts"
 import { ClientWorld } from "game/client.ts"
+import { Store } from "game/store.ts"
+import type { Entity } from "game/entity.ts"
+import { ExitPresence } from "./ExitPresence.tsx"
 
 export class GameUI extends PreactComponent {
-
-    screen: "title" | "ready" | "game" = "title"
-
+    
+    state: Entity<"Connection">
+    
     world: ClientWorld
-
+    
     constructor() {
         super()
         const url = new URL(location.href)
@@ -19,48 +21,40 @@ export class GameUI extends PreactComponent {
         url.pathname = "/connect"
         const websocket = new WebSocket(url)
         const world = this.world = new ClientWorld(websocket)
-        world.channel.subscribe(this)
+        this.state = world.spawnEntity({ Connection: "pending" })
+        Store.listen(this.state, this)
     }
-
-    receive(message: keyof MessageRegistry) {
-        if (message === "JoinedWorld") {
-            this.screen = "ready"
-            this.forceUpdate()
-        }
-        if (message === "Start") {
-            this.screen = "game"
-            this.forceUpdate()
-        }
+    
+    // called when the this.state entity is updated
+    handleEvent() {
+        this.forceUpdate()
     }
-
+    
+    componentWillUnmount() {
+        Store.stopListening(this.state, this)
+    }
+    
     render() {
+        const { Connection } = this.state
         return <WorldContext.Provider value={this.world}>
-            { 
-                this.screen === "title" ? <TitleScreen/> :
-                this.screen === "ready" ? <ReadyScreen/> :
-                this.screen === "game" ? <Board/> : <></>
-            }
-            <Toolbar/>
+            <ExitPresence timeout={300}>{
+                Connection === "pending" ? <TitleScreen/> :
+                Connection === "connected" ? <TitleScreen connected/> :
+                Connection === "ready" ? <WaitingForOpponentScreen/> :
+                Connection === "ingame" ? <Board/> : <></>
+            }</ExitPresence>
+            <ColorMixer/>
         </WorldContext.Provider>
     }
 }
 
-let baseHueTemp: number | undefined = undefined
-
-function updateBaseHue() {
-    /**
-     * This check ensures that multiple invocations of this function
-     * within the same frame result in only one update to `document`.
-     */
-    if (baseHueTemp) {
-        document.documentElement.style.setProperty("--base-hue", String(baseHueTemp))
-        baseHueTemp = undefined
-    }
-}
-
-class Toolbar extends Component {
+class ColorMixer extends Component {
 
     colorWheelDialogRef = createRef<HTMLDialogElement>()
+
+    switchLightDark() {
+        document.documentElement.toggleAttribute("data-dark")
+    }
 
     toggleColorWheel() {
         const dialog = this.colorWheelDialogRef.current
@@ -72,13 +66,22 @@ class Toolbar extends Component {
         const rect = this.colorWheelDialogRef.current!.getBoundingClientRect()
         const centerX = rect.left + rect.width / 2
         const centerY = rect.top + rect.height / 2
-        const radians = Math.atan2(centerY - y, x - centerX)
-        baseHueTemp = 90 - (180 / Math.PI) * radians
-        requestAnimationFrame(updateBaseHue)
+        const radians = Math.atan2(centerY - y, x - centerX);
+        ColorMixer.#updatedBaseHue = Math.round(90 - (180 / Math.PI) * radians)
+        requestAnimationFrame(ColorMixer.#updateBaseHue)
     }
-    
-    switchLightDark() {
-        document.documentElement.toggleAttribute("data-dark")
+
+    static #updatedBaseHue: number | undefined = undefined
+
+    static #updateBaseHue() {
+        /**
+         * This check ensures that multiple invocations of this function
+         * within the same frame result in only one update to `document`.
+         */
+        if (ColorMixer.#updatedBaseHue) {
+            document.documentElement.style.setProperty("--base-hue", String(ColorMixer.#updatedBaseHue))
+            ColorMixer.#updatedBaseHue = undefined
+        }
     }
 
     render() {
@@ -91,9 +94,7 @@ class Toolbar extends Component {
             place-self: end;
             margin: 1rem;
         `}>
-            <button class={[css`grid-area: d;`, toolButtonClass].join(" ")} onClick={this.toggleColorWheel}>
-                <Icons.Palette class={toolButtonIconClass}/>
-            </button>
+            <ColorMixerButton class={css`grid-area: d;`} Icon={Icons.Palette} onClick={this.toggleColorWheel}/>
             <dialog ref={this.colorWheelDialogRef} class={css`
                 grid-area: a;
                 position: static;
@@ -123,9 +124,7 @@ class Toolbar extends Component {
                     background: conic-gradient(in oklch increasing hue, oklch(0.7 0.15 0), oklch(0.7 0.15 359));
                     mask-image: radial-gradient(circle farthest-side at center, transparent 36%, white 38%, white 98%, transparent 100%);
                 `}/>
-                <button class={[css`grid-area: 1/1;`, toolButtonClass].join(" ")} onClick={this.switchLightDark}>
-                    <Icons.InvertColors class={toolButtonIconClass}/>
-                </button>
+                <ColorMixerButton class={css`grid-area: 1/1;`} Icon={Icons.InvertColors} onClick={this.switchLightDark}/>
                 <GrabbableButton onGrab={this.onColorWheelThumbGrab} class={css`
                     position: absolute;
                     --size: 2.5rem;
@@ -154,33 +153,40 @@ class Toolbar extends Component {
     }
 }
 
+interface ColorMixerButtonProps extends JSX.HTMLAttributes<HTMLButtonElement> {
+    Icon: typeof Icons[keyof typeof Icons]
+}
 
-const toolButtonClass = css`
-    &:not([disabled]) {
-        cursor: pointer;
+class ColorMixerButton extends Component<ColorMixerButtonProps> {
+    render() {
+        return <button {...this.props} class={[this.props.class, css`
+            &:not([disabled]) {
+                cursor: pointer;
+            }
+            &:not(:hover) {
+                background: none;
+                --fill: var(--primary)
+            }
+            &:hover {
+                background: var(--primary);
+                --fill: var(--on-primary);
+            }
+            transition: background 250ms;
+            border: none;
+            padding: 0;
+            border-radius: 1.5rem;
+            height: 3rem;
+            width: 3rem;
+        `].filter(Boolean).join(" ")}>
+            <this.props.Icon class={css`
+                height: 2rem;
+                width: 2rem;
+                fill: var(--fill);
+                transition: fill 250ms;
+            `}/>
+        </button>
     }
-    &:not(:hover) {
-        background: none;
-        --fill: var(--primary)
-    }
-    &:hover {
-        background: var(--primary);
-        --fill: var(--on-primary);
-    }
-    transition: background 250ms;
-    border: none;
-    padding: 0;
-    border-radius: 1.5rem;
-    height: 3rem;
-    width: 3rem;
-`
-
-const toolButtonIconClass = css`
-    height: 2rem;
-    width: 2rem;
-    fill: var(--fill);
-    transition: fill 250ms;
-`
+}
 
 interface GrabbableButtonProps extends JSX.HTMLAttributes<HTMLButtonElement> {
     onGrab?(event: PointerEvent): unknown
@@ -222,10 +228,8 @@ class GrabbableButton extends Component<GrabbableButtonProps> {
     }
 }
 
-class TitleScreen extends Component {
+class TitleScreen extends Component<{ connected?: boolean }> {
     
-    entity = this.world.spawnEntity({ Connected: false })
-
     new() {
         this.world.update("NewWorld", true)
     }
@@ -244,19 +248,23 @@ class TitleScreen extends Component {
         line-height: 5rem;
         margin: 0;
         pointer-events: none;
-        transition: color 250ms, translate 1s, opacity 1s;
-        transition-delay: calc(var(--stagger) * 250ms);
+        transition:
+            color 250ms,
+            translate 1s var(--stagger),
+            opacity 1s var(--stagger);
         @starting-style {
             translate: 0 3rem;
             opacity: 0;
         }
-    `} aria-hidden style={{ "--stagger": i }}>{text}</h1>)
+    `} aria-hidden style={{ "--stagger": `${i * 250}ms` }}>{text}</h1>)
 
     connecting = <p class={css`
         height: 8rem;
         margin: 0;
         font-size: 2rem;
         color: var(--primary);
+        transition: opacity 250ms 250ms;
+        @starting-style { opacity: 0; }
         &:after {
             display: inline-block;
             width: 0;
@@ -269,7 +277,7 @@ class TitleScreen extends Component {
         { children: "New Game", onClick: this.new, "data-primary": true },
         { children: "Join", onClick: this.join, "data-secondary": true }
     ].map(props => <button {...props} class={css`
-        font-family: 'Sue Ellen Francisco';
+        font-family: inherit;
         height: 3rem;
         width: 8rem;
         font-size: 2rem;
@@ -288,31 +296,49 @@ class TitleScreen extends Component {
         }
         &:not([disabled]) { cursor: pointer; }
         &:not([disabled]):hover { scale: 1.1; }
-        @starting-style {
-            opacity: 0;
-        }
+        @starting-style { opacity: 0; }
     `}></button>)
 
+    #base = createRef<HTMLDivElement>()
+
+    componentWillLeave(leave: () => void) {
+        const div = this.#base.current
+        div?.toggleAttribute("data-leaving", true)
+        div?.addEventListener("transitionend", leave, { once: true })
+    }
+
+    shouldComponentUpdate() {
+        return true
+    }
+
     render() {
-        return <div class={css`display: grid;`}>
+        return <div class={css`
+            display: grid;
+            transition: opacity 250ms;
+            &[data-leaving] {
+                opacity: 0;
+            }
+        `} ref={this.#base}>
             <h1 class={css`contain: strict;`}>TIC TAC TOE</h1>
             {this.titleText}
-            {this.entity.Connected === false ? this.connecting : this.buttons}
+            {this.props.connected ? this.buttons : this.connecting}
         </div>
     }
 }
 
-class ReadyScreen extends Component {
+class WaitingForOpponentScreen extends Component {
     render() {
         return <p class={css`
             font-size: 2rem;
             color: var(--primary);
+            transition: opacity 250ms 250ms;
+            @starting-style { opacity: 0; }
             &:after {
                 display: inline-block;
                 width: 0;
                 animation: ellipsis linear 3s infinite;
                 content: "";
             }
-        `}>waiting for other player</p>
+        `}>waiting for the other player</p>
     }
 }
