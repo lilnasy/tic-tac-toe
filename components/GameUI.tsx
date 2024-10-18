@@ -38,17 +38,17 @@ export class GameUI extends PreactComponent {
         const { Connection } = this.state
         return <WorldContext.Provider value={this.world}>
             <ExitPresence timeout={300}>{
-                Connection === "pending" ? <TitleScreen/> :
-                Connection === "connected" ? <TitleScreen connected/> :
+                Connection === "pending" ? <TitleScreen connecting/> :
+                Connection === "connected" ? <TitleScreen/> :
                 Connection === "ready" ? <WaitingForOpponentScreen/> :
                 Connection === "ingame" ? <Board/> : <></>
             }</ExitPresence>
-            <ColorMixer/>
+            <ColorMixer class={css`place-self: end;`}/>
         </WorldContext.Provider>
     }
 }
 
-class ColorMixer extends Component {
+class ColorMixer extends Component<JSX.HTMLAttributes<HTMLDivElement>> {
 
     colorWheelDialogRef = createRef<HTMLDialogElement>()
 
@@ -62,7 +62,7 @@ class ColorMixer extends Component {
         else dialog?.show()
     }
 
-    onColorWheelThumbGrab = ({ x, y }: PointerEvent) => {
+    onColorWheelThumbMove = ({ x, y }: PointerEvent) => {
         const rect = this.colorWheelDialogRef.current!.getBoundingClientRect()
         const centerX = rect.left + rect.width / 2
         const centerY = rect.top + rect.height / 2
@@ -85,15 +85,13 @@ class ColorMixer extends Component {
     }
 
     render() {
-        return <div class={css`
+        return <div {...this.props} class={[this.props.class, css`
             display: grid;
-            grid-template-areas:
+            grid:
                 "a b"
                 "c d";
-            position: absolute;
-            place-self: end;
             margin: 1rem;
-        `}>
+        `].filter(Boolean).join(" ")}>
             <ColorMixerButton class={css`grid-area: d;`} Icon={Icons.Palette} onClick={this.toggleColorWheel}/>
             <dialog ref={this.colorWheelDialogRef} class={css`
                 grid-area: a;
@@ -117,34 +115,49 @@ class ColorMixer extends Component {
                 }
             `}>
                 <div class={css`
-                    grid-area: 1/1;
+                    grid-area: 1 / 1;
                     pointer-events: none;
                     height: 80%;
                     width: 80%;
-                    background: conic-gradient(in oklch increasing hue, oklch(0.7 0.15 0), oklch(0.7 0.15 359));
+                    background: conic-gradient(in oklch longer hue, oklch(0.7 0.15 0),oklch(0.7 0.15 360));
                     mask-image: radial-gradient(circle farthest-side at center, transparent 36%, white 38%, white 98%, transparent 100%);
                 `}/>
                 <ColorMixerButton class={css`grid-area: 1/1;`} Icon={Icons.InvertColors} onClick={this.switchLightDark}/>
-                <GrabbableButton onGrab={this.onColorWheelThumbGrab} class={css`
-                    position: absolute;
+                <GrabbableRangeInput onMove={this.onColorWheelThumbMove} class={css`
+                    grid-area: 1 / 1;
                     --size: 2.5rem;
-                    top: calc(5rem - var(--size) / 2);
-                    left: calc(5rem - var(--size) / 2);
-                    height: var(--size);
-                    width: var(--size);
+                    background: transparent;
                     translate:
                         calc(sin(var(--base-hue) * 1deg) * 2.75rem)
                         calc(cos(var(--base-hue) * 1deg) * -2.75rem);
-                    border: none;
-                    padding: 0;
-                    background: var(--primary);
-                    transition: background 250ms;
-                    cursor: grab;
-                    mask-image: radial-gradient(circle farthest-side at center, transparent 74%, white 76%, white 98%, transparent 100%);
-                    [data-dark] & {
-                        mask-image: radial-gradient(circle farthest-side at center, white 97%, transparent 100%);
+                    &, &::-webkit-slider-container, &::-webkit-slider-runnable-track, &::-webkit-slider-thumb {
+                        appearance: none;
+                        height: var(--size);
+                        width: var(--size);
                     }
-                    &[data-grabbing] {
+                    &::-moz-range-progress, &::-moz-range-track, &::-moz-range-thumb {
+                        appearance: none;
+                        height: var(--size);
+                        width: var(--size);
+                    }
+                    &::-webkit-slider-thumb {
+                        position: absolute;
+                        background: var(--primary);
+                        transition: background 250ms;
+                        cursor: grab;
+                        mask-image: radial-gradient(circle farthest-side at center, transparent 74%, white 76%, white 98%, transparent 100%);
+                    }
+                    &::-moz-range-thumb {
+                        position: absolute;
+                        background: var(--primary);
+                        transition: background 250ms;
+                        cursor: grab;
+                        mask-image: radial-gradient(circle farthest-side at center, transparent 74%, white 76%, white 98%, transparent 100%);
+                    }
+                    &[data-grabbing]::-webkit-slider-thumb  {
+                        cursor: grabbing;
+                    }
+                    &[data-grabbing]::-moz-range-thumb {
                         cursor: grabbing;
                     }
                 `}/>
@@ -188,47 +201,50 @@ class ColorMixerButton extends Component<ColorMixerButtonProps> {
     }
 }
 
-interface GrabbableButtonProps extends JSX.HTMLAttributes<HTMLButtonElement> {
-    onGrab?(event: PointerEvent): unknown
+interface GrabbableRangeInputProps extends JSX.HTMLAttributes<HTMLInputElement> {
+    onMove(event: PointerEvent): unknown
 }
 
-class GrabbableButton extends Component<GrabbableButtonProps> {
-    #ref = createRef<HTMLButtonElement>()
+class GrabbableRangeInput extends Component<GrabbableRangeInputProps> {
+    #ref = createRef<HTMLInputElement>()
     #ac: AbortController | undefined = undefined
     componentDidMount() {
         this.#ref.current!.addEventListener("pointerdown", this)
     }
     handleEvent(event: Event) {
         if (event instanceof PointerEvent === false) return
-        const button = this.#ref.current!
-        if (event.type === "pointerdown") {
+        const input = this.#ref.current!
+        const { type } = event
+        if (type === "pointerdown") {
             const ac = this.#ac ??= new AbortController
             const options = { signal: ac.signal }
             document.addEventListener("pointermove", this, options)
             document.addEventListener("pointerup", this, options)
             document.addEventListener("pointercancel", this, options)
             document.addEventListener("pointerleave", this, options)
-            button.toggleAttribute("data-grabbing", true)
-        }
-        else if (
-            event.type === "pointerup" ||
-            event.type === "pointercancel" ||
-            event.type === "pointerleave"
+            input.toggleAttribute("data-grabbing", true)
+        } else if (
+            type === "pointerup" ||
+            type === "pointercancel" ||
+            type === "pointerleave"
         ) {
             this.#ac?.abort()
             this.#ac = undefined
-            button.toggleAttribute("data-grabbing", false)
-        }
-        else if (event.type === "pointermove") {
-            this.props.onGrab?.(event)
+            input.toggleAttribute("data-grabbing", false)
+        } else if (type === "pointermove") {
+            this.props.onMove(event)
         }
     }
     render() {
-        return <button {...this.props} ref={this.#ref}/>
+        return <input {...this.props} type="range" ref={this.#ref}/>
     }
 }
 
-class TitleScreen extends Component<{ connected?: boolean }> {
+interface TitleScreenProps extends JSX.HTMLAttributes<HTMLDivElement> {
+    connecting?: true
+}
+
+class TitleScreen extends Component<TitleScreenProps> {
     
     new() {
         this.world.update("NewWorld", true)
@@ -312,23 +328,23 @@ class TitleScreen extends Component<{ connected?: boolean }> {
     }
 
     render() {
-        return <div class={css`
+        return <div {...this.props} class={[this.props.class, css`
             display: grid;
             transition: opacity 250ms;
             &[data-leaving] {
                 opacity: 0;
             }
-        `} ref={this.#base}>
+        `].filter(Boolean).join(" ")} ref={this.#base}>
             <h1 class={css`contain: strict;`}>TIC TAC TOE</h1>
             {this.titleText}
-            {this.props.connected ? this.buttons : this.connecting}
+            {this.props.connecting ? this.connecting : this.buttons}
         </div>
     }
 }
 
-class WaitingForOpponentScreen extends Component {
+class WaitingForOpponentScreen extends Component<JSX.HTMLAttributes<HTMLParagraphElement>> {
     render() {
-        return <p class={css`
+        return <p {...this.props} class={[this.props.class, css`
             font-size: 2rem;
             color: var(--primary);
             transition: opacity 250ms 250ms;
@@ -339,6 +355,6 @@ class WaitingForOpponentScreen extends Component {
                 animation: ellipsis linear 3s infinite;
                 content: "";
             }
-        `}>waiting for the other player</p>
+        `].filter(Boolean).join(" ")}>waiting for the other player</p>
     }
 }

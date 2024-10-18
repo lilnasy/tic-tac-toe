@@ -1,0 +1,12 @@
+diff --git a/dist/esm/index.mjs b/dist/esm/index.mjs
+index 9cd9d82f3db962cc0cdf39be8ef2d22c557ed686..630a76dc36d5a4eebc0f9d325bd22df7a101379f 100644
+--- a/dist/esm/index.mjs
++++ b/dist/esm/index.mjs
+@@ -76,6 +76,7 @@ function preactPlugin({ devtoolsInProd, devToolsEnabled, prefreshEnabled, reactA
+             ].filter(Boolean);
+             const result = await transformAsync(code, {
+                 ...babelOptions,
++                cwd: import.meta.dirname,
+                 ast: true,
+                 root: config.root,
+                 filename: id,

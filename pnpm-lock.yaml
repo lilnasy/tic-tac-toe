@@ -5,6 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
+  '@preact/preset-vite':
+    hash: wx4a2puiselz4n5hatk6npe6l4
+    path: patches/@preact__preset-vite.patch
   astro-emotion:
     hash: 54d3kj6jhm4ybxx2dapxsihtmq
     path: patches/astro-emotion.patch
@@ -21,7 +24,7 @@ importers:
     devDependencies:
       '@preact/preset-vite':
         specifier: ^2.9.1
-        version: 2.9.1(@babel/core@7.25.8)(preact@10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi))(vite@5.4.9(@types/node@22.4.2))
+        version: 2.9.1(patch_hash=wx4a2puiselz4n5hatk6npe6l4)(@babel/core@7.25.8)(preact@10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi))(vite@5.4.9(@types/node@22.4.2))
       '@withastro/node':
         specifier: ^8.3.4
         version: 8.4.0(astro@4.16.5(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3))
@@ -2402,7 +2405,7 @@ snapshots:
 
   '@oslojs/encoding@1.1.0': {}
 
-  '@preact/preset-vite@2.9.1(@babel/core@7.25.8)(preact@10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi))(vite@5.4.9(@types/node@22.4.2))':
+  '@preact/preset-vite@2.9.1(patch_hash=wx4a2puiselz4n5hatk6npe6l4)(@babel/core@7.25.8)(preact@10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi))(vite@5.4.9(@types/node@22.4.2))':
     dependencies:
       '@babel/code-frame': 7.25.7
       '@babel/core': 7.25.8

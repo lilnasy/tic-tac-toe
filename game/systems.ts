@@ -54,10 +54,13 @@ export const lineCheckSystem: System = {
         const markedWithX = new Array<Place>
         const markedWithO = new Array<Place>
         
+        let markedPlaces = 0
+
         for (const { Marked, Place } of world.entities) {
-            if (Marked !== undefined && Place !== undefined) {
+            if (Place !== undefined && Marked !== undefined) {
                 if (Marked === "X") markedWithX.push(Place)
                 if (Marked === "O") markedWithO.push(Place)
+                markedPlaces++
             }
         }
         
@@ -68,7 +71,8 @@ export const lineCheckSystem: System = {
             if (winner) {
                 world.update("Victory", { winner, line })
                 if (isServer) world.channel.send("Victory", { winner, line })
-                return
+            } else if (markedPlaces === 9) {
+                // draw
             }
         }
     }

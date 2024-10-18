@@ -22,7 +22,8 @@
         "patchedDependencies": {
             "astro-emotion": "patches/astro-emotion.patch",
             "preact": "patches/preact.patch",
-            "ws": "patches/ws.patch"
+            "ws": "patches/ws.patch",
+            "@preact/preset-vite": "patches/@preact__preset-vite.patch"
         }
     }
 }

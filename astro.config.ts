@@ -10,6 +10,7 @@ export default defineConfig({
     integrations: [emotion(), precompress],
     adapter: node({ mode: "standalone" }),
     output: "server",
+    server: { host: import.meta.env.DEV ? "0.0.0.0" : "127.0.0.1" },
     devToolbar: { enabled: false },
     vite: {
         plugins: [ preact() ],
@@ -19,9 +20,9 @@ export default defineConfig({
             rollupOptions: {
                 output: {
                     entryFileNames: '_astro/[hash].mjs',
-                    assetFileNames: '_astro/[hash][extname]',
-                },
+                    assetFileNames: '_astro/[hash][extname]'
+                }
             }
         }
-    },
+    }
 })

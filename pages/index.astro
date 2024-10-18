@@ -9,7 +9,7 @@ import favicon from "./_favicon.svg"
 		<title>Tic Tac Toe</title>
 		<meta name="description" content="Enjoy the classic game of Tic Tac Toe in your browser! Play against friends or use random matchmaking and beat them all to pulp!."/>
 		<link rel="icon" type="image/svg+xml" href={favicon.src} />
-		<link rel="preload" href="https://fonts.gstatic.com/s/sueellenfrancisco/v20/wXK3E20CsoJ9j1DDkjHcQ5ZL8xRaxru9no1P2w.woff2" as="font" type="font/woff2" crossorigin>
+		<link rel="preload" as="font" type="font/woff2" crossorigin href="https://fonts.gstatic.com/s/sueellenfrancisco/v20/wXK3E20CsoJ9j1DDkjHcQ5ZL8xRaxru9no1P2w.woff2">
 		<style>
 			@import "../tokens.css";
 			@font-face {
@@ -29,8 +29,12 @@ import favicon from "./_favicon.svg"
 				background: var(--primary-container);
 				transition: background 250ms;
 			}
+			body > :global(*) {
+				grid-area: 1 / 1;
+			}
 			p {
 				font-size: 2rem;
+				grid-area: 1 / 1 / span 3 / span 3;
 				color: var(--primary);
 				transition: opacity 250ms 250ms;
 			}
@@ -43,14 +47,15 @@ import favicon from "./_favicon.svg"
 			}
 			@keyframes ellipsis {
 				0%, 32% { content: "." }
-				33%, 66% { content: ".." }
-				67%, 100% { content: "..." }
+				34%, 66% { content: ".." }
+				68%, 100% { content: "..." }
 			}
 		</style>
 		<script>
 			import { h, render } from "preact"
 			import { GameUI } from "components/GameUI.tsx"
-			
+			if (import.meta.env.DEV) await import("preact/debug")
+
 			document.querySelector("#loading")!.remove()
 			render(h(GameUI, {}), document.querySelector("body")!)
 		</script>

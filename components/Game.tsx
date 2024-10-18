@@ -9,11 +9,11 @@ interface BoardProps extends JSX.HTMLAttributes<HTMLDivElement> {
 
 export class Board extends Component<BoardProps> {
     render() {
-        return <div {...this.props} class={css`
+        return <div {...this.props} class={[this.props.class, css`
             width: calc(var(--square-size) * 3);
             height: calc(var(--square-size) * 3);
             display: grid;
-        ` + " " + (this.props.class ?? "")}>
+        `].filter(Boolean).join(" ")}>
             <CrissCrossFrame class={css`grid-area: 1 / 1 / span 3 / span 3;`}/>
             <Square class={css`grid-area: 1 / 1;`} place={1}/>
             <Square class={css`grid-area: 1 / 2;`} place={2}/>
