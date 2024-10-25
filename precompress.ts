@@ -21,6 +21,12 @@ export default {
             let cached = 0
             let current = 0
             for (const entry of fs.readdirSync(dir, { recursive: true })) {
+                if (typeof entry !== "string") continue
+                if (
+                    entry.endsWith(".mjs") === false &&
+                    entry.endsWith(".css") === false &&
+                    entry.endsWith(".svg") === false
+                ) continue
                 const srcFilePath = path.join(fileURLToPath(dir), entry as string)
                 if (fs.lstatSync(srcFilePath).isFile() === false) continue
 
