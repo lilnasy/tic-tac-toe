@@ -1,8 +1,9 @@
+import { fileURLToPath } from "node:url"
 import { defineConfig } from "astro/config"
 import node from "@withastro/node"
 import preact from "@preact/preset-vite"
-import precompress from "./precompress.ts"
 import { ecsstatic } from "@acab/ecsstatic/vite"
+import precompress from "./precompress.ts"
 
 // https://astro.build/config
 export default defineConfig({
@@ -18,6 +19,11 @@ export default defineConfig({
         plugins: [ ecsstatic({ classNamePrefix: "e" }), preact() ],
         ssr: {
             noExternal: import.meta.env.PROD || undefined
+        },
+        resolve: {
+            alias: {
+                assets: fileURLToPath(new URL("./assets", import.meta.url))
+            }
         },
         build: {
             assetsInlineLimit: 0,
