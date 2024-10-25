@@ -1,13 +1,13 @@
 import { defineConfig } from "astro/config"
 import node from "@withastro/node"
 import preact from "@preact/preset-vite"
-import emotion from "astro-emotion"
 import precompress from "./precompress.ts"
+import { ecsstatic } from "@acab/ecsstatic/vite"
 
 // https://astro.build/config
 export default defineConfig({
     srcDir: ".",
-    integrations: [emotion(), precompress],
+    integrations: [precompress],
     adapter: node({ mode: "standalone" }),
     output: "server",
     server: {
@@ -15,7 +15,7 @@ export default defineConfig({
     },
     devToolbar: { enabled: false },
     vite: {
-        plugins: [ preact() ],
+        plugins: [ ecsstatic({ classNamePrefix: "e" }), preact() ],
         ssr: {
             noExternal: import.meta.env.PROD || undefined
         },

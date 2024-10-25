@@ -1,6 +1,6 @@
 import type { RefObject } from "preact"
 import cx from "clsx/lite"
-import { css } from "astro:emotion"
+import { css } from "@acab/ecsstatic"
 import { Component, type Attributes } from "./component.ts"
 import type { Place } from "game/entity.ts"
 import { Store } from "game/store.ts"
@@ -79,7 +79,7 @@ export class Square extends Component<SquareProps> {
                 font-size: min(7rem, 19dvh, 19dvw);
                 height: var(--square-size);
                 width: var(--square-size);
-                :not([disabled]) { cursor: pointer; };
+                &:not([disabled]) { cursor: pointer; }
             `)}
             onClick={this.mark}
             disabled={disabled}

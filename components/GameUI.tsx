@@ -1,6 +1,6 @@
 import { Component as PreactComponent, createRef, type JSX } from "preact"
 import cx from "clsx/lite"
-import { css } from "astro:emotion"
+import { css } from "@acab/ecsstatic"
 import { Component, WorldContext, type Attributes } from "./component.ts"
 import { Board } from "./Game.tsx"
 import * as Icons from "./Icons.tsx"
