@@ -5,7 +5,7 @@ interface Props {
      * The maximum duration to wait for the transition to
      * complete.
      */
-    timeout: number
+    timeout?: number
     children: ComponentChild
 }
 
@@ -34,7 +34,7 @@ export class ExitPresence extends Component<Props> {
             if (_component && "componentWillLeave" in _component) {
                 this.#leavingChild = children
                 _component.componentWillLeave(this.#leave)
-                setTimeout(this.#leave, this.props.timeout)
+                setTimeout(this.#leave, this.props.timeout ?? 300)
             }
         }
     }
@@ -46,7 +46,6 @@ export class ExitPresence extends Component<Props> {
     }
     
     render() {
-        if (this.#leavingChild) return this.#leavingChild
-        else return this.props.children
+        return this.#leavingChild ?? this.props.children
     }
 }

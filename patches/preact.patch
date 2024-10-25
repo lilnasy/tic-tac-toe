@@ -1,12 +1,9 @@
 diff --git a/package.json b/package.json
-index d68c50da854ae5fa7502d7bf23fc67f87716e084..705db0c709a34ec57681125b57dc07b8c790d852 100644
+index 3fa17f13652e65ab8de2fba87aa9c469c2eed372..c8537ceb9b635e654b2cb146bf8e175a3910962f 100644
 --- a/package.json
 +++ b/package.json
-@@ -10,58 +10,59 @@
-   "unpkg": "dist/preact.min.js",
-   "source": "src/index.js",
+@@ -12,56 +12,56 @@
    "exports": {
-+    "./src": "./src",
      ".": {
        "types": "./src/index.d.ts",
 -      "browser": "./dist/preact.module.js",
@@ -71,10 +68,18 @@ index d68c50da854ae5fa7502d7bf23fc67f87716e084..705db0c709a34ec57681125b57dc07b8
        "import": "./jsx-runtime/dist/jsxRuntime.mjs",
        "require": "./jsx-runtime/dist/jsxRuntime.js"
 diff --git a/src/diff/index.js b/src/diff/index.js
-index 287f94344dadeeae11237a9c0ab39544ee7604ac..5172caba83d805297e8ec37a62d541f4e30615c7 100644
+index ae2d77ffc2351719d4390ceec43b3edbfdaf0bb7..38b0c203b8adca160fecdc0ca51db423485a0e16 100644
 --- a/src/diff/index.js
 +++ b/src/diff/index.js
-@@ -462,7 +462,7 @@ function diffElementNodes(
+@@ -227,6 +227,7 @@ export function diff(
+ 					c.state = c._nextState;
+ 				} while (c._dirty && ++count < 25);
+ 			}
++			options._rendered?.(newVNode);
+ 
+ 			// Handle setState called in render, see #2553
+ 			c.state = c._nextState;
+@@ -462,7 +463,7 @@ function diffElementNodes(
  				) {
  					continue;
  				}
@@ -83,7 +88,7 @@ index 287f94344dadeeae11237a9c0ab39544ee7604ac..5172caba83d805297e8ec37a62d541f4
  			}
  		}
  
-@@ -482,7 +482,7 @@ function diffElementNodes(
+@@ -482,7 +483,7 @@ function diffElementNodes(
  				(!isHydrating || typeof value == 'function') &&
  				oldProps[i] !== value
  			) {
@@ -92,7 +97,7 @@ index 287f94344dadeeae11237a9c0ab39544ee7604ac..5172caba83d805297e8ec37a62d541f4
  			}
  		}
  
-@@ -546,12 +546,12 @@ function diffElementNodes(
+@@ -546,12 +547,12 @@ function diffElementNodes(
  					// again, which triggers IE11 to re-evaluate the select value
  					(nodeType === 'option' && inputValue !== oldProps[i]))
  			) {
@@ -108,7 +113,7 @@ index 287f94344dadeeae11237a9c0ab39544ee7604ac..5172caba83d805297e8ec37a62d541f4
  		}
  	}
 diff --git a/src/diff/props.js b/src/diff/props.js
-index 316146f0fdfb91456047866931a02ba7bd8c0b51..a26016903844158187923f8cc1181f977fdeee70 100644
+index 316146f0fdfb91456047866931a02ba7bd8c0b51..c35387836c9e9594aebfbdc2ad73b84db57241bd 100644
 --- a/src/diff/props.js
 +++ b/src/diff/props.js
 @@ -29,12 +29,13 @@ let eventClock = 0;
@@ -145,11 +150,7 @@ index 316146f0fdfb91456047866931a02ba7bd8c0b51..a26016903844158187923f8cc1181f97
  
  		if (value) {
  			if (!oldValue) {
-diff --git a/src/diff/props.js b/src/diff/props.js
-index 316146f0fdfb91456047866931a02ba7bd8c0b51..d8e9919b777393bfe9293eb0c08a5d8e8545bbd9 100644
---- a/src/diff/props.js
-+++ b/src/diff/props.js
-@@ -166,7 +166,7 @@ function createEventProxy(useCapture) {
+@@ -166,7 +177,7 @@ function createEventProxy(useCapture) {
  			} else if (e._dispatched < eventHandler._attached) {
  				return;
  			}

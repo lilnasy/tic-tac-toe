@@ -12,7 +12,7 @@ patchedDependencies:
     hash: 54d3kj6jhm4ybxx2dapxsihtmq
     path: patches/astro-emotion.patch
   preact:
-    hash: odabzoz3oxpiqbya2hay2ywhfi
+    hash: nmwo7i2pfqokqkren3uyzcqkya
     path: patches/preact.patch
   ws:
     hash: kx7tmpitapmudddeuody7gwvtq
@@ -24,22 +24,28 @@ importers:
     devDependencies:
       '@preact/preset-vite':
         specifier: ^2.9.1
-        version: 2.9.1(patch_hash=wx4a2puiselz4n5hatk6npe6l4)(@babel/core@7.25.8)(preact@10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi))(vite@5.4.9(@types/node@22.4.2))
+        version: 2.9.1(patch_hash=wx4a2puiselz4n5hatk6npe6l4)(@babel/core@7.25.8)(preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya))(vite@5.4.9(@types/node@22.4.2))
       '@withastro/node':
-        specifier: ^8.3.4
-        version: 8.4.0(astro@4.16.5(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3))
+        specifier: ^8.4.0
+        version: 8.4.0(astro@4.16.6(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3))
       astro:
-        specifier: ^4.16.5
-        version: 4.16.5(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3)
+        specifier: ^4.16.6
+        version: 4.16.6(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3)
       astro-emotion:
         specifier: ^1.0.1
         version: 1.0.1(patch_hash=54d3kj6jhm4ybxx2dapxsihtmq)
       canvas-confetti:
         specifier: ^1.9.3
         version: 1.9.3
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
       preact:
-        specifier: ^10.24.2
-        version: 10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi)
+        specifier: ^10.24.3
+        version: 10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya)
+      preact-render-to-string:
+        specifier: ^6.5.11
+        version: 6.5.11(preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya))
       typescript:
         specifier: ^5.6.3
         version: 5.6.3
@@ -721,8 +727,8 @@ packages:
   astro-emotion@1.0.1:
     resolution: {integrity: sha512-dLcTYNZqphnEpc6DbAWi0ajiHB+PMqFBbeEV4nR90suKB8RdIsfYFaGLp9dFEaLd0x1fsIOIL0P4r7PsB0FhBQ==}
 
-  astro@4.16.5:
-    resolution: {integrity: sha512-v8mKWcEPN7hkfyVsMFWV0F8UgL4GUJKT172KTB7dePO3yJb64HBwCckC0QnA60QQh3jK6+2xwyWEc5QvCeqjtg==}
+  astro@4.16.6:
+    resolution: {integrity: sha512-LMMbjr+4aN26MOyJzTdjM+Y+srpAIkx7IX9IcdF3eHQLGr8PgkioZp+VQExRfioDIyA2HY6ottVg3QccTzJqYA==}
     engines: {node: ^18.17.1 || ^20.3.0 || >=21.0.0, npm: '>=9.6.5', pnpm: '>=7.1.0'}
     hasBin: true
 
@@ -1537,8 +1543,13 @@ packages:
     resolution: {integrity: sha512-56rxCq7G/XfB4EkXq9Egn5GCqugWvDFjafDOThIdMBsI15iqPqR5r15TfSr1YPYeEI19YeaXMCbY6u88Y76GLQ==}
     engines: {node: ^10 || ^12 || >=14}
 
-  preact@10.24.2:
-    resolution: {integrity: sha512-1cSoF0aCC8uaARATfrlz4VCBqE8LwZwRfLgkxJOQwAlQt6ayTmi0D9OF7nXid1POI5SZidFuG9CnlXbDfLqY/Q==}
+  preact-render-to-string@6.5.11:
+    resolution: {integrity: sha512-ubnauqoGczeGISiOh6RjX0/cdaF8v/oDXIjO85XALCQjwQP+SB4RDXXtvZ6yTYSjG+PC1QRP2AhPgCEsM2EvUw==}
+    peerDependencies:
+      preact: '>=10'
+
+  preact@10.24.3:
+    resolution: {integrity: sha512-Z2dPnBnMUfyQfSQ+GBdsGa16hz35YmLmtTLhM169uW944hYL6xzTYkJjC07j+Wosz733pMWx0fgON3JNw1jJQA==}
 
   preferred-pm@4.0.0:
     resolution: {integrity: sha512-gYBeFTZLu055D8Vv3cSPox/0iTPtkzxpLroSYYA7WXgRi31WCJ51Uyl8ZiPeUUjyvs2MBzK+S8v9JVUgHU/Sqw==}
@@ -2405,13 +2416,13 @@ snapshots:
 
   '@oslojs/encoding@1.1.0': {}
 
-  '@preact/preset-vite@2.9.1(patch_hash=wx4a2puiselz4n5hatk6npe6l4)(@babel/core@7.25.8)(preact@10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi))(vite@5.4.9(@types/node@22.4.2))':
+  '@preact/preset-vite@2.9.1(patch_hash=wx4a2puiselz4n5hatk6npe6l4)(@babel/core@7.25.8)(preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya))(vite@5.4.9(@types/node@22.4.2))':
     dependencies:
       '@babel/code-frame': 7.25.7
       '@babel/core': 7.25.8
       '@babel/plugin-transform-react-jsx': 7.25.7(@babel/core@7.25.8)
       '@babel/plugin-transform-react-jsx-development': 7.25.7(@babel/core@7.25.8)
-      '@prefresh/vite': 2.4.6(preact@10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi))(vite@5.4.9(@types/node@22.4.2))
+      '@prefresh/vite': 2.4.6(preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya))(vite@5.4.9(@types/node@22.4.2))
       '@rollup/pluginutils': 4.2.1
       babel-plugin-transform-hook-names: 1.0.2(@babel/core@7.25.8)
       debug: 4.3.7
@@ -2427,20 +2438,20 @@ snapshots:
 
   '@prefresh/babel-plugin@0.5.1': {}
 
-  '@prefresh/core@1.5.2(preact@10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi))':
+  '@prefresh/core@1.5.2(preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya))':
     dependencies:
-      preact: 10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi)
+      preact: 10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya)
 
   '@prefresh/utils@1.2.0': {}
 
-  '@prefresh/vite@2.4.6(preact@10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi))(vite@5.4.9(@types/node@22.4.2))':
+  '@prefresh/vite@2.4.6(preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya))(vite@5.4.9(@types/node@22.4.2))':
     dependencies:
       '@babel/core': 7.25.7
       '@prefresh/babel-plugin': 0.5.1
-      '@prefresh/core': 1.5.2(preact@10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi))
+      '@prefresh/core': 1.5.2(preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya))
       '@prefresh/utils': 1.2.0
       '@rollup/pluginutils': 4.2.1
-      preact: 10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi)
+      preact: 10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya)
       vite: 5.4.9(@types/node@22.4.2)
     transitivePeerDependencies:
       - supports-color
@@ -2535,7 +2546,7 @@ snapshots:
 
   '@types/babel__core@7.20.5':
     dependencies:
-      '@babel/parser': 7.25.7
+      '@babel/parser': 7.25.8
       '@babel/types': 7.25.8
       '@types/babel__generator': 7.6.8
       '@types/babel__template': 7.4.4
@@ -2547,7 +2558,7 @@ snapshots:
 
   '@types/babel__template@7.4.4':
     dependencies:
-      '@babel/parser': 7.25.7
+      '@babel/parser': 7.25.8
       '@babel/types': 7.25.8
 
   '@types/babel__traverse@7.20.6':
@@ -2590,10 +2601,10 @@ snapshots:
 
   '@ungap/structured-clone@1.2.0': {}
 
-  '@withastro/node@8.4.0(astro@4.16.5(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3))':
+  '@withastro/node@8.4.0(astro@4.16.6(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3))':
     dependencies:
       '@types/ws': 8.5.12
-      astro: 4.16.5(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3)
+      astro: 4.16.6(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3)
       send: 0.19.1
       server-destroy: 1.0.1
       ws: 8.18.0(patch_hash=kx7tmpitapmudddeuody7gwvtq)
@@ -2640,7 +2651,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  astro@4.16.5(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3):
+  astro@4.16.6(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3):
     dependencies:
       '@astrojs/compiler': 2.10.3
       '@astrojs/internal-helpers': 0.4.1
@@ -3260,7 +3271,7 @@ snapshots:
 
   magicast@0.3.5:
     dependencies:
-      '@babel/parser': 7.25.7
+      '@babel/parser': 7.25.8
       '@babel/types': 7.25.8
       source-map-js: 1.2.1
 
@@ -3703,7 +3714,11 @@ snapshots:
       picocolors: 1.1.0
       source-map-js: 1.2.1
 
-  preact@10.24.2(patch_hash=odabzoz3oxpiqbya2hay2ywhfi): {}
+  preact-render-to-string@6.5.11(preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya)):
+    dependencies:
+      preact: 10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya)
+
+  preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya): {}
 
   preferred-pm@4.0.0:
     dependencies:

@@ -1,15 +1,20 @@
 export type Entity<State extends keyof States = never> = Partial<States> & Required<Pick<States, State>>
 
 export interface States {
+    Sign: Sign
     Turn: Turn
     Marked: Marked
     Place: Place
     Line: null | Line
     Sync: Sync
     Connection: Connection
+    Game: Game
 }
 
-export type Connection = "pending" | "connected" | "ready" | "ingame"
+/**
+ * The Sign state represents the sign assigned to the player.
+ */
+export type Sign = "X" | "O" | null
 
 /**
  * The Turn state represents the sign of the player who has
@@ -39,6 +44,10 @@ export type Place = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
  * a strikethrough line.
  */
 export type Line = readonly [ Place, Place, Place ]
+
+export type Connection = "connecting" | "connected" | "waiting" | "ingame"
+
+export type Game = "pending" | "active" | "draw" | "victory"
 
 /**
  * A state containing a unique ID that is shared by the

@@ -1,5 +1,9 @@
 ---
 import favicon from "./_favicon.svg"
+import { h } from "preact"
+import { renderToString } from "preact-render-to-string"
+import { GameUISSR } from "components/GameUI.tsx"
+import "../tokens.css"
 ---
 <html lang="en">
 	<head>
@@ -11,12 +15,11 @@ import favicon from "./_favicon.svg"
 		<link rel="icon" type="image/svg+xml" href={favicon.src} />
 		<link rel="preload" as="font" type="font/woff2" crossorigin href="https://fonts.gstatic.com/s/sueellenfrancisco/v20/wXK3E20CsoJ9j1DDkjHcQ5ZL8xRaxru9no1P2w.woff2">
 		<style>
-			@import "../tokens.css";
 			@font-face {
 				font-family: "Sue Ellen Francisco";
 				font-style: normal;
 				font-weight: 400;
-				font-display: swap;
+				font-display: block;
 				src: url(https://fonts.gstatic.com/s/sueellenfrancisco/v20/wXK3E20CsoJ9j1DDkjHcQ5ZL8xRaxru9no1P2w.woff2) format('woff2');
 				unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 			}
@@ -26,24 +29,23 @@ import favicon from "./_favicon.svg"
 				height: 100dvh;
 				display: grid;
 				place-items: center;
+				font-size: 2rem;
 				background: var(--primary-container);
 				transition: background 250ms;
+				color-scheme: light dark;
 			}
 			body > :global(*) {
 				grid-area: 1 / 1;
 			}
-			p {
-				font-size: 2rem;
-				grid-area: 1 / 1 / span 3 / span 3;
-				color: var(--primary);
-				transition: opacity 250ms 250ms;
+			@media (prefers-color-scheme: dark) {
+				body[data-switch-color-scheme] {
+					color-scheme: light;
+				}
 			}
-			@starting-style { p { opacity: 0; } }
-			p:after {
-				display: inline-block;
-				width: 0;
-				animation: ellipsis linear 3s infinite;
-				content: "";
+			@media (prefers-color-scheme: light) {
+				body[data-switch-color-scheme] {
+					color-scheme: dark;
+				}
 			}
 			@keyframes ellipsis {
 				0%, 32% { content: "." }
@@ -52,15 +54,14 @@ import favicon from "./_favicon.svg"
 			}
 		</style>
 		<script>
-			import { h, render } from "preact"
+			import { h, hydrate } from "preact"
 			import { GameUI } from "components/GameUI.tsx"
+			import "components/component-store-reactivity.ts"
+			
 			if (import.meta.env.DEV) await import("preact/debug")
 
-			document.querySelector("#loading")!.remove()
-			render(h(GameUI, {}), document.querySelector("body")!)
+			hydrate(h(GameUI, {}), document.body)
 		</script>
 	</head>
-	<body>
-		<p id="loading">loading</p>
-	</body>
+	<body><Fragment set:html={renderToString(h(GameUISSR, {}))}/></body>
 </html>

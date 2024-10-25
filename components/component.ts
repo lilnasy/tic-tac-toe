@@ -1,48 +1,22 @@
-import { Component as Base, createContext } from "preact"
-import { Store } from "game/store.ts"
+import { Component as Base, createContext, type JSX } from "preact"
 import type { Entity, States } from "game/entity.ts"
-import type { ClientWorld } from "game/client.ts"
-import type { MessageRegistry } from "game/messages.ts"
-import type { Receiver } from "game/channel.ts"
+import type { ClientWorld } from "game/world.client.ts"
+import type { Data, MessageRegistry } from "game/messages.ts"
 
-export const WorldContext = createContext<ClientWorld>(null as any)
+export const WorldContext = createContext<ClientWorld>({} as any)
 
-/*
- * Optional abstract properties and methods need to be described in a
- * separate interface instead of directly in the class definition.
- * 
- * This is a limitation in TypeScript's syntax also affecting.
- */
-export interface Component<P = {}, S extends keyof States = never> {
-    /**
-     * The entity that the component visually represents.
-     * Most components have a one-to-one relationship with an entity.
-     */
-    entity?: Entity<S>
-    /**
-     * Extra entity that the component depends on reactively. The global state entity, for example.
-     */
-    listen?: Entity<never>
-    /**
-     * Components may implement this callback to receive all the events being sent by the server.
-     */
-    receive?<Message extends keyof MessageRegistry>(message: Message, data: MessageRegistry[Message]): unknown
-}
-
-export abstract class Component<P, S> extends Base<P> {
-    static contextType = WorldContext
-    world = this.context as ClientWorld
-
-    componentDidMount() {
-        if (this.entity) Store.listen(this.entity, this)
-        if (this.listen) Store.listen(this.listen, this)
-        if (this.receive !== undefined) this.world.channel.subscribe(this as Receiver)
-    }
+export abstract class Component<P = {}> extends Base<P> {
     
-    componentWillUnmount() {
-        if (this.entity) Store.stopListening(this.entity, this)
-        if (this.listen) Store.stopListening(this.listen, this)
-        this.world.channel.unsubscribe(this as any)
+    static contextType = WorldContext
+    
+    world = this.context as ClientWorld
+    
+    send<Message extends keyof MessageRegistry>(message: Message, ..._data: Data<Message>): void {
+        this.world.update(message, ..._data)
+    }
+
+    spawnEntity<State extends keyof States>(entity: Entity<State>) {
+        return this.world.spawnEntity(entity)
     }
 
     /**
@@ -54,7 +28,7 @@ export abstract class Component<P, S> extends Base<P> {
      * updated data from the entity.
      */
     handleEvent(event: Event) {
-        this.forceUpdate()
+        if (event.type === "update") this.forceUpdate()
     }
 
     /**
@@ -64,4 +38,19 @@ export abstract class Component<P, S> extends Base<P> {
     shouldComponentUpdate() {
         return false
     }
+}
+
+export interface Attributes<TagName extends string> extends JSX.HTMLAttributes<
+    TagName extends "button" ? HTMLButtonElement :
+    TagName extends "dialog" ? HTMLDialogElement :
+    TagName extends "div" ? HTMLDivElement :
+    TagName extends "p" ? HTMLParagraphElement :
+    HTMLElement
+> {}
+
+export namespace Attributes {
+    export interface SVG<TagName extends string = "svg"> extends JSX.SVGAttributes<
+        TagName extends "line" ? SVGLineElement :
+        SVGElement
+    > {}
 }

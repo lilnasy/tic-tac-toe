@@ -1,19 +1,21 @@
-import type { JSX, RefObject } from "preact"
+import type { RefObject } from "preact"
+import cx from "clsx/lite"
 import { css } from "astro:emotion"
-import { Component } from "./component.ts"
+import { Component, type Attributes } from "./component.ts"
 import type { Place } from "game/entity.ts"
+import { Store } from "game/store.ts"
 
-interface BoardProps extends JSX.HTMLAttributes<HTMLDivElement> {
+interface BoardProps extends Attributes<"div"> {
     ref?: RefObject<any>
 }
 
 export class Board extends Component<BoardProps> {
-    render() {
-        return <div {...this.props} class={[this.props.class, css`
+    render(props: typeof this.props) {
+        return <div {...props} class={cx(props.class, css`
             width: calc(var(--square-size) * 3);
             height: calc(var(--square-size) * 3);
             display: grid;
-        `].filter(Boolean).join(" ")}>
+        `)}>
             <CrissCrossFrame class={css`grid-area: 1 / 1 / span 3 / span 3;`}/>
             <Square class={css`grid-area: 1 / 1;`} place={1}/>
             <Square class={css`grid-area: 1 / 2;`} place={2}/>
@@ -29,82 +31,91 @@ export class Board extends Component<BoardProps> {
     }
 }
 
-class CrissCrossFrame extends Component<JSX.SVGAttributes> {
-    render() {
-        return <svg viewBox="0 0 576 576" height="576" width="576" {...this.props} xmlns="http://www.w3.org/2000/svg">
-            <line x1="192" y1="16" x2="192" y2="560" class={lineStroke} />
-            <line x1="384" y1="16" x2="384" y2="560" class={lineStroke} />
-            <line x1="16" y1="192" x2="560" y2="192" class={lineStroke} />
-            <line x1="16" y1="384" x2="560" y2="384" class={lineStroke} />
+class CrissCrossFrame extends Component<Attributes.SVG> {
+    render(props: typeof this.props) {
+        return <svg {...props} viewBox="0 0 576 576" class={cx(props.class, css`
+            --size: calc(var(--square-size) * 3);
+            width: var(--size);
+            height: var(--size);
+        `)} xmlns="http://www.w3.org/2000/svg">
+            <Line x1="192" y1="16" x2="192" y2="560" />
+            <Line x1="384" y1="16" x2="384" y2="560" />
+            <Line x1="16" y1="192" x2="560" y2="192" />
+            <Line x1="16" y1="384" x2="560" y2="384" />
         </svg>
     }
 }
 
-export interface SquareProps extends JSX.HTMLAttributes<HTMLButtonElement> {
+export interface SquareProps extends Attributes<"button"> {
     place: Place
 }
 
-export class Square extends Component<SquareProps, "Place"> {
+export class Square extends Component<SquareProps> {
 
-    listen = this.world.gamestate
-
-    entity = this.world.spawnEntity({
+    entity = this.spawnEntity({
         Marked: false,
         Place: this.props.place,
         Sync: { id: `square${this.props.place}` }
     })
-    
+
     mark() {
-        this.world.update("Mark", { place: this.entity.Place })
+        this.send("Mark", { place: this.entity.Place })
     }
-    
-    render() {
-        const disabled =
-            this.entity.Marked !== false ||
-            this.world.playerSign !== this.world.gamestate.Turn
+
+    render(props: typeof this.props) {
+        const Marked = Store.get(this.entity, "Marked")
+        const Sign = Store.get(this.world.state, "Sign")
+        const Turn = Store.get(this.world.state, "Turn")
+        
+        const disabled = Marked !== false || Sign !== Turn
         
         return <button
-            class={[this.props.class, css`
+            class={cx(props.class, css`
                 font-family: inherit;
                 background-color: initial;
                 border: initial;
                 padding: initial;
                 color: var(--primary);
-                font-size: 7rem;
+                font-size: min(7rem, 19dvh, 19dvw);
                 height: var(--square-size);
                 width: var(--square-size);
                 :not([disabled]) { cursor: pointer; };
-            `].filter(Boolean).join(" ")}
+            `)}
             onClick={this.mark}
             disabled={disabled}
-        >{this.entity.Marked || null}</button>
+        >{Marked || null}</button>
     }
 }
 
-export const lineStroke = css`
-    fill: none;
-    stroke: var(--primary);
-    stroke-linecap: round;
-    stroke-width: var(--line-size);
-`
+class Strikethrough extends Component<Attributes.SVG> {
 
-class Strikethrough extends Component<JSX.SVGAttributes> {
-    
-    entity = this.world.spawnEntity({ Line: null })
+    entity = this.spawnEntity({ Line: null })
 
-    render() {
-        if (this.entity.Line === null) return <></>
-        const [ a, b, c ] = this.entity.Line
-        const line = a * 100 + b * 10 + c
-        return <svg viewBox="0 0 576 576" height="576" width="576" {...this.props} xmlns="http://www.w3.org/2000/svg">
-            {line === 123 && <line x1="64" y1="96" x2="512" y2="96" class={lineStroke}/>}
-            {line === 456 && <line x1="64" y1="288" x2="512" y2="288" class={lineStroke}/>}
-            {line === 789 && <line x1="64" y1="480" x2="512" y2="480" class={lineStroke}/>}
-            {line === 147 && <line x1="96" y1="64" x2="96" y2="512" class={lineStroke}/>}
-            {line === 258 && <line x1="288" y1="64" x2="288" y2="512" class={lineStroke}/>}
-            {line === 369 && <line x1="480" y1="64" x2="480" y2="512" class={lineStroke}/>}
-            {line === 159 && <line x1="64" y1="64" x2="512" y2="512" class={lineStroke}/>}
-            {line === 357 && <line x1="512" y1="64" x2="64" y2="512" class={lineStroke}/>}
+    render(props: typeof this.props) {
+        const line = Store.get(this.entity, "Line")
+        if (line === null) return <></>
+        const [ a, b, c ] = line
+        const placement = a * 100 + b * 10 + c
+        return <svg {...props} viewBox="0 0 576 576" xmlns="http://www.w3.org/2000/svg">
+            {placement === 123 && <Line x1="64" y1="96" x2="512" y2="96"/>}
+            {placement === 456 && <Line x1="64" y1="288" x2="512" y2="288"/>}
+            {placement === 789 && <Line x1="64" y1="480" x2="512" y2="480"/>}
+            {placement === 147 && <Line x1="96" y1="64" x2="96" y2="512"/>}
+            {placement === 258 && <Line x1="288" y1="64" x2="288" y2="512"/>}
+            {placement === 369 && <Line x1="480" y1="64" x2="480" y2="512"/>}
+            {placement === 159 && <Line x1="64" y1="64" x2="512" y2="512"/>}
+            {placement === 357 && <Line x1="512" y1="64" x2="64" y2="512"/>}
         </svg>
+    }
+}
+
+class Line extends Component<Attributes.SVG<"line">> {
+    render(props: typeof this.props) {
+        return <line {...props} class={css`
+            fill: none;
+            stroke: var(--primary);
+            stroke-linecap: round;
+            stroke-width: var(--line-size);
+        `}/>
     }
 }

@@ -1,16 +1,19 @@
 import type { Channel, Receiver } from "game/channel.ts"
 import type { Entity } from "game/entity.ts"
-import type { MessageRegistry } from "game/messages.ts"
+import type { Data, MessageRegistry } from "game/messages.ts"
 import { type World, commonSystems, spawnEntity, update } from "game/world.ts"
-import { type System, connectionSystemClient, markerSystemClient, syncSystemClient } from "game/systems.ts"
+import { type System, connectionSystemClient, markerSystemClient } from "game/systems.ts"
 
 export class ClientWorld implements World, Receiver {
 
+    server = false as const
+    client = true as const
+
     channel: ClientToServerChannel
     entities = new Set<Entity>
-    playerSign: "X" | "O" | undefined = undefined
+    systems: System<"both" | "client">[] = [ markerSystemClient, ...commonSystems, connectionSystemClient ]
+    
     spawnEntity = spawnEntity
-    systems: System<"both" | "client">[] = [ markerSystemClient, ...commonSystems, connectionSystemClient, syncSystemClient ]
 
     /*
      * The client can be trusting of the server.
@@ -19,9 +22,14 @@ export class ClientWorld implements World, Receiver {
     receive = update
     update = update
 
-    gamestate: Entity<"Turn" | "Sync"> = this.spawnEntity({
+    /**
+     * A static entity containing state related to the game, the connection and the player.
+     */
+    state: Entity<"Connection" | "Game" | "Sign" | "Turn"> = this.spawnEntity({
+        Connection: "connecting",
+        Game: "pending",
+        Sign: null,
         Turn: null,
-        Sync: { id: "gamestate" }
     })
 
     constructor(websocket: WebSocket) {
@@ -33,12 +41,14 @@ export class ClientWorld implements World, Receiver {
 class ClientToServerChannel implements Channel {
     
     constructor(readonly websocket: WebSocket) {
-        websocket.addEventListener("open", this, { once: true })
+        if (websocket.readyState === WebSocket.OPEN) this.handleEvent(new Event("open"))
+        else websocket.addEventListener("open", this, { once: true })
         websocket.addEventListener("message", this)
         websocket.addEventListener("close", this, { once: true })
     }
     
-    send<Message extends keyof MessageRegistry>(message: Message, data: MessageRegistry[Message]) {
+    send<Message extends keyof MessageRegistry>(message: Message, ..._data: Data<Message>) {
+        const [ data = {} ] = _data
         const { websocket } = this
         if (websocket.readyState === WebSocket.OPEN) {
             websocket.send(JSON.stringify({ [message]: data }))

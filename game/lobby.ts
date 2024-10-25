@@ -1,9 +1,9 @@
 import { WebSocket } from "@withastro/node/websocket"
 import { generateProjectName as generateWorldName } from "vendor/withastro/cli-kit"
-import { ServerWorld } from "game/server.ts"
+import { ServerWorld } from "game/world.server.ts"
 import { Player } from "game/player.ts"
 import type { Receiver } from "game/channel.ts"
-import type { MessageRegistry, PlayerDisconnected, PlayerJoinWorld, PlayerNewWorld } from "game/messages.ts"
+import type { JoinWorld, MessageRegistry, NewWorld, Disconnected } from "game/messages.ts"
 
 /**
  * The lobby is responsible for creating new worlds where games can be played, and adding newly-connected players to those #worlds.
@@ -23,30 +23,33 @@ export const { lobby } = class Lobby implements Receiver {
     }
 
     receive<Message extends keyof MessageRegistry>(message: Message, data: MessageRegistry[Message]) {
-        if (message === "PlayerDisconnected") {
-            const { player } = data as PlayerDisconnected
+        if (message === "Disconnected") {
+            const { player } = data as Disconnected
             player.unsubscribe(this)
-        } else if (message === "PlayerNewWorld") {
-            this.#newWorld(data as PlayerNewWorld)
-        } else if (message === "PlayerJoinWorld") {
-            this.#joinWorld(data as PlayerJoinWorld)
+        } else if (message === "NewWorld") {
+            this.#newWorld(data as NewWorld)
+        } else if (message === "JoinWorld") {
+            this.#joinWorld(data as JoinWorld)
         }
     }
 
-    #newWorld({ player }: PlayerNewWorld) {
+    #newWorld(data: NewWorld) {
+        const player = Player.get(data)
         let worldName: string
-        // security: possible world names are finite - an attack could create them all, and this line would then freeze the server
+        // security: possible world names are finite - an attack could
+        // create them all, and this line would then freeze the server
         while (this.#worlds.has(worldName = generateWorldName())) {}
         const world = new ServerWorld(worldName)
         this.#worlds.set(world.name, new WeakRef(world))
-        world.update("PlayerJoinWorld", { player, world: worldName })
+        world.update("AddPlayer", { player })
     }
 
-    #joinWorld(message: PlayerJoinWorld) {
-        const world = this.#worlds.get(message.world)?.deref()
+    #joinWorld(data: JoinWorld) {
+        const player = Player.get(data)
+        const world = this.#worlds.get(data.world)?.deref()
         if (world === undefined) {
-            return message.player.send("WorldNotFound", { world: message.world })
+            return Player.get(data).send("WorldNotFound", { world: data.world })
         }
-        world.update("PlayerJoinWorld", message)
+        world.update("AddPlayer", { player, reconnectId: data.reconnectId })
     }
 }

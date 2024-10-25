@@ -1,24 +1,37 @@
 :root {
-    --base-hue: 360;
-    --base-chroma: 0.15;
+    --base-hue: 0;
     --line-size: 1rem;
-    --square-size: 12rem;
-}
-
-:root[data-dark] {
-    --primary             : oklch(0.8 var(--base-chroma)             var(--base-hue));
-    --on-primary          : oklch(0.2 var(--base-chroma)             var(--base-hue));
-    --primary-container   : oklch(0.2 var(--base-chroma)             calc(var(--base-hue) - 20));
-    --on-primary-container: oklch(0.8 var(--base-chroma)             calc(var(--base-hue) - 20));
-    --secondary           : oklch(0.7 calc(0.7 * var(--base-chroma)) var(--base-hue));
-    --on-secondary        : oklch(0.2 calc(0.7 * var(--base-chroma)) var(--base-hue));
-}
-
-:root:not([data-dark]) {
-    --primary             : oklch(0.3 var(--base-chroma)             var(--base-hue));
-    --on-primary          : white;
-    --primary-container   : oklch(0.9 var(--base-chroma)             calc(var(--base-hue) + 20));
-    --on-primary-container: oklch(0.1 var(--base-chroma)             calc(var(--base-hue) + 20));
-    --secondary           : oklch(0.4 calc(0.7 * var(--base-chroma)) var(--base-hue));
-    --on-secondary        : white;
+    --square-size: min(12rem, calc(100dvw / 3), calc(100dvh / 3));
+    --primary: light-dark(
+        oklch(30% 0.15 var(--base-hue)),
+        oklch(80% 0.15 var(--base-hue))
+    );
+    --on-primary: light-dark(
+        white,
+        oklch(20% 0.15 var(--base-hue))
+    );
+    --primary-container: light-dark(
+        oklch(90% 0.15 calc(var(--base-hue) + 20)),
+        oklch(20% 0.15 calc(var(--base-hue) - 20))
+    );
+    --on-primary-container: light-dark(
+        oklch(10% 0.15 calc(var(--base-hue) + 20)),
+        oklch(80% 0.15 calc(var(--base-hue) - 20))
+    );
+    --secondary: light-dark(
+        oklch(40% 0.1 var(--base-hue)),
+        oklch(70% 0.1 var(--base-hue))
+    );
+    --on-secondary: light-dark(
+        white,
+        oklch(20% 0.1 var(--base-hue))
+    );
+    --secondary-container: light-dark(
+        oklch(90% 0.05 var(--base-hue)),
+        oklch(40% 0.05 var(--base-hue))
+    );
+    --on-secondary-container: light-dark(
+        oklch(20% 0.1 var(--base-hue)),
+        oklch(90% 0.1 var(--base-hue))
+    );
 }

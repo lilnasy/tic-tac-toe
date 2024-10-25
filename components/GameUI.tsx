@@ -1,28 +1,27 @@
 import { Component as PreactComponent, createRef, type JSX } from "preact"
+import cx from "clsx/lite"
 import { css } from "astro:emotion"
-import { Component, WorldContext } from "./component.ts"
+import { Component, WorldContext, type Attributes } from "./component.ts"
 import { Board } from "./Game.tsx"
 import * as Icons from "./Icons.tsx"
-import { ClientWorld } from "game/client.ts"
+import { ClientWorld } from "game/world.client.ts"
 import { Store } from "game/store.ts"
-import type { Entity } from "game/entity.ts"
 import { ExitPresence } from "./ExitPresence.tsx"
+
+export function GameUISSR() {
+    return <TitleScreen loading/>
+}
 
 export class GameUI extends PreactComponent {
     
-    state: Entity<"Connection">
-    
-    world: ClientWorld
+    #world: ClientWorld
     
     constructor() {
         super()
         const url = new URL(location.href)
         url.protocol = url.protocol.replace("http", "ws")
         url.pathname = "/connect"
-        const websocket = new WebSocket(url)
-        const world = this.world = new ClientWorld(websocket)
-        this.state = world.spawnEntity({ Connection: "pending" })
-        Store.listen(this.state, this)
+        this.#world = new ClientWorld(new WebSocket(url))
     }
     
     // called when the this.state entity is updated
@@ -30,70 +29,82 @@ export class GameUI extends PreactComponent {
         this.forceUpdate()
     }
     
-    componentWillUnmount() {
-        Store.stopListening(this.state, this)
-    }
-    
     render() {
-        const { Connection } = this.state
-        return <WorldContext.Provider value={this.world}>
-            <ExitPresence timeout={300}>{
-                Connection === "pending" ? <TitleScreen connecting/> :
+        const Connection = Store.get(this.#world.state, "Connection")
+        const Game = Store.get(this.#world.state, "Game")
+        return <WorldContext.Provider value={this.#world}>
+            <ExitPresence  timeout={1000}>{
+                // true ? <><Board/><VictoryDialog/></> :
+                Connection === "connecting" ? <TitleScreen connecting/> :
                 Connection === "connected" ? <TitleScreen/> :
-                Connection === "ready" ? <WaitingForOpponentScreen/> :
-                Connection === "ingame" ? <Board/> : <></>
+                Connection === "waiting" ? <WaitingForOpponentScreen/> :
+                Connection === "ingame" ?
+                    <>
+                        <Board/>
+                        {
+                            Game === "draw" ? <DrawDialog/> :
+                            Game === "victory" ? <VictoryDialog/> : <></>
+                        }
+                    </> : <></>
             }</ExitPresence>
             <ColorMixer class={css`place-self: end;`}/>
         </WorldContext.Provider>
     }
 }
 
-class ColorMixer extends Component<JSX.HTMLAttributes<HTMLDivElement>> {
+class ColorMixer extends Component<Attributes<"div">> {
 
-    colorWheelDialogRef = createRef<HTMLDialogElement>()
+    #colorWheelDialogRef = createRef<HTMLDialogElement>()
 
-    switchLightDark() {
-        document.documentElement.toggleAttribute("data-dark")
+    #switchLightDark() {
+        document.body.toggleAttribute("data-switch-color-scheme")
     }
 
     toggleColorWheel() {
-        const dialog = this.colorWheelDialogRef.current
+        const dialog = this.#colorWheelDialogRef.current
         if (dialog?.open) dialog.close()
         else dialog?.show()
     }
 
-    onColorWheelThumbMove = ({ x, y }: PointerEvent) => {
-        const rect = this.colorWheelDialogRef.current!.getBoundingClientRect()
+    updateHue(event: PointerEvent) {
+        /**
+         * Schedule updating of hue for later to ensure that multiple
+         * multiple pointer events dispatched in the same frame result
+         * in only one update to `document`.
+         */
+        if (this.#pointer === undefined) requestAnimationFrame(this.#updateHue)
+        this.#pointer = event
+    }
+
+    #pointer: PointerEvent | undefined
+
+    #updateHue = () => {
+        if (!this.#pointer) return
+        const rect = this.#colorWheelDialogRef.current!.getBoundingClientRect()
         const centerX = rect.left + rect.width / 2
         const centerY = rect.top + rect.height / 2
+        const { x , y } = this.#pointer!
         const radians = Math.atan2(centerY - y, x - centerX);
-        ColorMixer.#updatedBaseHue = Math.round(90 - (180 / Math.PI) * radians)
-        requestAnimationFrame(ColorMixer.#updateBaseHue)
+        const updatedBaseHue = Math.round(90 - (180 / Math.PI) * radians)
+        document.documentElement.style.setProperty("--base-hue", String(updatedBaseHue))
+        this.#pointer = undefined
     }
 
-    static #updatedBaseHue: number | undefined = undefined
-
-    static #updateBaseHue() {
-        /**
-         * This check ensures that multiple invocations of this function
-         * within the same frame result in only one update to `document`.
-         */
-        if (ColorMixer.#updatedBaseHue) {
-            document.documentElement.style.setProperty("--base-hue", String(ColorMixer.#updatedBaseHue))
-            ColorMixer.#updatedBaseHue = undefined
-        }
-    }
-
-    render() {
-        return <div {...this.props} class={[this.props.class, css`
+    render(props: typeof this.props) {
+        return <div {...props} class={cx(props.class, css`
             display: grid;
             grid:
                 "a b"
                 "c d";
             margin: 1rem;
-        `].filter(Boolean).join(" ")}>
+            transition: opacity 250ms;
+            @starting-style { opacity: 0; }
+        `)}>
             <ColorMixerButton class={css`grid-area: d;`} Icon={Icons.Palette} onClick={this.toggleColorWheel}/>
-            <dialog ref={this.colorWheelDialogRef} class={css`
+            <dialog ref={this.#colorWheelDialogRef} class={css`
+                &[open] {
+                    display: grid;
+                }
                 grid-area: a;
                 position: static;
                 width: 10rem;
@@ -102,9 +113,6 @@ class ColorMixer extends Component<JSX.HTMLAttributes<HTMLDivElement>> {
                 outline: solid 0.25rem var(--primary);
                 transition-property: background, outline, scale, translate;
                 transition-duration: 250ms;
-                &[open] {
-                    display: grid;
-                }
                 place-items: center;
                 border: none;
                 margin: 0;
@@ -122,8 +130,8 @@ class ColorMixer extends Component<JSX.HTMLAttributes<HTMLDivElement>> {
                     background: conic-gradient(in oklch longer hue, oklch(0.7 0.15 0),oklch(0.7 0.15 360));
                     mask-image: radial-gradient(circle farthest-side at center, transparent 36%, white 38%, white 98%, transparent 100%);
                 `}/>
-                <ColorMixerButton class={css`grid-area: 1/1;`} Icon={Icons.InvertColors} onClick={this.switchLightDark}/>
-                <GrabbableRangeInput onMove={this.onColorWheelThumbMove} class={css`
+                <ColorMixerButton class={css`grid-area: 1/1;`} Icon={Icons.InvertColors} onClick={this.#switchLightDark}/>
+                <input type="range" ref={input => new RangeInputController(input!, this, "updateHue")} class={css`
                     grid-area: 1 / 1;
                     --size: 2.5rem;
                     background: transparent;
@@ -166,13 +174,13 @@ class ColorMixer extends Component<JSX.HTMLAttributes<HTMLDivElement>> {
     }
 }
 
-interface ColorMixerButtonProps extends JSX.HTMLAttributes<HTMLButtonElement> {
+interface ColorMixerButtonProps extends Attributes<"button"> {
     Icon: typeof Icons[keyof typeof Icons]
 }
 
 class ColorMixerButton extends Component<ColorMixerButtonProps> {
-    render() {
-        return <button {...this.props} class={[this.props.class, css`
+    render(props: typeof this.props) {
+        return <button {...props} class={cx(props.class, css`
             &:not([disabled]) {
                 cursor: pointer;
             }
@@ -190,8 +198,8 @@ class ColorMixerButton extends Component<ColorMixerButtonProps> {
             border-radius: 1.5rem;
             height: 3rem;
             width: 3rem;
-        `].filter(Boolean).join(" ")}>
-            <this.props.Icon class={css`
+        `)}>
+            <props.Icon class={css`
                 height: 2rem;
                 width: 2rem;
                 fill: var(--fill);
@@ -201,27 +209,28 @@ class ColorMixerButton extends Component<ColorMixerButtonProps> {
     }
 }
 
-interface GrabbableRangeInputProps extends JSX.HTMLAttributes<HTMLInputElement> {
-    onMove(event: PointerEvent): unknown
-}
-
-class GrabbableRangeInput extends Component<GrabbableRangeInputProps> {
-    #ref = createRef<HTMLInputElement>()
-    #ac: AbortController | undefined = undefined
-    componentDidMount() {
-        this.#ref.current!.addEventListener("pointerdown", this)
+class RangeInputController<Method extends string, Receiver extends Record<Method, (e: PointerEvent) => unknown>> {
+    #element: HTMLInputElement
+    #receiver: Receiver
+    #method: Method
+    #ac: AbortController | undefined
+    constructor(element: HTMLInputElement, receiver: Receiver, method: Method) {
+        element.addEventListener("pointerdown", this)
+        this.#element = element
+        this.#receiver = receiver
+        this.#method = method
     }
     handleEvent(event: Event) {
         if (event instanceof PointerEvent === false) return
-        const input = this.#ref.current!
+        const input = this.#element
         const { type } = event
         if (type === "pointerdown") {
             const ac = this.#ac ??= new AbortController
             const options = { signal: ac.signal }
-            document.addEventListener("pointermove", this, options)
-            document.addEventListener("pointerup", this, options)
-            document.addEventListener("pointercancel", this, options)
-            document.addEventListener("pointerleave", this, options)
+            addEventListener("pointermove", this, options)
+            addEventListener("pointerup", this, options)
+            addEventListener("pointercancel", this, options)
+            addEventListener("pointerleave", this, options)
             input.toggleAttribute("data-grabbing", true)
         } else if (
             type === "pointerup" ||
@@ -232,31 +241,29 @@ class GrabbableRangeInput extends Component<GrabbableRangeInputProps> {
             this.#ac = undefined
             input.toggleAttribute("data-grabbing", false)
         } else if (type === "pointermove") {
-            this.props.onMove(event)
+            this.#receiver[this.#method](event)
         }
-    }
-    render() {
-        return <input {...this.props} type="range" ref={this.#ref}/>
     }
 }
 
-interface TitleScreenProps extends JSX.HTMLAttributes<HTMLDivElement> {
+interface TitleScreenProps {
     connecting?: true
+    loading?: true
 }
 
 class TitleScreen extends Component<TitleScreenProps> {
     
     new() {
-        this.world.update("NewWorld", true)
+        this.send("NewWorld")
     }
 
     join() {
         const worldName = prompt("Enter world name")
         if (typeof worldName !== "string") return
-        this.world.update("JoinWorld", { world: worldName.replace(" ", "-") })
+        this.send("JoinWorld", { world: worldName.replace(" ", "-") })
     }
 
-    titleText = ["TIC", "TAC", "TOE"].map((text, i) => <h1 class={css`
+    #titleText = ["TIC", "TAC", "TOE"].map((text, i) => <h1 class={css`
         font-weight: 400;
         font-size: 5rem;
         text-align: center;
@@ -274,10 +281,10 @@ class TitleScreen extends Component<TitleScreenProps> {
         }
     `} aria-hidden style={{ "--stagger": `${i * 250}ms` }}>{text}</h1>)
 
-    connecting = <p class={css`
+    #connecting = <p class={css`
         height: 8rem;
         margin: 0;
-        font-size: 2rem;
+        text-align: center;
         color: var(--primary);
         transition: opacity 250ms 250ms;
         @starting-style { opacity: 0; }
@@ -287,65 +294,54 @@ class TitleScreen extends Component<TitleScreenProps> {
             animation: ellipsis linear 3s infinite;
             content: "";
         }
-    `}>connecting</p>
+    `}>{this.props.loading ? "loading" : "connecting"}</p>
 
-    buttons = [
-        { children: "New Game", onClick: this.new, "data-primary": true },
-        { children: "Join", onClick: this.join, "data-secondary": true }
-    ].map(props => <button {...props} class={css`
-        font-family: inherit;
-        height: 3rem;
-        width: 8rem;
-        font-size: 2rem;
-        border-radius: 1.5rem;
-        margin: 0.5rem;
-        line-height: 3.4rem;
-        border: none;
-        transition: background 250ms, color 250ms, opacity 1s, scale 250ms;
-        &[data-primary] {
-            background: var(--primary);
-            color: var(--on-primary);
-        }
-        &[data-secondary] {
-            background: var(--secondary);
-            color: var(--on-secondary);
-        }
-        &:not([disabled]) { cursor: pointer; }
-        &:not([disabled]):hover { scale: 1.1; }
-        @starting-style { opacity: 0; }
-    `}></button>)
+    #buttons = [
+        <ActionButton onClick={this.new} primary>New Game</ActionButton>,
+        <ActionButton onClick={this.join} secondary>Join</ActionButton>
+    ]
 
     #base = createRef<HTMLDivElement>()
 
-    componentWillLeave(leave: () => void) {
+    componentWillLeave(leave: () => void) {        
+        // we dont want to spend too much time in animations if
+        // a shared link to a world was opened, in which case,
+        // the buttons will not even have been rendered yet
+        const leaveQuickly = this.props.connecting || this.props.loading
+        if (!leaveQuickly) {
+            for (const h1 of this.#titleText) {
+                const element: HTMLHeadingElement = (h1 as any)._dom
+                element.animate([{}, { translate: "0 -10rem" }], { duration: 1000, easing: "cubic-bezier(0.5, -0.5, 0.25, 1)" })
+            }
+            for (const button of this.#buttons) {
+                const element: HTMLButtonElement = (button as any)._dom
+                element.animate([{}, { translate: "0 5rem" } ], { duration: 1000, easing: "cubic-bezier(0.5, -0.5, 0.25, 1)" })
+            }
+        }
         const div = this.#base.current
-        div?.toggleAttribute("data-leaving", true)
-        div?.addEventListener("transitionend", leave, { once: true })
+        const animation = div!.animate([{}, { opacity: 0 }], { duration: leaveQuickly ? 250 : 750 })
+        animation.finished.then(leave)
     }
 
     shouldComponentUpdate() {
         return true
     }
 
-    render() {
-        return <div {...this.props} class={[this.props.class, css`
+    render(props: typeof this.props) {
+        return <div class={css`
             display: grid;
             transition: opacity 250ms;
-            &[data-leaving] {
-                opacity: 0;
-            }
-        `].filter(Boolean).join(" ")} ref={this.#base}>
+        `} ref={this.#base}>
             <h1 class={css`contain: strict;`}>TIC TAC TOE</h1>
-            {this.titleText}
-            {this.props.connecting ? this.connecting : this.buttons}
+            {this.#titleText}
+            {props.loading || props.connecting ? this.#connecting : this.#buttons}
         </div>
     }
 }
 
-class WaitingForOpponentScreen extends Component<JSX.HTMLAttributes<HTMLParagraphElement>> {
-    render() {
-        return <p {...this.props} class={[this.props.class, css`
-            font-size: 2rem;
+class WaitingForOpponentScreen extends Component<Attributes<"p">> {
+    render(props: typeof this.props) {
+        return <p {...props} class={cx(props.class, css`
             color: var(--primary);
             transition: opacity 250ms 250ms;
             @starting-style { opacity: 0; }
@@ -355,6 +351,114 @@ class WaitingForOpponentScreen extends Component<JSX.HTMLAttributes<HTMLParagrap
                 animation: ellipsis linear 3s infinite;
                 content: "";
             }
-        `].filter(Boolean).join(" ")}>waiting for the other player</p>
+        `)}>waiting for the other player</p>
+    }
+}
+
+class DrawDialog extends Component {
+    render() {
+        return <PopUp>
+            <p>Draw</p>
+            <ActionButton secondary>Play Again</ActionButton>
+        </PopUp>
+    }
+}
+
+class VictoryDialog extends Component {
+    render() {
+        return <PopUp>
+            <p>You Win</p>
+            <ActionButton secondary>Play Again</ActionButton>
+        </PopUp>
+    }
+}
+
+class PopUp extends Component<Attributes<"dialog">> {
+    #ref = createRef<HTMLDialogElement>()
+    componentDidMount() {
+        this.#ref.current?.showModal()
+    }
+    componentWillUnmount() {
+        this.#ref.current?.close()
+    }
+    render(props: typeof this.props) {
+        return <dialog {...props} ref={this.#ref} class={css`
+            &[open] {
+                display: grid;
+            }
+            place-items: center;
+            width: min(20rem, 100dvw);
+            background: var(--secondary-container);
+            color: var(--on-secondary-container);
+            transition-property: opacity, translate;
+            transition-duration: 1s;
+            @starting-style {
+                opacity: 0;
+                translate: 0 4rem;
+            }
+            &::backdrop {
+                background: light-dark(oklch(20% 0 0 / .2), oklch(90% 0 0 / .3));
+                backdrop-filter: blur(0.5rem);
+                transition: background 1s, backdrop-filter 250ms;
+                @starting-style {
+                    background: transparent;
+                    backdrop-filter: blur(0);
+                }
+            }
+        `}/>
+    }
+}
+
+interface ButtonProps extends Attributes<"button"> {
+    primary?: true
+    secondary?: true
+}
+
+class ActionButton extends Component<ButtonProps> {
+    #ref = createRef<HTMLButtonElement>()
+    componentDidMount() {
+        this.#ref.current?.addEventListener("click", this)
+    }
+    handleEvent(event: JSX.TargetedMouseEvent<HTMLButtonElement>) {
+        event.currentTarget.animate(
+            [{}, { scale: 0.9 }, {}],
+            { duration: 250, easing: "cubic-bezier(0.5, 0.5, 0.5, 1.5)" }
+        )
+    }
+    render({ primary, secondary, ...props }: typeof this.props) {
+        return <button {...props} ref={this.#ref} class={cx(props.class, css`
+            font-family: inherit;
+            font-size: inherit;
+            height: 3rem;
+            width: 8rem;
+            border-radius: 1.5rem;
+            margin: 0.5rem;
+            line-height: 3.4rem;
+            border: none;
+            transition: background 250ms, color 250ms, opacity 1s, outline-color 250ms, outline-style 250ms, outline-offset 250ms, scale 250ms;
+            outline: dashed 0.25rem;
+            outline-offset: -0.25rem;
+            &:hover, &:active, &:focus-visible {
+                outline-offset: 0.25rem;
+            }
+            &:focus-visible {
+                outline-style: solid;
+            }
+            &:not([disabled]) {
+                cursor: pointer;
+                &:hover {
+                    scale: 1.1;
+                }
+            }
+            @starting-style { opacity: 0; }
+        `, primary && css`
+            background: var(--primary);
+            outline-color: var(--primary);
+            color: var(--on-primary);
+        `, secondary && css`
+            background: var(--secondary);
+            outline-color: var(--secondary);
+            color: var(--on-secondary);
+        `)}/>
     }
 }

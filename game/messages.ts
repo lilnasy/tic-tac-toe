@@ -1,6 +1,7 @@
 import type { Entity, Line, Place } from "game/entity.ts"
 import type { Player } from "game/player.ts"
 
+
 /**
  * All communication between the systems, and between server and
  * the clients must happen in the form of these messages.
@@ -15,25 +16,36 @@ export interface MessageRegistry {
     Start: Start
     Sync: Sync
     Victory: Victory
+    Draw: Draw
+    Restart: Restart
 
-    /* CLIENT-SENT MATCH-ESTABLISHING MESSAGES */
+    /* CLIENT-ONLY CONNECTION-MANAGEMENT MESSAGE */
     Connected: Connected
-    Ready: Ready
+
+    /* CLIENT-TO-SERVER MATCH-ESTABLISHING MESSAGES */
     NewWorld: NewWorld
     JoinWorld: JoinWorld
 
-    /* SERVER VERSIONS OF CLIENT-SENT MATCH-ESTABLISHING MESSAGES */
-    PlayerMark: PlayerMark
-    PlayerReady: PlayerReady
-    PlayerNewWorld: PlayerNewWorld
-    PlayerJoinWorld: PlayerJoinWorld
-    PlayerDisconnected: PlayerDisconnected
+    /* SERVER-ONLY CONNECTION MANAGEMENT MESSAGES */
+    AddPlayer: AddPlayer
+    Disconnected: Disconnected
     
-    /* SERVER-SENT MATCH-ESTABLISHING MESSAGES */
+    /* SERVER-TO-CLIENT MATCH-ESTABLISHING MESSAGES */
     JoinedWorld: JoinedWorld
     WorldNotFound: WorldNotFound
     WorldOccupied: WorldOccupied
 }
+
+/**
+ * A type utility to get the shape of the Data that is expected
+ * along with a particular message. Returns a tuple that can be
+ * used for spread params, allowing the call site to leave out
+ * the argument if data is an empty interface.
+ */
+export type Data<Message extends keyof MessageRegistry> =
+    {} extends MessageRegistry[Message]
+        ? ([] | [data: MessageRegistry[Message]])
+        : [data: MessageRegistry[Message]]
 
 /**
  * A message from the server telling a player
@@ -55,89 +67,17 @@ export interface Mark {
  * A message to switch turns to the other player after a valid move
  * has been played.
  */
-export interface Switch {}
-
-/**
- * The Mark message combined with the player object corresponding
- * to the player that sent the message. Server only.
- */
-export interface PlayerMark extends Mark {
-    player: Player
-}
-
-/**
- * A client-side only message shared when the websocket connection
- * to the server becomes open.
- */
-export interface Connected {}
-
-/**
- * A message sent by a player to the server that they are ready
- * to go in game. A precursor to the `PlayerReady` message on the
- * server that also includes the player object corresponding to
- * the player that sent the message.
- */
-export interface Ready {}
-
-/**
- * A message sent by a player to the server that they are ready
- * to go in game. Server only.
- */
-export interface PlayerReady {
-    player: Player
-}
-
-export interface PlayerDisconnected {
-    player: Player
-}
-
-export interface NewWorld {}
-
-export interface PlayerNewWorld {
-    player: Player
-}
-
-export interface JoinWorld {
-    world: string
-    reconnectId?: string
-}
-
-export interface PlayerJoinWorld extends JoinWorld {
-    player: Player
-}
-
-export interface JoinedWorld {
-    world: string
-    reconnect: {
-        /**
-         * A unique id sent by the server to each player when they
-         * initially connect. Will be used by the player to rejion game
-         * after network issues.
-         */
-        id: string
-    } | Reconnect
-}
-
-export interface Reconnect {}
-
-export interface WorldNotFound {
-    world: string
-}
-
-/**
- * A message from the server indicating that the world
- * that the player is atttempting to join already has all
- * the players to start a game.
- */
-export interface WorldOccupied {
-    world: string
+export interface Switch {
+    to?: "X" | "O"
 }
 
 /**
  * A message sent by the server to both server and client
  * systems when 2 players are connected and ready.
  */
-export interface Start {}
+export interface Start {
+    Turn: "X" | "O"
+}
 
 /**
  * A message sent by the server to all connected players.
@@ -154,4 +94,91 @@ export interface Sync extends Entity<"Sync"> {}
 export interface Victory {
     winner: "X" | "O"
     line: Line
+}
+
+/**
+ * A message propagated when all the squares have been marked,
+ * but no player successfully made a line.
+ */
+export interface Draw {}
+
+export interface Restart {}
+
+/**
+ * A client-side only message shared when the websocket connection
+ * to the server becomes open.
+ */
+export interface Connected {}
+
+/**
+ * A server-only message sent to the server world when the
+ * connection to the player is closed or otherwise severed.
+ */ 
+export interface Disconnected {
+    player: Player
+}
+
+export interface NewWorld {}
+
+/**
+ * A message sent by the player to the server that it
+ * wants to join a particular world.
+ */
+export interface JoinWorld {
+    world: string
+    /**
+     * In case the player is reconnecting after being
+     * disconnected, the `reconnectId` is used to
+     * let the player continue where they left off.
+     */
+    reconnectId?: string
+}
+
+/**
+ * A server-only message derived either from `NewWorld` or
+ * `JoinWorld`, sent to the newly-created or pre-existing
+ * world to which the player wants to be added. 
+ */
+export interface AddPlayer {
+    player: Player
+    reconnectId?: string
+}
+
+/**
+ * A message sent by the server to the player when a new world
+ * is created, or the player was added to a pre-existing one.
+ */
+export interface JoinedWorld {
+    world: string
+    reconnect: {
+        /**
+         * A unique id sent by the server to each player when they
+         * initially connect. Will be used by the player to rejion game
+         * after network issues.
+         */
+        id: string
+    } | Reconnect
+}
+
+/**
+ * TODO
+ */
+export interface Reconnect {}
+
+/**
+ * A message sent by the server to the player when the
+ * specific world that the player requested to join does
+ * not exist.
+ */
+export interface WorldNotFound {
+    world: string
+}
+
+/**
+ * A message from the server indicating that the world
+ * that the player is atttempting to join already has all
+ * the players to start a game.
+ */
+export interface WorldOccupied {
+    world: string
 }
