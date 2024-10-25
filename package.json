@@ -24,7 +24,8 @@
         "patchedDependencies": {
             "preact": "patches/preact.patch",
             "ws": "patches/ws.patch",
-            "@preact/preset-vite": "patches/@preact__preset-vite.patch"
+            "@preact/preset-vite": "patches/@preact__preset-vite.patch",
+            "astro": "patches/astro.patch"
         }
     }
 }
