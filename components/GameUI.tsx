@@ -42,8 +42,8 @@ export class GameUI extends PreactComponent {
                     <>
                         <Board/>
                         {
-                            Game === "draw" ? <DrawDialog/> :
-                            Game === "victory" ? <VictoryDialog/> : <></>
+                            Game === "draw" ? <GameEndDialog draw/> :
+                            Game === "victory" ? <GameEndDialog victory/> : <></>
                         }
                     </> : <></>
             }</ExitPresence>
@@ -355,20 +355,18 @@ class WaitingForOpponentScreen extends Component<Attributes<"p">> {
     }
 }
 
-class DrawDialog extends Component {
-    render() {
-        return <PopUp>
-            <p>Draw</p>
-            <ActionButton secondary>Play Again</ActionButton>
-        </PopUp>
-    }
-}
+type GameEndDialogProps =
+    | { draw: true, victory?: undefined }
+    | { draw?: undefined, victory: true }
 
-class VictoryDialog extends Component {
-    render() {
+class GameEndDialog extends Component<GameEndDialogProps> {
+    playAgain() {
+        this.send("RequestRematch")
+    }
+    render(props: typeof this.props) {
         return <PopUp>
-            <p>You Win</p>
-            <ActionButton secondary>Play Again</ActionButton>
+            <p>{ props.draw ? "Draw" : "You Win!" }</p>
+            <ActionButton secondary onClick={this.playAgain}>Play Again</ActionButton>
         </PopUp>
     }
 }

@@ -4,8 +4,8 @@ import type { Channel, Receiver } from "game/channel.ts"
 export class Player implements Channel {
     
     id = crypto.randomUUID()
-    sign: "X" | "O" | undefined    
-    state: "pending" | "connected" | "ingame" | "disconnected" = "pending"
+    sign: "X" | "O" | undefined
+    state: "pending" | "connected" | "ingame" | "rematching" | "disconnected" = "pending"
     #websocket: WebSocket
     
     constructor(websocket: WebSocket) {
@@ -14,7 +14,7 @@ export class Player implements Channel {
         } else if (websocket.readyState === WebSocket.CONNECTING) {
             websocket.addEventListener("open", this, { once: true })
         } else {
-            console.error(new Error(`Connection to the player is an unexpected readyState: ${websocket.readyState}`, { cause: websocket }))
+            console.error(new Error(`Could not create a player using the provided websocket connection because it is in an unusable readyState: ${readableReadyState(websocket.readyState)}`, { cause: websocket }))
         }
         websocket.addEventListener("message", this)
         websocket.addEventListener("close", this, { once: true })
@@ -65,7 +65,12 @@ export class Player implements Channel {
                 * Special case some messages to also include the `Player`
                 * object corresponding to the sender as a hidden field.
                 */
-               if (message === "Mark" || message === "NewWorld" || message === "JoinWorld") {
+                if (
+                    message === "Mark" ||
+                    message === "NewWorld" ||
+                    message === "JoinWorld" ||
+                    message === "RequestRematch"
+                ) {
                     Metadata.set(data, this)
                 }
                 for (const receiver of this.#receivers) {
@@ -92,4 +97,11 @@ class Metadata extends class { constructor(x: {}) { return x } } {
         if (object.#data) return object.#data as T
         throw new Error(`The object does not have any metadata`, { cause: object })
     }
+}
+
+function readableReadyState(readyState: WebSocket["readyState"]) {
+    if (readyState === WebSocket.CONNECTING) return "CONNECTING"
+    if (readyState === WebSocket.OPEN) return "OPEN"
+    if (readyState === WebSocket.CLOSING) return "CLOSING"
+    if (readyState === WebSocket.CLOSED) return "CLOSED"
 }

@@ -17,7 +17,8 @@ export interface MessageRegistry {
     Sync: Sync
     Victory: Victory
     Draw: Draw
-    Restart: Restart
+    RequestRematch: RequestRematch
+    RematchRequested: RematachRequested
 
     /* CLIENT-ONLY CONNECTION-MANAGEMENT MESSAGE */
     Connected: Connected
@@ -102,7 +103,17 @@ export interface Victory {
  */
 export interface Draw {}
 
-export interface Restart {}
+/**
+ * A message sent by the client to the server when the player
+ * wants a rematch.
+ */
+export interface RequestRematch {}
+
+/**
+ * A message sent by the server to the second player to let
+ * it know that the first player has requested a rematch.
+ */
+export interface RematachRequested {}
 
 /**
  * A client-side only message shared when the websocket connection

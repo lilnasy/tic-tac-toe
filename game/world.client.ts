@@ -2,7 +2,8 @@ import type { Channel, Receiver } from "game/channel.ts"
 import type { Entity } from "game/entity.ts"
 import type { Data, MessageRegistry } from "game/messages.ts"
 import { type World, commonSystems, spawnEntity, update } from "game/world.ts"
-import { type System, connectionSystemClient, markerSystemClient } from "game/systems.ts"
+import { type System, connectionSystemClient, gameLoopSystemClient, markerSystemClient, syncSystemClient } from "game/systems.ts"
+import { Store } from "game/store.ts"
 
 export class ClientWorld implements World, Receiver {
 
@@ -11,7 +12,7 @@ export class ClientWorld implements World, Receiver {
 
     channel: ClientToServerChannel
     entities = new Set<Entity>
-    systems: System<"both" | "client">[] = [ markerSystemClient, ...commonSystems, connectionSystemClient ]
+    systems: System<"both" | "client">[] = [ connectionSystemClient, gameLoopSystemClient, markerSystemClient, ...commonSystems, syncSystemClient ]
     
     spawnEntity = spawnEntity
 
@@ -23,9 +24,9 @@ export class ClientWorld implements World, Receiver {
     update = update
 
     /**
-     * A static entity containing state related to the game, the connection and the player.
+     * A static entity containing global state related to the game, the connection and the player.
      */
-    state: Entity<"Connection" | "Game" | "Sign" | "Turn"> = this.spawnEntity({
+    state: Entity<"Connection" | "Game" | "Sign" | "Turn"> = Store.create({
         Connection: "connecting",
         Game: "pending",
         Sign: null,
@@ -59,7 +60,7 @@ class ClientToServerChannel implements Channel {
                 { once: true }
             )
         } else {
-            console.error(new Error(`Connection to the server is an unexpected readyState: ${websocket.readyState}`, { cause: websocket }))
+            console.error(new Error(`Could not send the ${message} message to the server because the connection is in an unexpected readyState: ${readableReadyState(websocket.readyState)}`, { cause: websocket }))
         }
     }
     
@@ -90,4 +91,11 @@ class ClientToServerChannel implements Channel {
             } 
         }
     }
+}
+
+function readableReadyState(readyState: WebSocket["readyState"]) {
+    if (readyState === WebSocket.CONNECTING) return "CONNECTING"
+    if (readyState === WebSocket.OPEN) return "OPEN"
+    if (readyState === WebSocket.CLOSING) return "CLOSING"
+    if (readyState === WebSocket.CLOSED) return "CLOSED"
 }
