@@ -1,7 +1,7 @@
-import type { Entity } from "game/entity.ts"
+import type { Entity, States } from "game/entity.ts"
 import type { Channel, Receiver } from "game/channel.ts"
 import type { Data, MessageRegistry } from "game/messages.ts"
-import { type World, commonSystems, spawnEntity, update } from "game/world.ts"
+import { type World, commonSystems, update } from "game/world.ts"
 import { connectionSystemServer, gameLoopSystemServer, markerSystemServer, syncSystemServer, type System } from "game/systems.ts"
 import { Player } from "game/player.ts"
 import { Store } from "game/store.ts"
@@ -18,19 +18,29 @@ export class ServerWorld implements World, Receiver {
     players = new Set<Player>
     disconnectedPlayers = new Set<Player>
     
-    spawnEntity = spawnEntity
     update = update
     
     /**
      * A static object containing global state related to the game.
      */
-    state: Entity<"Turn"> = Store.create({
+    state: Gamestate = Store.create({
         Turn: null,
     })
     
     constructor(readonly name: string) {
         const channel = this.channel = new ServerToClientsChannel(this.players)
         channel.subscribe(this)
+    }
+
+    spawn<State extends keyof States>(entity: Entity<State>) {
+        const _entity = Store.create(entity)
+        this.update("Spawn", _entity)
+        this.entities.add(_entity)
+        return _entity
+    }
+
+    despawn(entity: Entity) {
+        this.entities.delete(entity)
     }
     
     /**
@@ -42,6 +52,14 @@ export class ServerWorld implements World, Receiver {
     receive<Message extends keyof MessageRegistry>(message: Message, data: MessageRegistry[Message]) {
         if (this.#messageAllowlist.includes(message)) this.update(message, data)
     }
+}
+
+export interface Gamestate {
+    /**
+     * The Turn state represents the sign of the player who has
+     * the current turn.
+     */
+    Turn: "X" | "O" | null
 }
 
 class ServerToClientsChannel implements Channel {

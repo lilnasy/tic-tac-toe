@@ -1,11 +1,11 @@
 import type { MessageRegistry } from "game/messages.ts"
 import type { Entity, Line, Place } from "game/entity.ts"
-import type { World } from "game/world.ts"
 import type { ClientWorld } from "game/world.client.ts"
 import type { ServerWorld } from "game/world.server.ts"
 import { Store } from "game/store.ts"
 import { isServer } from "game/client-server.ts"
-import { Player } from "./player"
+import { Player } from "game/player.ts"
+import { Square, Strikethrough } from "components/Entities.tsx"
 
 export const markerSystemClient: System<"client"> = {
     onMark(marked, world) {
@@ -13,7 +13,7 @@ export const markerSystemClient: System<"client"> = {
         const { channel, entities, state } = world
         if (state.Sign === null || state.Sign !== state.Turn) return
         for (const entity of entities) {
-            if (entity.Place === place && entity.Marked === false) {
+            if (entity.Place === place && entity.Marked === undefined) {
                 Store.set(entity, "Marked", state.Sign)
                 channel.send("Mark", marked)
                 world.update("Switch")
@@ -29,7 +29,7 @@ export const markerSystemServer: System<"server"> = {
         const { place } = marked
         if (player.sign !== world.state.Turn) return
         for (const entity of world.entities) {
-            if (entity.Place === place && entity.Marked === false) {
+            if (entity.Place === place && entity.Marked === undefined) {
                 Store.set(entity, "Marked", player.sign)
                 return world.update("Switch")
             }
@@ -59,7 +59,7 @@ export const lineCheckSystem: System = {
             if (Place !== undefined && Marked !== undefined) {
                 if (Marked === "X") markedWithX.push(Place)
                 if (Marked === "O") markedWithO.push(Place)
-                if (Marked !== false) markedPlaces++
+                if (Marked !== undefined) markedPlaces++
             }
         }
         
@@ -97,15 +97,22 @@ export const turnSystem: System = {
 }
 
 export const gameLoopSystemClient: System<"client"> = {
-    onStart({ Turn }, { entities, state }) {
+    onStart({ Turn }, world) {
+        const { entities, state } = world
+        
         for (const entity of entities) {
-            if (entity.Line) {
-                Store.set(entity, "Line", null)
-            }
-            if (entity.Place !== undefined && entity.Marked !== undefined) {
-                Store.set(entity, "Marked", false)
-            }
+            world.despawn(entity)
         }
+        
+        for (let place = 1; place <= 9; place++) {
+            const unmarkedSquare: Entity<"Place" | "Sync"> = {
+                Place: place as Place,
+                Sync: { id: `square${place}` },
+                View: Square
+            }
+            world.spawn(unmarkedSquare)
+        }
+        
         Store.set(state, "Connection", "ingame")
         Store.set(state, "Game", "active")
         Store.set(state, "Turn", Turn)
@@ -113,11 +120,12 @@ export const gameLoopSystemClient: System<"client"> = {
     onDraw(_, { state }) {
         Store.set(state, "Game", "draw")
     },
-    onVictory({ line }, { entities, state }) {
-        Store.set(state, "Game", "victory")
-        for (const entity of entities) {
-            if (entity.Line !== undefined) Store.set(entity, "Line", line)
-        }
+    onVictory({ line }, world) {
+        Store.set(world.state, "Game", "victory")
+        world.spawn({
+            Line: line,
+            View: Strikethrough
+        })
     },
     onRequestRematch(_, { channel }) {
         channel.send("RequestRematch")
@@ -132,16 +140,15 @@ export const gameLoopSystemServer: System<"server"> = {
         const { entities, state, players } = world
 
         for (const entity of entities) {
-            entities.delete(entity)
+            world.despawn(entity)
         }
         
         for (let place = 1; place <= 9; place++) {
-            const unmarkedSquare: Entity<"Marked" | "Place" | "Sync"> = {
-                Marked: false,
+            const unmarkedSquare: Entity<"Place" | "Sync"> = {
                 Place: place as Place,
                 Sync: { id: `square${place}` }
             }
-            world.spawnEntity(unmarkedSquare)
+            world.spawn(unmarkedSquare)
         }
         
         for (const player of players) {

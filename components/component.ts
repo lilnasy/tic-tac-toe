@@ -1,5 +1,4 @@
 import { Component as Base, createContext, type JSX } from "preact"
-import type { Entity, States } from "game/entity.ts"
 import type { ClientWorld } from "game/world.client.ts"
 import type { Data, MessageRegistry } from "game/messages.ts"
 
@@ -13,10 +12,6 @@ export abstract class Component<P = {}> extends Base<P> {
     
     send<Message extends keyof MessageRegistry>(message: Message, ..._data: Data<Message>): void {
         this.world.update(message, ..._data)
-    }
-
-    spawnEntity<State extends keyof States>(entity: Entity<State>) {
-        return this.world.spawnEntity(entity)
     }
 
     /**

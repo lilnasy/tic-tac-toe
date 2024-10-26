@@ -1,9 +1,11 @@
 import type { Channel, Receiver } from "game/channel.ts"
-import type { Entity } from "game/entity.ts"
+import type { Entity, States } from "game/entity.ts"
 import type { Data, MessageRegistry } from "game/messages.ts"
-import { type World, commonSystems, spawnEntity, update } from "game/world.ts"
+import { type World, commonSystems, update } from "game/world.ts"
 import { type System, connectionSystemClient, gameLoopSystemClient, markerSystemClient, syncSystemClient } from "game/systems.ts"
 import { Store } from "game/store.ts"
+import { h } from "preact"
+import { EntitiesView } from "components/Entities.tsx"
 
 export class ClientWorld implements World, Receiver {
 
@@ -13,8 +15,6 @@ export class ClientWorld implements World, Receiver {
     channel: ClientToServerChannel
     entities = new Set<Entity>
     systems: System<"both" | "client">[] = [ connectionSystemClient, gameLoopSystemClient, markerSystemClient, ...commonSystems, syncSystemClient ]
-    
-    spawnEntity = spawnEntity
 
     /*
      * The client can be trusting of the server.
@@ -26,17 +26,48 @@ export class ClientWorld implements World, Receiver {
     /**
      * A static entity containing global state related to the game, the connection and the player.
      */
-    state: Entity<"Connection" | "Game" | "Sign" | "Turn"> = Store.create({
+    state: Gamestate = Store.create({
         Connection: "connecting",
         Game: "pending",
         Sign: null,
         Turn: null,
     })
 
+    Entities = h(EntitiesView, { entities: this.entities })
+
     constructor(websocket: WebSocket) {
         const channel = this.channel = new ClientToServerChannel(websocket)
         channel.subscribe(this)
     }
+
+    spawn<State extends keyof States>(entity: Entity<State>) {
+        const _entity = Store.create(entity)
+        this.update("Spawn", _entity)
+        this.entities.add(_entity)
+        // @ts-expect-error
+        this.Entities?._component?.forceUpdate()
+        return _entity
+    }
+
+    despawn(entity: Entity) {
+        this.entities.delete(entity)
+        // @ts-expect-error
+        this.Entities?._component?.forceUpdate()
+    }
+}
+
+export interface Gamestate {
+    Connection: "connecting" | "connected" | "waiting" | "ingame"
+    Game: "pending" | "active" | "draw" | "victory"
+    /**
+     * The Sign state holds the sign assigned to the player.
+     */
+    Sign: "X" | "O" | null
+    /**
+     * The Turn state represents the sign of the player who has
+     * the current turn.
+     */
+    Turn: "X" | "O" | null
 }
 
 class ClientToServerChannel implements Channel {

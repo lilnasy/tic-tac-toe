@@ -10,7 +10,6 @@ export interface World {
     channel: Channel
     entities: Set<Entity>
     systems: System<"client" | "server" | "both">[]
-    spawnEntity: typeof spawnEntity
     update: typeof update
 }
 
@@ -18,13 +17,6 @@ export interface World {
  * Systems that run both on the server and the client; mostly the main game logic.
  */
 export const commonSystems: System<"both">[] = [ lineCheckSystem, turnSystem ]
-
-export function spawnEntity<State extends keyof States>(this: World, entity: Entity<State>) {
-    const _entity = Store.create(entity)
-    this.update("Spawn", _entity)
-    this.entities.add(_entity)
-    return _entity
-}
 
 export function update<Message extends keyof MessageRegistry>(
     this: World,

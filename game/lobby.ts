@@ -13,9 +13,9 @@ export const { lobby } = class Lobby implements Receiver {
     /**
      * Singleton instance of the Lobby class.
      */
-    static lobby = new Lobby
+    static lobby = import.meta.env.DEV ? (((globalThis as any).lobby as Lobby) ??= new Lobby) : new Lobby
 
-    #worlds = new Map<string, WeakRef<ServerWorld>>
+    #worlds = new Map<string, ServerWorld>
 
     enter(weboscket: WebSocket) {
         const player = new Player(weboscket)
@@ -40,13 +40,13 @@ export const { lobby } = class Lobby implements Receiver {
         // create them all, and this line would then freeze the server
         while (this.#worlds.has(worldName = generateWorldName())) {}
         const world = new ServerWorld(worldName)
-        this.#worlds.set(world.name, new WeakRef(world))
+        this.#worlds.set(world.name, world)
         world.update("AddPlayer", { player })
     }
 
     #joinWorld(data: JoinWorld) {
         const player = Player.get(data)
-        const world = this.#worlds.get(data.world)?.deref()
+        const world = this.#worlds.get(data.world)
         if (world === undefined) {
             return Player.get(data).send("WorldNotFound", { world: data.world })
         }
