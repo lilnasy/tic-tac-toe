@@ -1,6 +1,6 @@
 import { Component as PreactComponent, createRef, type JSX } from "preact"
 import cx from "clsx/lite"
-import { css } from "@acab/ecsstatic"
+import { css } from "astro:emotion"
 import { ClientWorld } from "game/world.client.ts"
 import { Store } from "game/store.ts"
 import { Component, WorldContext, type Attributes } from "./component.ts"
@@ -180,12 +180,14 @@ class ColorMixerDial extends Component<Attributes<"input">> {
 
     #updateHue = () => {
         if (!this.#pointer) return
-        const rect = this.#ref.current!.parentElement!.getBoundingClientRect()
-        const centerX = rect.left + rect.width / 2
-        const centerY = rect.top + rect.height / 2
+        const input = this.#ref.current!
+        const dialog = input.parentElement!.getBoundingClientRect()
+        const centerX = dialog.left + dialog.width / 2
+        const centerY = dialog.top + dialog.height / 2
         const { x , y } = this.#pointer!
         const radians = Math.atan2(centerY - y, x - centerX);
         const updatedBaseHue = Math.round(90 - (180 / Math.PI) * radians)
+        input.value = String(updatedBaseHue)
         document.documentElement.style.setProperty("--base-hue", String(updatedBaseHue))
         this.#pointer = undefined
     }

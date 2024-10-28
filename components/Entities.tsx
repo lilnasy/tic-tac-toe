@@ -1,4 +1,4 @@
-import { css } from "@acab/ecsstatic"
+import { css } from "astro:emotion"
 import type { Entity } from "game/entity.ts"
 import { Store } from "game/store.ts"
 import { Component, type Attributes } from "./component.ts"

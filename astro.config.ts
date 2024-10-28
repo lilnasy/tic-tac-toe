@@ -2,11 +2,11 @@ import { fileURLToPath } from "node:url"
 import { defineConfig, type ViteUserConfig } from "astro/config"
 import node from "@withastro/node"
 import preact from "@preact/preset-vite"
-import { ecsstatic } from "@acab/ecsstatic/vite"
+import emotion from "astro-emotion"
 import precompress from "./precompress.ts"
 
 const vite: ViteUserConfig = {
-    plugins: [ ecsstatic({ classNamePrefix: "e" }), preact() ],
+    plugins: [ preact() ],
     ssr: {
         noExternal: import.meta.env.PROD || undefined
     },
@@ -30,7 +30,7 @@ const vite: ViteUserConfig = {
 // https://astro.build/config
 export default defineConfig({
     srcDir: ".",
-    integrations: [precompress],
+    integrations: [ emotion(), precompress ],
     adapter: node({ mode: "standalone" }),
     output: "server",
     server: {

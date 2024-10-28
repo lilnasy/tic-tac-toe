@@ -1,5 +1,5 @@
 import cx from "clsx/lite"
-import { css } from "@acab/ecsstatic"
+import { css } from "astro:emotion"
 import { Component, type Attributes } from "./component.ts"
 import { EntitiesView } from "./Entities.tsx"
 
