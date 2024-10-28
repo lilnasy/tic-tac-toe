@@ -56,38 +56,15 @@ class ColorMixer extends Component<Attributes<"div">> {
 
     #colorWheelDialogRef = createRef<HTMLDialogElement>()
 
-    #switchLightDark() {
+    switchScheme() {
         document.body.toggleAttribute("data-switch-color-scheme")
+        this.update("ColorsUpdated")
     }
 
     toggleColorWheel() {
         const dialog = this.#colorWheelDialogRef.current
         if (dialog?.open) dialog.close()
         else dialog?.show()
-    }
-
-    updateHue(event: PointerEvent) {
-        /**
-         * Schedule updating of hue for later to ensure that multiple
-         * multiple pointer events dispatched in the same frame result
-         * in only one update to `document`.
-         */
-        if (this.#pointer === undefined) requestAnimationFrame(this.#updateHue)
-        this.#pointer = event
-    }
-
-    #pointer: PointerEvent | undefined
-
-    #updateHue = () => {
-        if (!this.#pointer) return
-        const rect = this.#colorWheelDialogRef.current!.getBoundingClientRect()
-        const centerX = rect.left + rect.width / 2
-        const centerY = rect.top + rect.height / 2
-        const { x , y } = this.#pointer!
-        const radians = Math.atan2(centerY - y, x - centerX);
-        const updatedBaseHue = Math.round(90 - (180 / Math.PI) * radians)
-        document.documentElement.style.setProperty("--base-hue", String(updatedBaseHue))
-        this.#pointer = undefined
     }
 
     render(props: typeof this.props) {
@@ -111,33 +88,40 @@ class ColorMixer extends Component<Attributes<"div">> {
                 height: 10rem;
                 background: var(--primary-container);
                 outline: solid 0.25rem var(--primary);
-                transition-property: background, outline, scale, translate;
+                transition-behavior: allow-discrete;
                 transition-duration: 250ms;
+                transition-property: background, display, opacity, outline, scale, translate;
                 place-items: center;
                 border: none;
                 margin: 0;
                 padding: 0;
                 @starting-style {
+                    opacity: 0;
+                    scale: 0.75;
+                    translate: 3rem 3rem;
+                }
+                &:not([open])  {
+                    opacity: 0;
                     scale: 0.75;
                     translate: 3rem 3rem;
                 }
             `}>
-                <div class={css`
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" alt="Hue wheel track" class={css`
                     grid-area: 1 / 1;
                     pointer-events: none;
-                    height: 80%;
-                    width: 80%;
-                    background: conic-gradient(in oklch longer hue, oklch(0.7 0.15 0),oklch(0.7 0.15 360));
+                    height: 8rem;
+                    width: 8rem;
+                    background-image: conic-gradient(in oklch longer hue, oklch(0.7 0.15 0),oklch(0.7 0.15 360));
                     mask-image: radial-gradient(circle farthest-side at center, transparent 36%, white 38%, white 98%, transparent 100%);
                 `}/>
-                <ColorMixerButton class={css`grid-area: 1 / 1;`} Icon={Icons.InvertColors} onClick={this.#switchLightDark}/>
-                <ColorMixerDial class={css`grid-area: 1 / 1;`}/>
+                <ColorMixerButton class={css`grid-area: 1 / 1;`} Icon={Icons.InvertColors} onClick={this.switchScheme}/>
+                <HueWheelThumb class={css`grid-area: 1 / 1;`}/>
             </dialog>
         </div>
     }
 }
 
-class ColorMixerDial extends Component<Attributes<"input">> {
+class HueWheelThumb extends Component<Attributes<"input">> {
     #ref = createRef<HTMLInputElement>()
     #ac: AbortController | undefined
 
@@ -165,6 +149,7 @@ class ColorMixerDial extends Component<Attributes<"input">> {
             this.#ac?.abort()
             this.#ac = undefined
             input.toggleAttribute("data-grabbing", false)
+            this.update("ColorsUpdated")
         } else if (type === "pointermove") {
             /**
              * Schedule updating of hue for later to ensure that multiple
@@ -181,14 +166,14 @@ class ColorMixerDial extends Component<Attributes<"input">> {
     #updateHue = () => {
         if (!this.#pointer) return
         const input = this.#ref.current!
-        const dialog = input.parentElement!.getBoundingClientRect()
-        const centerX = dialog.left + dialog.width / 2
-        const centerY = dialog.top + dialog.height / 2
+        const wheel = input.previousElementSibling!.getBoundingClientRect()
+        const centerX = wheel.left + wheel.width / 2
+        const centerY = wheel.top + wheel.height / 2
         const { x , y } = this.#pointer!
         const radians = Math.atan2(centerY - y, x - centerX);
         const updatedBaseHue = Math.round(90 - (180 / Math.PI) * radians)
         input.value = String(updatedBaseHue)
-        document.documentElement.style.setProperty("--base-hue", String(updatedBaseHue))
+        this.update("UpdateColors", { hue: updatedBaseHue })
         this.#pointer = undefined
     }
 
@@ -279,13 +264,13 @@ namespace TitleScreen {
 class TitleScreen extends Component<TitleScreen.Props> {
     
     new() {
-        this.send("NewWorld")
+        this.update("NewWorld")
     }
 
     join() {
         const worldName = prompt("Enter world name")
         if (typeof worldName !== "string") return
-        this.send("JoinWorld", { world: worldName.replace(" ", "-") })
+        this.update("JoinWorld", { world: worldName.replace(" ", "-") })
     }
 
     #titleText = ["TIC", "TAC", "TOE"].map((text, i) => <h1 class={css`
@@ -388,7 +373,7 @@ namespace GameEndDialog {
 
 class GameEndDialog extends Component<GameEndDialog.Props> {
     playAgain() {
-        this.send("RequestRematch")
+        this.update("RequestRematch")
     }
     render(props: typeof this.props) {
         return <PopUp>
@@ -460,7 +445,8 @@ class ActionButton extends Component<ActionButton.Props> {
             width: 8rem;
             border-radius: 1.5rem;
             margin: 0.5rem;
-            line-height: 3.4rem;
+            padding: 0;
+            line-height: 170%;
             border: none;
             transition: background 250ms, color 250ms, opacity 1s, outline-color 250ms, scale 250ms;
             outline-width: 0.25rem;
@@ -473,9 +459,7 @@ class ActionButton extends Component<ActionButton.Props> {
             }
             &:not([disabled]) {
                 cursor: pointer;
-                &:hover {
-                    scale: 1.1;
-                }
+                &:hover { scale: 1.1; }
             }
             @starting-style { opacity: 0; }
         `, primary && css`

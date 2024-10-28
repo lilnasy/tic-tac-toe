@@ -2,7 +2,7 @@ import type { Channel, Receiver } from "game/channel.ts"
 import type { Entity, States } from "game/entity.ts"
 import type { Data, MessageRegistry } from "game/messages.ts"
 import { type World, commonSystems, update } from "game/world.ts"
-import { type System, connectionSystemClient, gameLoopSystemClient, markerSystemClient, syncSystemClient } from "game/systems.ts"
+import { type System, colorSystemClient, connectionSystemClient, gameLoopSystemClient, markerSystemClient, syncSystemClient } from "game/systems.ts"
 import { Store } from "game/store.ts"
 import { h } from "preact"
 import { EntitiesView } from "components/Entities.tsx"
@@ -14,7 +14,14 @@ export class ClientWorld implements World, Receiver {
 
     channel: ClientToServerChannel
     entities = new Set<Entity>
-    systems: System<"both" | "client">[] = [ connectionSystemClient, gameLoopSystemClient, markerSystemClient, ...commonSystems, syncSystemClient ]
+    systems: System<"both" | "client">[] = [
+        colorSystemClient,
+        connectionSystemClient,
+        gameLoopSystemClient,
+        markerSystemClient,
+        ...commonSystems,
+        syncSystemClient
+    ]
 
     /*
      * The client can be trusting of the server.

@@ -47,6 +47,6 @@ export class Store extends class { constructor(x: {}) { return x } } {
     }
 
     static #notStore(store: unknown) {
-        console.log("object is not a store", store)
+        console.error(new Error("object is not a store", { cause: store }))
     }
 }

@@ -10,7 +10,7 @@ export abstract class Component<P = {}> extends Base<P> {
     
     world = this.context as ClientWorld
     
-    send<Message extends keyof MessageRegistry>(message: Message, ..._data: Data<Message>): void {
+    update<Message extends keyof MessageRegistry>(message: Message, ..._data: Data<Message>): void {
         this.world.update(message, ..._data)
     }
 

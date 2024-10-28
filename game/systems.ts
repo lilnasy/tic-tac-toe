@@ -26,6 +26,7 @@ export const markerSystemClient: System<"client"> = {
 export const markerSystemServer: System<"server"> = {
     onMark(marked, world) {
         const player = Player.get(marked)
+        if (!player) return console.error(new Error(`The mark message did not have a player associated with it.`, { cause: marked }))
         const { place } = marked
         if (player.sign !== world.state.Turn) return
         for (const entity of world.entities) {
@@ -170,6 +171,9 @@ export const gameLoopSystemServer: System<"server"> = {
     },
     onRequestRematch(data, world) {
         const requestingPlayer = Player.get(data)
+        if (!requestingPlayer) return console.error(
+            new Error("The RequestRematch message did not have a player associated with it.", { cause: data })
+        )
         requestingPlayer.state = "rematching"
         if (world.players.size === 2 && world.players.values().every(p => p.state === "rematching")) {
             return world.update("Start", { Turn: Math.random() < 0.5 ? "X" : "O" })
@@ -178,6 +182,39 @@ export const gameLoopSystemServer: System<"server"> = {
             if (player === requestingPlayer) continue
             player.send("RematchRequested")
         }
+    }
+}
+
+export const colorSystemClient: System<"client"> = {
+    onColorsUpdated(_, { channel }) {
+        const { body, documentElement } = document
+        const prefersDark = matchMedia('(prefers-color-scheme: dark)').matches
+        const switched = body.hasAttribute("data-switch-color-scheme")
+        const dark = Boolean(Number(prefersDark) ^ Number(switched))
+        
+        const _hue = parseInt(documentElement.style.getPropertyValue("--base-hue"))
+        const hue = Number.isFinite(_hue) ? _hue : 0
+        
+        channel.send("UpdateColors", { hue, dark })
+    },
+    onUpdateColors(update) {
+        const { body, documentElement } = document
+        if (update.dark !== undefined) {
+            const prefersDark = matchMedia('(prefers-color-scheme: dark)').matches
+            const switched = body.hasAttribute("data-switch-color-scheme")
+            const alreadyDark = Boolean(Number(prefersDark) ^ Number(switched))
+            const toggle = Boolean(Number(alreadyDark) ^ Number(update.dark))
+            if (toggle) body.toggleAttribute("data-switch-color-scheme")
+        }
+        if (update.hue !== undefined) {
+            documentElement.style.setProperty("--base-hue", String(update.hue))
+        }
+    },
+}
+
+export const colorSystemServer: System<"server"> = {
+    onUpdateColors(color, { channel }) {
+        channel.send("UpdateColors", color)
     }
 }
 

@@ -23,6 +23,8 @@ export class Player implements Channel {
 
     send<Message extends keyof MessageRegistry>(message: Message, ..._data: Data<Message>) {
         const [ data = {} ] = _data
+        // if the current player was the one who created this message, dont bother echoing it back
+        if (Player.get(data) === this) return
         if (this.#websocket.readyState !== WebSocket.OPEN) {
             return console.error(new Error(`closed connection not cleaned up`, { cause: this }))
         }
@@ -43,7 +45,7 @@ export class Player implements Channel {
      * Retrieve the hidden field containing the player object
      * from a message originally created by that Player.
      */
-    static get(messageData: {}): Player {
+    static get(messageData: {}): Player | undefined {
         return Metadata.get(messageData as Metadata)
     }
 
@@ -93,9 +95,8 @@ class Metadata extends class { constructor(x: {}) { return x } } {
             Metadata.#create(object).#data = data
         }
     }
-    static get<T>(object: Metadata): T {
-        if (object.#data) return object.#data as T
-        throw new Error(`The object does not have any metadata`, { cause: object })
+    static get<T>(object: Metadata): T | undefined {
+        if (#data in object) return object.#data as T
     }
 }
 

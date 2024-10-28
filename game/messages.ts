@@ -20,6 +20,10 @@ export interface MessageRegistry {
     RequestRematch: RequestRematch
     RematchRequested: RematachRequested
 
+    /* COLOR SYNCING */
+    ColorsUpdated: ColorsUpdated
+    UpdateColors: UpdateColors
+
     /* CLIENT-ONLY CONNECTION-MANAGEMENT MESSAGE */
     Connected: Connected
 
@@ -114,6 +118,22 @@ export interface RequestRematch {}
  * it know that the first player has requested a rematch.
  */
 export interface RematachRequested {}
+
+/**
+ * A message indicating that there was an update to the
+ * colors which should be sent to the other players.
+ */
+export interface ColorsUpdated {}
+
+/**
+ * A message indicating that either the color scheme or hue
+ * should be updated. When sent across network, includes both
+ * fields so that other players can fully synchronise.
+ */
+export interface UpdateColors extends ColorsUpdated {
+    hue?: number
+    dark?: boolean
+}
 
 /**
  * A client-side only message shared when the websocket connection

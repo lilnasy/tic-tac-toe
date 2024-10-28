@@ -23,7 +23,7 @@ interface SquareProps {
 export class Square extends Component<SquareProps> {
 
     mark() {
-        this.send("Mark", { place: this.props.entity.Place })
+        this.update("Mark", { place: this.props.entity.Place })
     }
 
     render({ entity }: typeof this.props) {
