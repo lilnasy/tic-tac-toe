@@ -34,7 +34,6 @@ export class GameUI extends PreactComponent {
         const Game = Store.get(this.#world.state, "Game")
         return <WorldContext.Provider value={this.#world}>
             <ExitPresence  timeout={1000}>{
-                // true ? <><Board/><VictoryDialog/></> :
                 Connection === "connecting" ? <TitleScreen connecting/> :
                 Connection === "connected" ? <TitleScreen/> :
                 Connection === "waiting" ? <WaitingForOpponentScreen/> :
@@ -52,7 +51,7 @@ export class GameUI extends PreactComponent {
     }
 }
 
-class ColorMixer extends Component<Attributes<"div">> {
+class ColorMixer extends Component<Attributes.div> {
 
     #colorWheelDialogRef = createRef<HTMLDialogElement>()
 
@@ -121,7 +120,7 @@ class ColorMixer extends Component<Attributes<"div">> {
     }
 }
 
-class HueWheelThumb extends Component<Attributes<"input">> {
+class HueWheelThumb extends Component<Attributes.input> {
     #ref = createRef<HTMLInputElement>()
     #ac: AbortController | undefined
 
@@ -219,7 +218,7 @@ class HueWheelThumb extends Component<Attributes<"input">> {
 }
 
 namespace ColorMixerButton {
-    export interface Props extends Attributes<"button"> {
+    export interface Props extends Attributes.button {
         Icon: typeof Icons[keyof typeof Icons]
     }
 }
@@ -349,7 +348,7 @@ class TitleScreen extends Component<TitleScreen.Props> {
     }
 }
 
-class WaitingForOpponentScreen extends Component<Attributes<"p">> {
+class WaitingForOpponentScreen extends Component<Attributes.p> {
     render(props: typeof this.props) {
         return <p {...props} class={cx(props.class, css`
             color: var(--primary);
@@ -383,7 +382,7 @@ class GameEndDialog extends Component<GameEndDialog.Props> {
     }
 }
 
-class PopUp extends Component<Attributes<"dialog">> {
+class PopUp extends Component<Attributes.dialog> {
     #ref = createRef<HTMLDialogElement>()
     componentDidMount() {
         this.#ref.current?.showModal()
@@ -420,7 +419,7 @@ class PopUp extends Component<Attributes<"dialog">> {
 }
 
 namespace ActionButton {
-    export interface Props extends Attributes<"button"> {
+    export interface Props extends Attributes.button {
         primary?: true
         secondary?: true    
     }

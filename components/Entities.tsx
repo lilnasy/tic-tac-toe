@@ -1,7 +1,8 @@
 import { css } from "astro:emotion"
 import type { Entity } from "game/entity.ts"
 import { Store } from "game/store.ts"
-import { Component, type Attributes } from "./component.ts"
+import { Component } from "./component.ts"
+import { Line } from "./Line.tsx"
 
 export class EntitiesView extends Component<{ entities?: Set<Entity> }> {
     render({ entities }: typeof this.props) {
@@ -88,16 +89,5 @@ export class Strikethrough extends Component<ViewProps> {
             {placement === 159 && <Line x1="64" y1="64" x2="512" y2="512"/>}
             {placement === 357 && <Line x1="512" y1="64" x2="64" y2="512"/>}
         </svg>
-    }
-}
-
-class Line extends Component<Attributes.SVG<"line">> {
-    render(props: typeof this.props) {
-        return <line {...props} class={css`
-            fill: none;
-            stroke: var(--primary);
-            stroke-linecap: round;
-            stroke-width: var(--line-size);
-        `}/>
     }
 }

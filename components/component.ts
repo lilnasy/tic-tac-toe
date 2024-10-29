@@ -35,17 +35,14 @@ export abstract class Component<P = {}> extends Base<P> {
     }
 }
 
-export interface Attributes<TagName extends string> extends JSX.HTMLAttributes<
-    TagName extends "button" ? HTMLButtonElement :
-    TagName extends "dialog" ? HTMLDialogElement :
-    TagName extends "div" ? HTMLDivElement :
-    TagName extends "p" ? HTMLParagraphElement :
-    HTMLElement
-> {}
-
 export namespace Attributes {
-    export interface SVG<TagName extends string = "svg"> extends JSX.SVGAttributes<
-        TagName extends "line" ? SVGLineElement :
-        SVGElement
-    > {}
+    export interface button extends JSX.HTMLAttributes<HTMLButtonElement> {}
+    export interface dialog extends JSX.HTMLAttributes<HTMLDialogElement> {}
+    export interface div extends JSX.HTMLAttributes<HTMLDivElement> {}
+    export interface input extends JSX.HTMLAttributes<HTMLInputElement> {}
+    export interface p extends JSX.HTMLAttributes<HTMLParagraphElement> {}
+    export interface svg extends JSX.SVGAttributes {}
+    export namespace svg {
+        export interface line extends JSX.SVGAttributes<SVGLineElement> {}
+    }
 }
