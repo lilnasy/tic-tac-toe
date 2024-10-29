@@ -320,15 +320,15 @@ class TitleScreen extends Component<TitleScreen.Props> {
         if (!leaveQuickly) {
             for (const h1 of this.#titleText) {
                 const element: HTMLHeadingElement = (h1 as any)._dom
-                element.animate([{}, { translate: "0 -10rem" }], { duration: 1000, easing: "cubic-bezier(0.5, -0.5, 0.25, 1)" })
+                element.animate([{}, { translate: "0 -10rem" }], { duration: 750, easing: "cubic-bezier(0.75, -0.75, 0.25, 1)" })
             }
             for (const button of this.#buttons) {
                 const element: HTMLButtonElement = (button as any)._dom
-                element.animate([{}, { translate: "0 5rem" } ], { duration: 1000, easing: "cubic-bezier(0.5, -0.5, 0.25, 1)" })
+                element.animate([{}, { translate: "0 5rem" } ], { duration: 750, easing: "cubic-bezier(0.75, -0.75, 0.25, 1)" })
             }
         }
         const div = this.#base.current
-        const animation = div!.animate([{}, { opacity: 0 }], { duration: leaveQuickly ? 250 : 750 })
+        const animation = div!.animate([{}, { opacity: 0 }], { duration: leaveQuickly ? 250 : 500 })
         animation.finished.then(leave)
     }
 
