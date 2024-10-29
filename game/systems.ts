@@ -256,6 +256,7 @@ export const connectionSystemClient: System<"client"> = {
                 reconnectId: sessionStorage.getItem(`reconnectId:${segment2}`) ?? undefined
             })
         }
+        addEventListener("popstate", e => { if (e.state === null) location.reload() })
     },
     onNewWorld(_, world) {
         world.channel.send("NewWorld")
@@ -266,18 +267,18 @@ export const connectionSystemClient: System<"client"> = {
     onJoinedWorld(data, { state }) {
         if ("id" in data.reconnect) {            
             sessionStorage.setItem(`reconnectId:${data.world}`, data.reconnect.id)
-        } 
+        }
         Store.set(state, "Connection", "waiting")
-        history.replaceState(null, "", `/world/${data.world}`)
+        history.pushState(null, "", `/world/${data.world}`)
     },
     onWorldNotFound(data, world) {
         alert(`World '${data.world.replace("-", " ")}' does not exist. The game may have ended, or all the player may have left.`)
-        history.replaceState(null, "", `/`)
+        history.back()
         Store.set(world.state, "Connection", "connected")
     },
     onWorldOccupied(data, world) {
         alert(`World '${data.world.replace("-", " ")}' already has enough players.`)
-        history.replaceState(null, "", `/`)
+        history.back()
         Store.set(world.state, "Connection", "connected")
     },
     onAssign({ sign }, world) {
