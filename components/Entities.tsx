@@ -9,28 +9,39 @@ export class EntitiesView extends Component<{ entities?: Set<Entity> }> {
         return <>{
             entities
             .values()
-            .filter((e): e is Entity<"View"> => e.View)
-            .map(e => <e.View entity={e}/>)
+            .filter(isVisibleEntity)
+            .map(renderEntity)
             .toArray()
         }</>
     }
 }
 
-interface SquareProps {
-    entity: Entity<"Place">
+function isVisibleEntity(entity: Entity): entity is Entity<"View"> {
+    return entity.View !== undefined
 }
 
-export class Square extends Component<SquareProps> {
+function renderEntity(entity: Entity<"View">) {
+    if (entity.View === "Square") return <Square entity={entity}/>
+    if (entity.View === "Strikethrough") return <Strikethrough entity={entity}/>
+}
+
+interface ViewProps {
+    entity: Entity
+}
+
+export class Square extends Component<ViewProps> {
 
     mark() {
-        this.update("Mark", { place: this.props.entity.Place })
+        const { Place: place } = this.props.entity
+        if (place) this.update("Mark", { place })
+        else console.error(new Error("The entity provided to the Square View does not have the required states", { cause: this.props.entity }))
     }
 
     render({ entity }: typeof this.props) {
         const Marked = Store.get(entity, "Marked")
         const Sign = Store.get(this.world.state, "Sign")
         const Turn = Store.get(this.world.state, "Turn")
-        const { Place } = entity 
+        const { Place } = entity as Entity<"Place">
         
         const disabled = Marked !== undefined || Sign !== Turn
         
@@ -56,14 +67,10 @@ export class Square extends Component<SquareProps> {
     }
 }
 
-interface StrikethroughProps {
-    entity: Entity<"Line">
-}
-
-export class Strikethrough extends Component<StrikethroughProps> {
+export class Strikethrough extends Component<ViewProps> {
     render(props: typeof this.props) {
         const line = Store.get(props.entity, "Line")
-        if (line === null) return <></>
+        if (line === null || line === undefined) return <></>
         const [ a, b, c ] = line
         const placement = a * 100 + b * 10 + c
 

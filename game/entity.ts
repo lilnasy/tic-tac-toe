@@ -7,7 +7,7 @@ export interface States {
     Place: Place
     Line: Line
     Sync: Sync
-    View: any
+    View: View
 }
 
 /**
@@ -40,3 +40,9 @@ export type Line = readonly [ Place, Place, Place ]
 export interface Sync {
     id: string
 }
+
+/**
+ * The name of the component with which the entity 
+ * should be rendered.
+ */
+export type View = "Square" | "Strikethrough"

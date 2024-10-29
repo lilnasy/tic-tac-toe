@@ -1,6 +1,5 @@
 import type { Data, MessageRegistry } from "game/messages.ts"
-import { Store } from "game/store.ts"
-import type { Entity, States } from "game/entity.ts"
+import type { Entity } from "game/entity.ts"
 import type { Channel } from "game/channel.ts"
 import { type System, lineCheckSystem, turnSystem } from "game/systems.ts"
 

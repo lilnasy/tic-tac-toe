@@ -5,7 +5,6 @@ import type { ServerWorld } from "game/world.server.ts"
 import { Store } from "game/store.ts"
 import { isServer } from "game/client-server.ts"
 import { Player } from "game/player.ts"
-import { Square, Strikethrough } from "components/Entities.tsx"
 
 export const markerSystemClient: System<"client"> = {
     onMark(marked, world) {
@@ -26,7 +25,7 @@ export const markerSystemClient: System<"client"> = {
 export const markerSystemServer: System<"server"> = {
     onMark(marked, world) {
         const player = Player.get(marked)
-        if (!player) return console.error(new Error(`The mark message did not have a player associated with it.`, { cause: marked }))
+        if (!player) return Player.notFound("Mark", marked)
         const { place } = marked
         if (player.sign !== world.state.Turn) return
         for (const entity of world.entities) {
@@ -109,7 +108,7 @@ export const gameLoopSystemClient: System<"client"> = {
             const unmarkedSquare: Entity<"Place" | "Sync"> = {
                 Place: place as Place,
                 Sync: { id: `square${place}` },
-                View: Square
+                View: "Square"
             }
             world.spawn(unmarkedSquare)
         }
@@ -125,7 +124,7 @@ export const gameLoopSystemClient: System<"client"> = {
         Store.set(world.state, "Game", "victory")
         world.spawn({
             Line: line,
-            View: Strikethrough
+            View: "Strikethrough"
         })
     },
     onRequestRematch(_, { channel }) {
@@ -171,9 +170,7 @@ export const gameLoopSystemServer: System<"server"> = {
     },
     onRequestRematch(data, world) {
         const requestingPlayer = Player.get(data)
-        if (!requestingPlayer) return console.error(
-            new Error("The RequestRematch message did not have a player associated with it.", { cause: data })
-        )
+        if (!requestingPlayer) return Player.notFound("RequestRematch", data)
         requestingPlayer.state = "rematching"
         if (world.players.size === 2 && world.players.values().every(p => p.state === "rematching")) {
             return world.update("Start", { Turn: Math.random() < 0.5 ? "X" : "O" })

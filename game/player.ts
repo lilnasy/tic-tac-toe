@@ -49,6 +49,10 @@ export class Player implements Channel {
         return Metadata.get(messageData as Metadata)
     }
 
+    static notFound(message: keyof MessageRegistry, data: {}) {
+        return console.error(new Error(`The ${message} message did not have a player associated with it.`, { cause: data }))
+    }
+
     handleEvent(event: Event) {
         if (event.target !== this.#websocket) return
         if (event.type === "open") {

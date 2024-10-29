@@ -1,10 +1,10 @@
+import { h } from "preact"
 import type { Channel, Receiver } from "game/channel.ts"
 import type { Entity, States } from "game/entity.ts"
 import type { Data, MessageRegistry } from "game/messages.ts"
 import { type World, commonSystems, update } from "game/world.ts"
 import { type System, colorSystemClient, connectionSystemClient, gameLoopSystemClient, markerSystemClient, syncSystemClient } from "game/systems.ts"
 import { Store } from "game/store.ts"
-import { h } from "preact"
 import { EntitiesView } from "components/Entities.tsx"
 
 export class ClientWorld implements World, Receiver {
@@ -40,6 +40,11 @@ export class ClientWorld implements World, Receiver {
         Turn: null,
     })
 
+    /**
+     * The EntitiesView component is rendered here so that the world
+     * has a reference to it, and can update it when entities are
+     * spawned and despawned.
+     */
     Entities = h(EntitiesView, { entities: this.entities })
 
     constructor(websocket: WebSocket) {

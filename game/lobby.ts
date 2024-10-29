@@ -35,6 +35,7 @@ export const { lobby } = class Lobby implements Receiver {
 
     #newWorld(data: NewWorld) {
         const player = Player.get(data)
+        if (!player) return Player.notFound("NewWorld", data)
         let worldName: string
         // security: possible world names are finite - an attack could
         // create them all, and this line would then freeze the server
@@ -46,9 +47,10 @@ export const { lobby } = class Lobby implements Receiver {
 
     #joinWorld(data: JoinWorld) {
         const player = Player.get(data)
+        if (!player) return Player.notFound("JoinWorld", data)
         const world = this.#worlds.get(data.world)
         if (world === undefined) {
-            return Player.get(data).send("WorldNotFound", { world: data.world })
+            return player.send("WorldNotFound", { world: data.world })
         }
         world.update("AddPlayer", { player, reconnectId: data.reconnectId })
     }
