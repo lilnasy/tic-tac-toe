@@ -14,7 +14,7 @@ import "../tokens.css"
 		<title>Tic Tac Toe</title>
 		<meta name="description" content="Enjoy the classic game of Tic Tac Toe in your browser! Play against friends or use random matchmaking and beat them all to pulp!."/>
 		<link rel="icon" type="image/svg+xml" href={favicon.src} />
-		<link rel="preload" as="font" type="font/woff2" crossorigin href={font}>
+		<link rel="preload" as="font" type="font/woff2" href={font}>
 		<style is:global>
 			@font-face {
 				font-family: "Sue Ellen Francisco";
@@ -60,6 +60,7 @@ import "../tokens.css"
 			import "components/component-store-reactivity.ts"
 			
 			if (import.meta.env.DEV) await import("preact/debug")
+			if ("Iterator" in window === false) await import("iterator-helpers-polyfill")
 
 			hydrate(h(GameUI, {}), document.body)
 		</script>

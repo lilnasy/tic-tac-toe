@@ -23,6 +23,7 @@ export default {
             for (const entry of fs.readdirSync(dir, { recursive: true })) {
                 if (typeof entry !== "string") continue
                 if (
+                    entry.endsWith(".js") === false &&
                     entry.endsWith(".mjs") === false &&
                     entry.endsWith(".css") === false &&
                     entry.endsWith(".svg") === false

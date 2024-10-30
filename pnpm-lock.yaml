@@ -24,7 +24,7 @@ importers:
     devDependencies:
       '@preact/preset-vite':
         specifier: ^2.9.1
-        version: 2.9.1(patch_hash=wx4a2puiselz4n5hatk6npe6l4)(@babel/core@7.25.8)(preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya))(vite@5.4.9(@types/node@22.4.2))
+        version: 2.9.1(patch_hash=wx4a2puiselz4n5hatk6npe6l4)(@babel/core@7.25.7)(preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya))(vite@5.4.9(@types/node@22.4.2))
       '@withastro/node':
         specifier: ^8.4.0
         version: 8.4.0(astro@4.16.6(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3))
@@ -40,6 +40,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      iterator-helpers-polyfill:
+        specifier: ^3.0.1
+        version: 3.0.1
       preact:
         specifier: ^10.24.3
         version: 10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya)
@@ -1213,6 +1216,10 @@ packages:
     resolution: {integrity: sha512-UcVfVfaK4Sc4m7X3dUSoHoozQGBEFeDC+zVo06t98xe8CzHSZZBekNXH+tu0NalHolcJ/QAGqS46Hef7QXBIMw==}
     engines: {node: '>=16'}
 
+  iterator-helpers-polyfill@3.0.1:
+    resolution: {integrity: sha512-9uSoKErC0+TG7uoXlv5k7rs196/l/VGr9hb9KbptpMhszsSksxJCwetp0p7FvgM3SwxlxgEkvokmeOi02PARlQ==}
+    engines: {chrome: '>=63', firefox: '>=57', node: '>=10.0.0', safari: '>=11'}
+
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
 
@@ -2122,15 +2129,31 @@ snapshots:
     dependencies:
       '@babel/types': 7.25.8
 
+  '@babel/plugin-syntax-jsx@7.25.7(@babel/core@7.25.7)':
+    dependencies:
+      '@babel/core': 7.25.7
+      '@babel/helper-plugin-utils': 7.25.7
+
   '@babel/plugin-syntax-jsx@7.25.7(@babel/core@7.25.8)':
     dependencies:
       '@babel/core': 7.25.8
       '@babel/helper-plugin-utils': 7.25.7
 
-  '@babel/plugin-transform-react-jsx-development@7.25.7(@babel/core@7.25.8)':
+  '@babel/plugin-transform-react-jsx-development@7.25.7(@babel/core@7.25.7)':
     dependencies:
-      '@babel/core': 7.25.8
-      '@babel/plugin-transform-react-jsx': 7.25.7(@babel/core@7.25.8)
+      '@babel/core': 7.25.7
+      '@babel/plugin-transform-react-jsx': 7.25.7(@babel/core@7.25.7)
+    transitivePeerDependencies:
+      - supports-color
+
+  '@babel/plugin-transform-react-jsx@7.25.7(@babel/core@7.25.7)':
+    dependencies:
+      '@babel/core': 7.25.7
+      '@babel/helper-annotate-as-pure': 7.25.7
+      '@babel/helper-module-imports': 7.25.7
+      '@babel/helper-plugin-utils': 7.25.7
+      '@babel/plugin-syntax-jsx': 7.25.7(@babel/core@7.25.7)
+      '@babel/types': 7.25.7
     transitivePeerDependencies:
       - supports-color
 
@@ -2413,15 +2436,15 @@ snapshots:
 
   '@oslojs/encoding@1.1.0': {}
 
-  '@preact/preset-vite@2.9.1(patch_hash=wx4a2puiselz4n5hatk6npe6l4)(@babel/core@7.25.8)(preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya))(vite@5.4.9(@types/node@22.4.2))':
+  '@preact/preset-vite@2.9.1(patch_hash=wx4a2puiselz4n5hatk6npe6l4)(@babel/core@7.25.7)(preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya))(vite@5.4.9(@types/node@22.4.2))':
     dependencies:
       '@babel/code-frame': 7.25.7
-      '@babel/core': 7.25.8
-      '@babel/plugin-transform-react-jsx': 7.25.7(@babel/core@7.25.8)
-      '@babel/plugin-transform-react-jsx-development': 7.25.7(@babel/core@7.25.8)
+      '@babel/core': 7.25.7
+      '@babel/plugin-transform-react-jsx': 7.25.7(@babel/core@7.25.7)
+      '@babel/plugin-transform-react-jsx-development': 7.25.7(@babel/core@7.25.7)
       '@prefresh/vite': 2.4.6(preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya))(vite@5.4.9(@types/node@22.4.2))
       '@rollup/pluginutils': 4.2.1
-      babel-plugin-transform-hook-names: 1.0.2(@babel/core@7.25.8)
+      babel-plugin-transform-hook-names: 1.0.2(@babel/core@7.25.7)
       debug: 4.3.7
       kolorist: 1.8.0
       magic-string: 0.30.5
@@ -2735,9 +2758,9 @@ snapshots:
       cosmiconfig: 7.1.0
       resolve: 1.22.8
 
-  babel-plugin-transform-hook-names@1.0.2(@babel/core@7.25.8):
+  babel-plugin-transform-hook-names@1.0.2(@babel/core@7.25.7):
     dependencies:
-      '@babel/core': 7.25.8
+      '@babel/core': 7.25.7
 
   bail@2.0.2: {}
 
@@ -3204,6 +3227,8 @@ snapshots:
   is-wsl@3.1.0:
     dependencies:
       is-inside-container: 1.0.0
+
+  iterator-helpers-polyfill@3.0.1: {}
 
   js-tokens@4.0.0: {}
 
