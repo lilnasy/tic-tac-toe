@@ -1,0 +1,13 @@
+diff --git a/dist/node/chunks/dep-Cyk9bIUq.js b/dist/node/chunks/dep-Cyk9bIUq.js
+index 7403493d039fc227a8090f5abf7d54501158a6c8..19d0d59d403e49225c8a07bffafe9ba5cd5d8eca 100644
+--- a/dist/node/chunks/dep-Cyk9bIUq.js
++++ b/dist/node/chunks/dep-Cyk9bIUq.js
+@@ -64591,7 +64591,7 @@ function preload(baseModule, deps, importerUrl) {
+ function buildImportAnalysisPlugin(config) {
+   const ssr = !!config.build.ssr;
+   const isWorker = config.isWorker;
+-  const insertPreload = !(ssr || !!config.build.lib || isWorker);
++  const insertPreload = false;
+   const renderBuiltUrl = config.experimental.renderBuiltUrl;
+   const isRelativeBase = config.base === "./" || config.base === "";
+   const { modulePreload } = config.build;
