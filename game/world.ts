@@ -1,7 +1,7 @@
 import type { Data, MessageRegistry } from "game/messages.ts"
 import type { Entity } from "game/entity.ts"
 import type { Channel } from "game/channel.ts"
-import { type System, lineCheckSystem, turnSystem } from "game/systems.ts"
+import type { System } from "game/systems.ts"
 
 export interface World {
     server: boolean
@@ -11,11 +11,6 @@ export interface World {
     systems: System<"client" | "server" | "both">[]
     update: typeof update
 }
-
-/**
- * Systems that run both on the server and the client; mostly the main game logic.
- */
-export const commonSystems: System<"both">[] = [ lineCheckSystem, turnSystem ]
 
 export function update<Message extends keyof MessageRegistry>(
     this: World,

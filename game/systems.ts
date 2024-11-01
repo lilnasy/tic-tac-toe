@@ -4,20 +4,30 @@ import type { ClientWorld } from "game/world.client.ts"
 import type { ServerWorld } from "game/world.server.ts"
 import { Store } from "game/store.ts"
 import { isServer } from "game/client-server.ts"
-import { Player } from "game/player.ts"
+import { Player, type PlayerData } from "game/player.ts"
+import * as Animal from "game/animals.ts"
 
 export const markerSystemClient: System<"client"> = {
     onMark(marked, world) {
         const { place } = marked
         const { channel, entities, state } = world
-        if (state.Sign === null || state.Sign !== state.Turn) return
-        for (const entity of entities) {
-            if (entity.Place === place && entity.Marked === undefined) {
-                Store.set(entity, "Marked", state.Sign)
-                channel.send("Mark", marked)
-                world.update("Switch")
-                return
-            }
+        
+        if (
+            state.connection !== "ingame" ||
+            state.game.state !== "active" ||
+            state.game.turn !== state.game.player.sign
+        ) {
+            return
+        }
+        
+        const unmarkedSquare = entities.values().find(
+            e => e.Place === place && e.Marked === undefined
+        )
+        
+        if (unmarkedSquare) {
+            Store.set(unmarkedSquare, "Marked", state.game.turn)
+            channel.send("Mark", marked)
+            world.update("Switch")
         }
     }
 }
@@ -26,13 +36,24 @@ export const markerSystemServer: System<"server"> = {
     onMark(marked, world) {
         const player = Player.get(marked)
         if (!player) return Player.notFound("Mark", marked)
+
         const { place } = marked
-        if (player.sign !== world.state.Turn) return
-        for (const entity of world.entities) {
-            if (entity.Place === place && entity.Marked === undefined) {
-                Store.set(entity, "Marked", player.sign)
-                return world.update("Switch")
-            }
+
+        if (
+            player.state.connection !== "ingame" ||
+            world.state.connection !== "ingame" ||
+            player.state.data.sign !== world.state.turn
+        ) {
+            return
+        }
+
+        const unmarkedSquare = world.entities.values().find(
+            e => e.Place === place && e.Marked === undefined
+        )
+
+        if (unmarkedSquare) {
+            Store.set(unmarkedSquare, "Marked", player.state.data.sign)
+            return world.update("Switch")
         }
     }
 }
@@ -88,16 +109,27 @@ function makesLine(line: Line, board: Array<Place>) {
     return false
 }
 
-export const turnSystem: System = {
-    onSwitch(data, { channel, server, state }) {
-        const { to = state.Turn === "X" ? "O" : "X" } = data
-        Store.set(state, "Turn", to)
-        if (isServer && server) channel.send("Switch", { to })
+export const turnSystemClient: System<"client"> = {
+    onSwitch(data, { state }) {
+        if (state.connection === "ingame" && state.game.state === "active") {
+            const turn = data.to ?? (state.game.turn === "X" ? "O" : "X")
+            Store.assign(state, { ...state, game: { ...state.game, turn } })
+        }
+    }
+}
+
+export const turnSystemServer: System<"server"> = {
+    onSwitch(data, { channel, state }) {
+        if (state.connection === "ingame") {
+            const to = data.to ?? state.turn === "X" ? "O" : "X"
+            Store.assign(state, { ...state, turn: to })
+            channel.send("Switch", { to })
+        }
     }
 }
 
 export const gameLoopSystemClient: System<"client"> = {
-    onStart({ Turn }, world) {
+    onStart({ player, turn }, world) {
         const { entities, state } = world
         
         for (const entity of entities) {
@@ -112,32 +144,52 @@ export const gameLoopSystemClient: System<"client"> = {
             }
             world.spawn(unmarkedSquare)
         }
-        
-        Store.set(state, "Connection", "ingame")
-        Store.set(state, "Game", "active")
-        Store.set(state, "Turn", Turn)
+        Store.assign(state, {
+            connection: "ingame",
+            game: {
+                state: "active",
+                player, turn
+            }
+        })
     },
-    onDraw(_, { state }) {
-        Store.set(state, "Game", "draw")
+    onDraw(_, world) {
+        if (world.state.connection === "ingame" && world.state.game.state === "active") {
+            Store.assign(world.state, {
+                connection: "ingame",
+                game: {
+                    state: "draw",
+                    player: world.state.game.player
+                }
+            })
+        }
     },
     onVictory({ line }, world) {
-        Store.set(world.state, "Game", "victory")
-        world.spawn({
-            Line: line,
-            View: "Strikethrough"
-        })
+        if (world.state.connection === "ingame" && world.state.game.state === "active") {
+            Store.assign(world.state, {
+                connection: "ingame",
+                game: {
+                    state: "victory",
+                    player: world.state.game.player,
+                    winner: world.state.game.turn
+                }
+            })
+            world.spawn({
+                Line: line,
+                View: "Strikethrough"
+            })
+        }
     },
     onRequestRematch(_, { channel }) {
         channel.send("RequestRematch")
     },
     onRematchRequested(_, { channel }) {
-
+        // channel.send("RequestRematch")
     }
 }
 
 export const gameLoopSystemServer: System<"server"> = {
-    onStart({ Turn }, world) {
-        const { entities, state, players } = world
+    onReady(_, world) {
+        const { entities, players } = world
 
         for (const entity of entities) {
             world.despawn(entity)
@@ -151,31 +203,34 @@ export const gameLoopSystemServer: System<"server"> = {
             world.spawn(unmarkedSquare)
         }
         
+        const signs: ("X" | "O")[] = Math.random() < 0.5 ? [ "X", "O" ] : [ "O", "X" ]
+        const firstTurn = Math.random() < 0.5 ? "X" : "O"
+        Store.assign(world.state, { connection: "ingame", turn: firstTurn })
+
         for (const player of players) {
-            player.state = "ingame"
+            if (
+                player.state.connection === "connected" ||
+                player.state.connection === "rematching"
+            ) {
+                const data: PlayerData = {
+                    animal: Animal.random(),
+                    sign: signs.pop()!
+                }
+                player.state = { connection: "ingame", data }
+                player.send("Start", { player: data, turn: firstTurn })
+            }
         }
-
-        const [ player1, player2 ] = [ ...players ]
-        const [ sign1, sign2 ] = Math.random() < 0.5 ? [ "X", "O" ] as const : [ "O", "X" ] as const
-                
-        player1.sign = sign1
-        player1.send("Assign", { sign: sign1 })
-
-        player2.sign = sign2
-        player2.send("Assign", { sign: sign2 })
-
-        Store.set(state, "Turn", Turn)
-
-        world.channel.send("Start", { Turn })
     },
     onRequestRematch(data, world) {
+        const { players } = world
         const requestingPlayer = Player.get(data)
-        if (!requestingPlayer) return Player.notFound("RequestRematch", data)
-        requestingPlayer.state = "rematching"
-        if (world.players.size === 2 && world.players.values().every(p => p.state === "rematching")) {
-            return world.update("Start", { Turn: Math.random() < 0.5 ? "X" : "O" })
+        if (requestingPlayer === undefined) return Player.notFound("RequestRematch", data)
+        if (requestingPlayer.state.connection !== "ingame") return
+        requestingPlayer.state = { connection: "rematching", data: requestingPlayer.state.data }
+        if (players.size === 2 && players.values().every(p => p.state.connection === "rematching")) {
+            return world.update("Ready")
         }
-        for (const player of world.players) {
+        for (const player of players) {
             if (player === requestingPlayer) continue
             player.send("RematchRequested")
         }
@@ -218,45 +273,50 @@ export const colorSystemServer: System<"server"> = {
 export const syncSystemClient: System<"client"> = {
     onSync(updatedEntity, world) {
         const { Sync: { id } } = updatedEntity
-        for (const entity of world.entities) {
-            if (entity.Sync !== undefined && entity.Sync.id === id) {
-                for (const _key in updatedEntity) {
-                    const key = _key as keyof typeof updatedEntity
-                    Store.set(entity, key, updatedEntity[key])
-                }
-            }
-        }
+        const entity = world.entities.values().find(e => e.Sync?.id === id)
+        if (entity) Store.assign(entity, updatedEntity)
+        else console.error(new Error("Server sent Sync message for an entity that does not exist in the client world.", { cause: updatedEntity }))
     }
 }
 
 export const syncSystemServer: System<"server"> = {
-    onSpawn(entity, world) {
+    onSpawn(entity, { channel, entities }) {
         const { Sync } = entity
         if (Sync !== undefined) {
-            const alreadyNetworked = world.entities.values().some(e => e.Sync?.id === Sync.id)
+            const alreadyNetworked = entities.values().some(e => e.Sync?.id === Sync.id)
             if (alreadyNetworked) {
                 return console.error(new Error("A networked entity is being spawned with an ID that's already used by another entity in the world.", { cause: entity }))
             }
             // server announces all mutations done to networked entities to all connected players
-            Store.listen(entity, () => world.channel.send("Sync", entity as Entity<"Sync">))
+            Store.listen(entity, () => channel.send("Sync", entity as Entity<"Sync">))
         }
     }
 }
 
+function onPopState(event: PopStateEvent) {
+    if (event.state === null) location.reload()
+}
+
 export const connectionSystemClient: System<"client"> = {
     onConnected(_, world) {
-        const { state } = world
-        Store.set(state, "Connection", "connected")
+        Store.assign(world.state, {
+            connection: "ingame",
+            game: { state: "inlobby" }
+        })
         const url = new URL(location.href)
         const [ segment1, segment2 ] = url.pathname.split("/").filter(Boolean)
         if (segment1 === "world" && typeof segment2 === "string") {
-            Store.set(state, "Connection", "waiting")
+            Store.assign(world.state, { connection: "connecting" })
             world.update("JoinWorld", {
                 world: segment2,
                 reconnectId: sessionStorage.getItem(`reconnectId:${segment2}`) ?? undefined
             })
         }
-        addEventListener("popstate", e => { if (e.state === null) location.reload() })
+        removeEventListener("popstate", onPopState)
+        addEventListener("popstate", onPopState)
+    },
+    onDisconnected(_, world) {
+        Store.set(world.state, "connection", "disconnected")
     },
     onNewWorld(_, world) {
         world.channel.send("NewWorld")
@@ -268,61 +328,58 @@ export const connectionSystemClient: System<"client"> = {
         if ("id" in data.reconnect) {            
             sessionStorage.setItem(`reconnectId:${data.world}`, data.reconnect.id)
         }
-        Store.set(state, "Connection", "waiting")
+        Store.assign(state, {
+            connection: "ingame",
+            game: { state: "waiting",}
+        })
         history.pushState(null, "", `/world/${data.world}`)
     },
     onWorldNotFound(data, world) {
         alert(`World '${data.world.replace("-", " ")}' does not exist. The game may have ended, or all the player may have left.`)
         history.back()
-        Store.set(world.state, "Connection", "connected")
+        Store.set(world.state, "connection", "ingame")
     },
     onWorldOccupied(data, world) {
         alert(`World '${data.world.replace("-", " ")}' already has enough players.`)
         history.back()
-        Store.set(world.state, "Connection", "connected")
-    },
-    onAssign({ sign }, world) {
-        world.state.Sign = sign
+        Store.set(world.state, "connection", "ingame")
     }
 }
 
 export const connectionSystemServer: System<"server"> = {
     onAddPlayer({ player, reconnectId }, world) {
-        if (world.players.has(player)) return
+        const { players, disconnectedPlayers, name } = world
+        if (players.has(player)) return
         if (reconnectId) {
-            for (const dplayer of world.disconnectedPlayers) {
-                if (reconnectId === dplayer.id) {
-                    player.id = reconnectId
-                    player.sign = dplayer.sign
-                    world.disconnectedPlayers.delete(dplayer)
-                    break
-                }
+            const dplayer = disconnectedPlayers.values()
+                .find(p => p.id === reconnectId)
+            if (dplayer !== undefined) {
+                player.id = reconnectId
+                player.state = dplayer.state
+                disconnectedPlayers.delete(dplayer)
             }
         }
-        if (world.players.size < 2) {
-            world.players.add(player)
+        if (players.size < 2) {
+            players.add(player)
             player.send("JoinedWorld", {
-                world: world.name,
-                reconnect: { id: player.id }
+                world: name,
+                reconnect: { id: player.id },
             })
-            if (world.players.size === 2) {
-                let allPlayersReady = true
-                for (const player of world.players) {
-                    if (player.state !== "connected") allPlayersReady = false
-                }
-                /** Start the game while randomly give the first turn to a player */
-                if (allPlayersReady) world.update("Start", { Turn: Math.random() < 0.5 ? "X" : "O" })
+            if (players.size === 2 && players.values().every(p => p.state.connection === "connected")) {
+                world.update("Ready")
             }
             /** subscribe the world to the message being sent by the player */
             player.subscribe(world)
         } else {
-            player.send("WorldOccupied", { world: world.name })
+            player.send("WorldOccupied", { world: name })
         }
     },
     onDisconnected({ player }, world) {
-        world.players.delete(player)
-        world.disconnectedPlayers.add(player)
-        player.unsubscribe(world)
+        if (player !== undefined) {
+            world.players.delete(player)
+            world.disconnectedPlayers.add(player)
+            player.unsubscribe(world)
+        }
     }
 }
 

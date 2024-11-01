@@ -39,13 +39,17 @@ export class Square extends Component<ViewProps> {
     }
 
     render({ entity }: typeof this.props) {
+        const { state } = this.world
         const Marked = Store.get(entity, "Marked")
-        const Sign = Store.get(this.world.state, "Sign")
-        const Turn = Store.get(this.world.state, "Turn")
         const { Place } = entity as Entity<"Place">
         
-        const disabled = Marked !== undefined || Sign !== Turn
-        
+        Store.get(state, "connection")
+        const playable = Marked === undefined &&
+            ((state.connection === "ingame" &&
+                state.game.state === "active")
+                ? state.game.player.sign === state.game.turn
+                : false)
+
         return <button
             class={css`
                 font-family: inherit;
@@ -63,7 +67,7 @@ export class Square extends Component<ViewProps> {
                 gridColumn: ((Place - 1) % 3) + 1
             }}
             onClick={this.mark}
-            disabled={disabled}
+            disabled={!playable}
         >{Marked || null}</button>
     }
 }

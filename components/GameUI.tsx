@@ -30,21 +30,19 @@ export class GameUI extends PreactComponent {
     }
     
     render() {
-        const Connection = Store.get(this.#world.state, "Connection")
-        const Game = Store.get(this.#world.state, "Game")
+        const { state } = this.#world
+        const Connection = Store.get(state, "connection")
         return <WorldContext.Provider value={this.#world}>
             <ExitPresence  timeout={1000}>{
-                Connection === "connecting" ? <TitleScreen connecting/> :
-                Connection === "connected" ? <TitleScreen/> :
-                Connection === "waiting" ? <WaitingForOpponentScreen/> :
-                Connection === "ingame" ?
-                    <>
-                        <Board/>
-                        {
-                            Game === "draw" ? <GameEndDialog draw/> :
-                            Game === "victory" ? <GameEndDialog victory/> : <></>
-                        }
-                    </> : <></>
+                state.connection === "connecting" ? <TitleScreen connecting/> :
+                state.connection === "disconnected" ? <TitleScreen connecting/> :
+                state.connection === "ingame" ?
+                    state.game.state === "inlobby" ? <TitleScreen/> :
+                    state.game.state === "waiting" ? <WaitingForOpponentScreen/> :
+                    state.game.state === "active" ? <Board/> :
+                    state.game.state === "draw" ? <><Board/><GameEndDialog draw/></> :
+                    state.game.state === "victory" ? <><Board/><GameEndDialog victory={state.game.winner}/></> : <></>
+                : <></>
             }</ExitPresence>
             <ColorMixer class={css`place-self: end;`}/>
         </WorldContext.Provider>
@@ -367,7 +365,7 @@ class WaitingForOpponentScreen extends Component<Attributes.p> {
 namespace GameEndDialog {
     export type Props = 
         | { draw: true, victory?: undefined }
-        | { draw?: undefined, victory: true }
+        | { draw?: undefined, victory: "X" | "O" }
 }
 
 class GameEndDialog extends Component<GameEndDialog.Props> {
@@ -399,6 +397,7 @@ class PopUp extends Component<Attributes.dialog> {
             width: min(20rem, 100dvw);
             background: var(--secondary-container);
             color: var(--on-secondary-container);
+            border-radius: 1rem;
             transition-property: opacity, translate;
             transition-duration: 1s;
             @starting-style {

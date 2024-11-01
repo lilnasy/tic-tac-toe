@@ -2,8 +2,9 @@ import { h } from "preact"
 import type { Channel, Receiver } from "game/channel.ts"
 import type { Entity, States } from "game/entity.ts"
 import type { Data, MessageRegistry } from "game/messages.ts"
-import { type World, commonSystems, update } from "game/world.ts"
-import { type System, colorSystemClient, connectionSystemClient, gameLoopSystemClient, markerSystemClient, syncSystemClient } from "game/systems.ts"
+import type { PlayerData } from "game/player.ts"
+import { type World, update } from "game/world.ts"
+import { type System, colorSystemClient, connectionSystemClient, gameLoopSystemClient, lineCheckSystem, markerSystemClient, syncSystemClient, turnSystemClient } from "game/systems.ts"
 import { Store } from "game/store.ts"
 import { EntitiesView } from "components/Entities.tsx"
 
@@ -19,7 +20,8 @@ export class ClientWorld implements World, Receiver {
         connectionSystemClient,
         gameLoopSystemClient,
         markerSystemClient,
-        ...commonSystems,
+        lineCheckSystem,
+        turnSystemClient,
         syncSystemClient
     ]
 
@@ -30,15 +32,7 @@ export class ClientWorld implements World, Receiver {
     receive = update
     update = update
 
-    /**
-     * A static entity containing global state related to the game, the connection and the player.
-     */
-    state: Gamestate = Store.create({
-        Connection: "connecting",
-        Game: "pending",
-        Sign: null,
-        Turn: null,
-    })
+    state = Store.create<WorldState>({ connection: "connecting" })
 
     /**
      * The EntitiesView component is rendered here so that the world
@@ -68,19 +62,28 @@ export class ClientWorld implements World, Receiver {
     }
 }
 
-export interface Gamestate {
-    Connection: "connecting" | "connected" | "waiting" | "ingame"
-    Game: "pending" | "active" | "draw" | "victory"
+type WorldState =
     /**
-     * The Sign state holds the sign assigned to the player.
+     * The client is waiting for the connection to the server to be established.
      */
-    Sign: "X" | "O" | null
+    | { connection : "connecting" }
+    | { connection : "ingame", game: Gamestate }
+    | { connection : "disconnected" }
+
+type Gamestate =
     /**
-     * The Turn state represents the sign of the player who has
-     * the current turn.
+     * The player may create a new world, or join one while in the lobby.
      */
-    Turn: "X" | "O" | null
-}
+    | { state: "inlobby" }
+    /**
+     * A new world has been created, and the player is waiting for an opponent to join.
+     */
+    | { state: "waiting" }
+    | { state: "active", player: PlayerData, turn: XO }
+    | { state: "draw", player: PlayerData }
+    | { state: "victory", player: PlayerData, winner: XO }
+
+type XO = "X" | "O"
 
 class ClientToServerChannel implements Channel {
     
@@ -120,10 +123,13 @@ class ClientToServerChannel implements Channel {
     handleEvent(event: Event) {
         if (event.type === "open") {
             for (const receiver of this.#receivers) {
-                receiver.receive("Connected", true)
+                receiver.receive("Connected", {})
             }
         } else if (event.type === "close") {
             this.websocket.removeEventListener("message", this)
+            for (const receiver of this.#receivers) {
+                receiver.receive("Disconnected", {})
+            }
         } else if (event.type === "message" && "data" in event && typeof event.data === "string") {
             const messageAndData = JSON.parse(event.data)
             for (const message in messageAndData) {

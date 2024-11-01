@@ -1,6 +1,8 @@
 export class Store extends class { constructor(x: {}) { return x } } {
     #et = new EventTarget
 
+    static #update = new Event("update")
+
     static create<Store extends {}>(storeData: Store): Store {
         return new Store(storeData) as unknown as Store
     }
@@ -14,10 +16,21 @@ export class Store extends class { constructor(x: {}) { return x } } {
         if (store[prop] === value) return
         /** @ts-expect-error */
         store[prop] = value
-        store.#et.dispatchEvent(new Event("update"))
+        store.#et.dispatchEvent(Store.#update)
+    }
+
+    static assign<Store extends {}>(store: Store, newstore: Store) {
+        if (#et in store === false) return this.#notStore(store)
+        const keys = Object.keys(store).concat(Object.keys(newstore))
+        for (const key of keys) {
+            /** @ts-expect-error */
+            store[key] = newstore[key]
+        }
+        store.#et.dispatchEvent(Store.#update)
     }
 
     static #usedStores: Set<Store> | undefined
+
     static track() {
         this.#usedStores = new Set
     }

@@ -1,5 +1,5 @@
 import type { Entity, Line, Place } from "game/entity.ts"
-import type { Player } from "game/player.ts"
+import type { Player, PlayerData } from "game/player.ts"
 
 
 /**
@@ -9,10 +9,10 @@ import type { Player } from "game/player.ts"
 export interface MessageRegistry {
 
     /* GAME-MECHANICS MESSAGES */
-    Assign: Assign
     Mark: Mark
     Switch: Switch
     Spawn: Entity
+    Ready: Ready
     Start: Start
     Sync: Sync
     Victory: Victory
@@ -53,14 +53,6 @@ export type Data<Message extends keyof MessageRegistry> =
         : [data: MessageRegistry[Message]]
 
 /**
- * A message from the server telling a player
- * which sign - X or O - they will be playing as.
- */
-export interface Assign {
-    sign: "X" | "O"
-}
-
-/**
  * A message that a specific place on the tic tac toe board has
  * been marked by a player.
  */
@@ -77,11 +69,21 @@ export interface Switch {
 }
 
 /**
+ * A message in the server emitted when both the players
+ * are ready to start the game.
+ */
+export interface Ready {}
+
+/**
  * A message sent by the server to both server and client
  * systems when 2 players are connected and ready.
  */
 export interface Start {
-    Turn: "X" | "O"
+    player: PlayerData
+    /**
+     * The sign of the player who will make the first move.
+     */
+    turn: "X" | "O"
 }
 
 /**
@@ -142,11 +144,11 @@ export interface UpdateColors extends ColorsUpdated {
 export interface Connected {}
 
 /**
- * A server-only message sent to the server world when the
- * connection to the player is closed or otherwise severed.
+ * A message emitted when the connection to the server (on the client)
+ * or to the player (on the server) is closed or otherwise severed.
  */ 
 export interface Disconnected {
-    player: Player
+    player?: Player
 }
 
 export interface NewWorld {}

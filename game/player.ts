@@ -1,16 +1,33 @@
 import type { Data, MessageRegistry } from "game/messages.ts"
 import type { Channel, Receiver } from "game/channel.ts"
+import type * as Animal from "game/animals.ts"
+
+export interface PlayerData {
+    animal: Animal.Type
+    sign: "X" | "O"
+}
+
+export type PlayerState = 
+    | { connection: "pending" }
+    | { connection: "connected" }
+    | { connection: "ingame", data: PlayerData }
+    | { connection: "rematching", data: PlayerData }
+    | { connection: "disconnected" }
 
 export class Player implements Channel {
     
-    id = crypto.randomUUID()
-    sign: "X" | "O" | undefined
-    state: "pending" | "connected" | "ingame" | "rematching" | "disconnected" = "pending"
+    id = crypto.randomUUID().slice(0, 8)
+    state: PlayerState = { connection: "pending" }
     #websocket: WebSocket
-    
+
+    #name?: string
+    name() {
+        return this.#name ?? (this.state.connection === "ingame" ? this.state.data.animal.name : undefined)
+    }
+
     constructor(websocket: WebSocket) {
         if (websocket.readyState === WebSocket.OPEN) {
-            this.state = "connected"
+            this.state.connection = "connected"
         } else if (websocket.readyState === WebSocket.CONNECTING) {
             websocket.addEventListener("open", this, { once: true })
         } else {
@@ -56,9 +73,9 @@ export class Player implements Channel {
     handleEvent(event: Event) {
         if (event.target !== this.#websocket) return
         if (event.type === "open") {
-            this.state = "connected"
+            this.state.connection = "connected"
         } else if (event.type === "close") {
-            this.state = "disconnected"
+            this.state.connection = "disconnected"
             this.#websocket.removeEventListener("message", this)
             for (const receiver of this.#receivers) {
                 receiver.receive("Disconnected", { player: this })

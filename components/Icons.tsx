@@ -3,7 +3,7 @@
  */
 import { Component, type Attributes } from "./component.ts"
 
-export class Palette extends Component<Attributes.SVG> {
+export class Palette extends Component<Attributes.svg> {
     render(props: typeof this.props) {
         return <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -15,7 +15,7 @@ export class Palette extends Component<Attributes.SVG> {
     }
 }
 
-export class InvertColors extends Component<Attributes.SVG> {
+export class InvertColors extends Component<Attributes.svg> {
     render(props: typeof this.props) {
         return <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -27,7 +27,7 @@ export class InvertColors extends Component<Attributes.SVG> {
     }
 }
 
-export class Check extends Component<Attributes.SVG> {
+export class Check extends Component<Attributes.svg> {
     render(props: typeof this.props) {
         return <svg
             xmlns="http://www.w3.org/2000/svg"

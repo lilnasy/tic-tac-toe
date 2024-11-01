@@ -25,7 +25,7 @@ export const { lobby } = class Lobby implements Receiver {
     receive<Message extends keyof MessageRegistry>(message: Message, data: MessageRegistry[Message]) {
         if (message === "Disconnected") {
             const { player } = data as Disconnected
-            player.unsubscribe(this)
+            player!.unsubscribe(this)
         } else if (message === "NewWorld") {
             this.#newWorld(data as NewWorld)
         } else if (message === "JoinWorld") {
