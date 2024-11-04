@@ -8,25 +8,16 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
-    
-    - name: Setup PNPM
-      uses: pnpm/action-setup@v4
-    
-    - name: Setup Node
-      uses: actions/setup-node@v4
-      with:
-        node-version: 22
-        cache: "pnpm"
-    
-    - name: Install dependencies
-      run: pnpm install
-    
-    - name: Build
-      run: pnpm build
+      run: git clone https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} . && git checkout ${{ github.event.after }}
+
+    - name: Install PNPM
+      run: wget --quiet -O /usr/local/bin/pnpm https://github.com/pnpm/pnpm/releases/download/v9.12.3/pnpm-linux-x64 && chmod +x /usr/local/bin/pnpm
+
+    - run: pnpm install
+    - run: pnpm build
     
     - name: Upload artifcats
       id: upload
