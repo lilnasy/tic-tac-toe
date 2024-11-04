@@ -11,7 +11,7 @@
         "@preact/preset-vite": "^2.9.1",
         "@withastro/node": "^8.4.0",
         "astro": "^4.16.9",
-        "astro-emotion": "^1.0.1",
+        "astro-emotion": "^2.0.0",
         "canvas-confetti": "^1.9.3",
         "clsx": "^2.1.1",
         "iterator-helpers-polyfill": "^3.0.1",
@@ -24,7 +24,7 @@
     "pnpm": {
         "patchedDependencies": {
             "@preact/preset-vite": "patches/@preact__preset-vite.patch",
-            "astro-emotion": "patches/astro-emotion.patch",
+            "astro": "patches/astro.patch",
             "preact": "patches/preact.patch",
             "vite": "patches/vite.patch",
             "ws": "patches/ws.patch"
