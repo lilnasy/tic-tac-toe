@@ -4,11 +4,16 @@ import { Store } from "game/store.ts"
 import { Component } from "./component.ts"
 import { Line } from "./Line.tsx"
 
-export class EntitiesView extends Component<{ entities?: Set<Entity> }> {
-    render({ entities }: typeof this.props) {
-        if (!entities) return this.world.Entities
+export class EntitiesView extends Component {
+    componentDidMount() {
+        this.world.EntitiesView = this
+    }
+    componentWillUnmount() {
+        this.world.EntitiesView = undefined
+    }
+    render() {
         return <>{
-            entities
+            this.world.entities
             .values()
             .filter(isVisibleEntity)
             .map(renderEntity)

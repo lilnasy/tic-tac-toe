@@ -1,12 +1,11 @@
-import { h } from "preact"
 import type { Channel, Receiver } from "game/channel.ts"
 import type { Entity, States } from "game/entity.ts"
 import type { Data, MessageRegistry } from "game/messages.ts"
 import type { PlayerData } from "game/player.ts"
+import type { Component } from "components/component.ts"
 import { type World, update } from "game/world.ts"
 import { type System, colorSystemClient, connectionSystemClient, gameLoopSystemClient, lineCheckSystem, markerSystemClient, syncSystemClient, turnSystemClient } from "game/systems.ts"
 import { Store } from "game/store.ts"
-import { EntitiesView } from "components/Entities.tsx"
 
 export class ClientWorld implements World, Receiver {
 
@@ -35,11 +34,11 @@ export class ClientWorld implements World, Receiver {
     state = Store.create<WorldState>({ connection: "connecting" })
 
     /**
-     * The EntitiesView component is rendered here so that the world
-     * has a reference to it, and can update it when entities are
-     * spawned and despawned.
+     * A reference to the EntitiesView component is provided here
+     * when it renders so that the world can update it when entities
+     * are spawned and despawned.
      */
-    Entities = h(EntitiesView, { entities: this.entities })
+    EntitiesView: Component | undefined
 
     constructor(websocket: WebSocket) {
         const channel = this.channel = new ClientToServerChannel(websocket)
@@ -50,15 +49,13 @@ export class ClientWorld implements World, Receiver {
         const _entity = Store.create(entity)
         this.update("Spawn", _entity)
         this.entities.add(_entity)
-        // @ts-expect-error
-        this.Entities?._component?.forceUpdate()
+        this.EntitiesView?.forceUpdate()
         return _entity
     }
 
     despawn(entity: Entity) {
         this.entities.delete(entity)
-        // @ts-expect-error
-        this.Entities?._component?.forceUpdate()
+        this.EntitiesView?.forceUpdate()
     }
 }
 
