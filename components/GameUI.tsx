@@ -186,11 +186,11 @@ class WaitingForOpponentScreen extends Component<WaitingForOpponentScreen.Props>
                 grid-area: d;
                 display: grid;
                 place-items: center;
+                &:has(> *:nth-child(2)):not(:has(> *:nth-child(3))) {
+                    grid-template-columns: auto 1fr;
+                }
                 &:has(> *:nth-child(3)) {
                     grid-template-columns: auto 1fr 1fr;
-                }
-                &:has(> *:nth-child(2)) {
-                    grid-template-columns: auto 1fr;
                 }
                 column-gap: 1rem;
                 border-radius: 1rem;
