@@ -7,6 +7,7 @@ import { Component, WorldContext, type Attributes } from "./component.ts"
 import { Board } from "./Game.tsx"
 import { ExitPresence } from "./ExitPresence.tsx"
 import { ColorMixer } from "./ColorMixer.tsx"
+import * as Icon from "./Icons.tsx"
 
 export function GameUISSR() {
     return <TitleScreen loading/>
@@ -31,14 +32,14 @@ export class GameUI extends PreactComponent {
     
     render() {
         const { state } = this.#world
-        const Connection = Store.get(state, "connection")
+        Store.get(state, "connection")
         return <WorldContext.Provider value={this.#world}>
             <ExitPresence  timeout={1000}>{
                 state.connection === "connecting" ? <TitleScreen connecting/> :
                 state.connection === "disconnected" ? <TitleScreen connecting/> :
                 state.connection === "ingame" ?
                     state.game.state === "inlobby" ? <TitleScreen/> :
-                    state.game.state === "waiting" ? <WaitingForOpponentScreen/> :
+                    state.game.state === "waiting" ? <WaitingForOpponentScreen name={state.game.world.name}/> :
                     state.game.state === "active" ? <Board/> :
                     state.game.state === "draw" ? <><Board/><GameEndDialog draw/></> :
                     state.game.state === "victory" ? <><Board/><GameEndDialog victory={state.game.winner}/></> : <></>
@@ -144,19 +145,84 @@ class TitleScreen extends Component<TitleScreen.Props> {
     }
 }
 
-class WaitingForOpponentScreen extends Component<Attributes.p> {
-    render(props: typeof this.props) {
-        return <p {...props} class={cx(props.class, css`
-            color: var(--primary);
+namespace WaitingForOpponentScreen {
+    export interface Props {
+        name: string
+    }
+}
+
+class WaitingForOpponentScreen extends Component<WaitingForOpponentScreen.Props> {
+    copy() {
+        navigator.clipboard.writeText(this.props.name.replace(" ", "-"))
+    }
+    share() {
+        navigator.share({
+            title: "Tic Tac Toe",
+            url: location.href
+        }).catch(() => {})
+    }
+    render({ name }: typeof this.props) {
+        return <div class={css`
+            display: grid;
+            place-items: center;
+            grid-template-areas:
+                "a b c"
+                "d d d"
+                "e f g";
+            grid-template-columns: 1fr 16rem 1fr;
+            row-gap: 1rem;
             transition: opacity 250ms 250ms;
             @starting-style { opacity: 0; }
-            &:after {
-                display: inline-block;
-                width: 0;
-                animation: ellipsis linear 3s infinite;
-                content: "";
-            }
-        `)}>waiting for the other player</p>
+        `}>
+            <p class={css`
+                grid-area: b;
+                color: var(--primary);
+                transition: color 250ms;
+                margin: 0;
+                text-align: center;
+                line-height: 120%;
+            `}>Share this code with a friend to play against them.</p>
+            <div class={css`
+                grid-area: d;
+                display: grid;
+                place-items: center;
+                &:has(> *:nth-child(3)) {
+                    grid-template-columns: auto 1fr 1fr;
+                }
+                &:has(> *:nth-child(2)) {
+                    grid-template-columns: auto 1fr;
+                }
+                column-gap: 1rem;
+                border-radius: 1rem;
+                padding: 1rem;
+                outline: 2px solid var(--on-secondary-container);
+                background-color: var(--secondary-container);
+                color: var(--on-secondary-container);
+                transition: outline-color 250ms, background-color 250ms;
+            `}>
+                <h6 class={css`
+                    text-align: center;
+                    font-size: 3rem;
+                    font-weight: inherit;
+                    margin: 0;
+                    transition: color 250ms;
+                `}>{name.replace("-", " ")}</h6>
+                {/** @ts-expect-error */ navigator.clipboard && <Icon.Button outline on-secondary-container class={css`--icon-size: 1.5rem;`} onClick={this.copy}><Icon.Copy/></Icon.Button>}
+                {navigator.share && <Icon.Button outline on-secondary-container class={css`--icon-size: 1.5rem;`} onClick={this.share}><Icon.Share/></Icon.Button>} 
+            </div>
+            <p class={css`
+                grid-area: f;
+                color: var(--primary);
+                margin: 0;
+                transition: color 250ms;
+                &:after {
+                    display: inline-block;
+                    width: 0;
+                    animation: ellipsis linear 3s infinite;
+                    content: "";
+                }
+            `}>waiting for the other player</p>
+        </div>
     }
 }
 

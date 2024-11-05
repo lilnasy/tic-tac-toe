@@ -131,6 +131,9 @@ export const turnSystemServer: System<"server"> = {
 export const gameLoopSystemClient: System<"client"> = {
     onStart({ player, turn }, world) {
         const { entities, state } = world
+        if (state.connection !== "ingame" || state.game.state !== "waiting") {
+            return
+        }
         
         for (const entity of entities) {
             world.despawn(entity)
@@ -147,37 +150,42 @@ export const gameLoopSystemClient: System<"client"> = {
         Store.assign(state, {
             connection: "ingame",
             game: {
+                ...state.game,
                 state: "active",
-                player, turn
+                player,
+                turn,
             }
         })
     },
-    onDraw(_, world) {
-        if (world.state.connection === "ingame" && world.state.game.state === "active") {
-            Store.assign(world.state, {
-                connection: "ingame",
-                game: {
-                    state: "draw",
-                    player: world.state.game.player
-                }
-            })
+    onDraw(_, { state }) {
+        if (state.connection !== "ingame" || state.game.state !== "active") {
+            return
         }
+        Store.assign(state, {
+            connection: "ingame",
+            game: {
+                ...state.game,
+                state: "draw",
+            }
+        })
     },
     onVictory({ line }, world) {
-        if (world.state.connection === "ingame" && world.state.game.state === "active") {
-            Store.assign(world.state, {
-                connection: "ingame",
-                game: {
-                    state: "victory",
-                    player: world.state.game.player,
-                    winner: world.state.game.turn
-                }
-            })
-            world.spawn({
-                Line: line,
-                View: "Strikethrough"
-            })
+        const { state } = world
+        if (state.connection !== "ingame" || state.game.state !== "active") {
+            return
         }
+        Store.assign(world.state, {
+            connection: "ingame",
+            game: {
+                ...state.game,
+                state: "victory",
+                winner: state.game.turn
+            }
+        })
+        world.spawn({
+            Line: line,
+            View: "Strikethrough"
+        })
     },
     onRequestRematch(_, { channel }) {
         channel.send("RequestRematch")
@@ -330,7 +338,10 @@ export const connectionSystemClient: System<"client"> = {
         }
         Store.assign(state, {
             connection: "ingame",
-            game: { state: "waiting",}
+            game: {
+                state: "waiting",
+                world: { name: data.world }
+            }
         })
         history.pushState(null, "", `/world/${data.world}`)
     },

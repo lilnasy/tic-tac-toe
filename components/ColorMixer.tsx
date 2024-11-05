@@ -2,7 +2,7 @@ import { createRef } from "preact"
 import cx from "clsx/lite"
 import { css } from "astro:emotion"
 import { Component, type Attributes } from "./component.ts"
-import * as Icons from "./Icons.tsx"
+import * as Icon from "./Icons.tsx"
 
 export class ColorMixer extends Component<Attributes.div> {
 
@@ -29,7 +29,9 @@ export class ColorMixer extends Component<Attributes.div> {
             transition: opacity 250ms;
             @starting-style { opacity: 0; }
         `)}>
-            <ColorMixerButton class={css`grid-area: d;`} Icon={Icons.Palette} onClick={this.toggleColorWheel}/>
+            <Icon.Button filledOnHover class={css`grid-area: d;`} onClick={this.toggleColorWheel}>
+                <Icon.Palette/>
+            </Icon.Button>
             <dialog ref={this.#colorWheelDialogRef} class={css`
                 &[open] {
                     display: grid;
@@ -67,7 +69,9 @@ export class ColorMixer extends Component<Attributes.div> {
                     background-image: conic-gradient(in oklch longer hue, oklch(0.7 0.15 0),oklch(0.7 0.15 360));
                     mask-image: radial-gradient(circle farthest-side at center, transparent 36%, white 38%, white 98%, transparent 100%);
                 `}/>
-                <ColorMixerButton class={css`grid-area: 1 / 1;`} Icon={Icons.InvertColors} onClick={this.switchScheme}/>
+                <Icon.Button filledOnHover class={css`grid-area: 1 / 1;`} onClick={this.switchScheme}>
+                    <Icon.InvertColors/>
+                </Icon.Button>
                 <HueWheelThumb class={css`grid-area: 1 / 1;`}/>
             </dialog>
         </div>
@@ -170,42 +174,5 @@ class HueWheelThumb extends Component<Attributes.input> {
                 cursor: grabbing;
             }
         `)}/>
-    }
-}
-
-namespace ColorMixerButton {
-    export interface Props extends Attributes.button {
-        Icon: typeof Icons[keyof typeof Icons]
-    }
-}
-
-class ColorMixerButton extends Component<ColorMixerButton.Props> {
-    render(props: typeof this.props) {
-        return <button {...props} class={cx(props.class, css`
-            &:not([disabled]) {
-                cursor: pointer;
-            }
-            &:not(:hover) {
-                background: none;
-                --fill: var(--primary)
-            }
-            &:hover {
-                background: var(--primary);
-                --fill: var(--on-primary);
-            }
-            transition: background 250ms;
-            border: none;
-            padding: 0;
-            border-radius: 1.5rem;
-            height: 3rem;
-            width: 3rem;
-        `)}>
-            <props.Icon aria-hidden class={css`
-                height: 2rem;
-                width: 2rem;
-                fill: var(--fill);
-                transition: fill 250ms;
-            `}/>
-        </button>
     }
 }

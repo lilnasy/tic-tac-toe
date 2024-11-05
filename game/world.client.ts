@@ -75,10 +75,14 @@ type Gamestate =
     /**
      * A new world has been created, and the player is waiting for an opponent to join.
      */
-    | { state: "waiting" }
-    | { state: "active", player: PlayerData, turn: XO }
-    | { state: "draw", player: PlayerData }
-    | { state: "victory", player: PlayerData, winner: XO }
+    | { state: "waiting", world: WorldData }
+    | { state: "active",  world: WorldData, player: PlayerData, turn: XO }
+    | { state: "draw",    world: WorldData, player: PlayerData }
+    | { state: "victory", world: WorldData, player: PlayerData, winner: XO }
+
+interface WorldData {
+    name: string
+}
 
 type XO = "X" | "O"
 

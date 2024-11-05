@@ -1,7 +1,7 @@
 :root {
     --base-hue: 0;
     --line-size: 1rem;
-    --square-size: min(12rem, calc(100dvw / 3), calc(100dvh / 3));
+    --square-size: min(12rem, 33dvw, 33dvh);
     --primary: light-dark(
         oklch(30% 0.15 var(--base-hue)),
         oklch(80% 0.15 var(--base-hue))

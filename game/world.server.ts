@@ -53,7 +53,7 @@ export class ServerWorld implements World, Receiver {
      * To prevent reverse engineering and cheating, only certain messages sent by players
      * are allowed to have an effect on the server world.
      */
-    static #messageAllowlist: ReadonlyArray<keyof MessageRegistry> = [ "UpdateColors", "Mark", "RequestRematch" ]
+    static #messageAllowlist: ReadonlyArray<keyof MessageRegistry> = [ "Disconnected", "UpdateColors", "Mark", "RequestRematch" ]
     
     receive<Message extends keyof MessageRegistry>(message: Message, data: MessageRegistry[Message]) {
         if (ServerWorld.#messageAllowlist.includes(message)) this.update(message, data)
