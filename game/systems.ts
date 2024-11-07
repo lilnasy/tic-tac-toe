@@ -13,7 +13,7 @@ export const markerSystemClient: System<"client"> = {
         const { channel, entities, state } = world
         
         if (
-            state.connection !== "ingame" ||
+            state.connected !== "toworld" ||
             state.game.state !== "active" ||
             state.game.turn !== state.game.player.sign
         ) {
@@ -111,10 +111,14 @@ function makesLine(line: Line, board: Array<Place>) {
 
 export const turnSystemClient: System<"client"> = {
     onSwitch(data, { state }) {
-        if (state.connection === "ingame" && state.game.state === "active") {
-            const turn = data.to ?? (state.game.turn === "X" ? "O" : "X")
-            Store.assign(state, { ...state, game: { ...state.game, turn } })
+        if (
+            state.connected !== "toworld" ||
+            state.game.state !== "active"
+        ) {
+            return
         }
+        const turn = data.to ?? (state.game.turn === "X" ? "O" : "X")
+        Store.assign(state, { ...state, game: { ...state.game, turn } })
     }
 }
 
@@ -131,7 +135,7 @@ export const turnSystemServer: System<"server"> = {
 export const gameLoopSystemClient: System<"client"> = {
     onStart({ player, turn }, world) {
         const { entities, state } = world
-        if (state.connection !== "ingame" || state.game.state !== "waiting") {
+        if (state.connected !== "toworld") {
             return
         }
         
@@ -148,7 +152,7 @@ export const gameLoopSystemClient: System<"client"> = {
             world.spawn(unmarkedSquare)
         }
         Store.assign(state, {
-            connection: "ingame",
+            ...state,
             game: {
                 ...state.game,
                 state: "active",
@@ -158,11 +162,14 @@ export const gameLoopSystemClient: System<"client"> = {
         })
     },
     onDraw(_, { state }) {
-        if (state.connection !== "ingame" || state.game.state !== "active") {
+        if (
+            state.connected !== "toworld" ||
+            state.game.state !== "active"
+        ) {
             return
         }
         Store.assign(state, {
-            connection: "ingame",
+            ...state,
             game: {
                 ...state.game,
                 state: "draw",
@@ -171,11 +178,14 @@ export const gameLoopSystemClient: System<"client"> = {
     },
     onVictory({ line }, world) {
         const { state } = world
-        if (state.connection !== "ingame" || state.game.state !== "active") {
+        if (
+            state.connected !== "toworld" ||
+            state.game.state !== "active"
+        ) {
             return
         }
         Store.assign(world.state, {
-            connection: "ingame",
+            ...state,
             game: {
                 ...state.game,
                 state: "victory",
@@ -301,30 +311,23 @@ export const syncSystemServer: System<"server"> = {
     }
 }
 
-function onPopState(event: PopStateEvent) {
-    if (event.state === null) location.reload()
-}
-
 export const connectionSystemClient: System<"client"> = {
     onConnected(_, world) {
         Store.assign(world.state, {
-            connection: "ingame",
-            game: { state: "inlobby" }
+            connected: "tolobby",
         })
         const url = new URL(location.href)
         const [ segment1, segment2 ] = url.pathname.split("/").filter(Boolean)
         if (segment1 === "world" && typeof segment2 === "string") {
-            Store.assign(world.state, { connection: "connecting" })
+            Store.assign(world.state, { connected: "connecting" })
             world.update("JoinWorld", {
                 world: segment2,
                 reconnectId: sessionStorage.getItem(`reconnectId:${segment2}`) ?? undefined
             })
         }
-        removeEventListener("popstate", onPopState)
-        addEventListener("popstate", onPopState)
     },
     onDisconnected(_, world) {
-        Store.set(world.state, "connection", "disconnected")
+        Store.assign(world.state, { connected: "disconnected" })
     },
     onNewWorld(_, world) {
         world.channel.send("NewWorld")
@@ -337,23 +340,19 @@ export const connectionSystemClient: System<"client"> = {
             sessionStorage.setItem(`reconnectId:${data.world}`, data.reconnect.id)
         }
         Store.assign(state, {
-            connection: "ingame",
-            game: {
-                state: "waiting",
-                world: { name: data.world }
-            }
+            connected: "toworld",
+            world: { name: data.world },
+            game: { state: "waiting" }
         })
         history.pushState(null, "", `/world/${data.world}`)
     },
-    onWorldNotFound(data, world) {
+    onWorldNotFound(data) {
         alert(`World '${data.world.replace("-", " ")}' does not exist. The game may have ended, or all the player may have left.`)
-        history.back()
-        Store.set(world.state, "connection", "ingame")
+        location.href = "/"
     },
-    onWorldOccupied(data, world) {
+    onWorldOccupied(data) {
         alert(`World '${data.world.replace("-", " ")}' already has enough players.`)
-        history.back()
-        Store.set(world.state, "connection", "ingame")
+        location.href = "/"
     }
 }
 

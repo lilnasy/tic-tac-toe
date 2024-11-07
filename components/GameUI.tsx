@@ -32,14 +32,16 @@ export class GameUI extends PreactComponent {
     
     render() {
         const { state } = this.#world
-        Store.get(state, "connection")
+        // HACK: not using the value returned by Store.get() because
+        // it doesn't do type narrowing, still needed for reactivity.
+        Store.get(state, "connected")
         return <WorldContext.Provider value={this.#world}>
             <ExitPresence  timeout={1000}>{
-                state.connection === "connecting" ? <TitleScreen connecting/> :
-                state.connection === "disconnected" ? <TitleScreen connecting/> :
-                state.connection === "ingame" ?
-                    state.game.state === "inlobby" ? <TitleScreen/> :
-                    state.game.state === "waiting" ? <WaitingForOpponentScreen name={state.game.world.name}/> :
+                state.connected === "connecting" ? <TitleScreen connecting/> :
+                state.connected === "disconnected" ? <TitleScreen connecting/> :
+                state.connected === "tolobby" ? <TitleScreen/> :
+                state.connected === "toworld" ?
+                    state.game.state === "waiting" ? <WaitingForOpponentScreen name={state.world.name}/> :
                     state.game.state === "active" ? <Board/> :
                     state.game.state === "draw" ? <><Board/><GameEndDialog draw/></> :
                     state.game.state === "victory" ? <><Board/><GameEndDialog victory={state.game.winner}/></> : <></>

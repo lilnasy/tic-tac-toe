@@ -8,8 +8,8 @@ import { Store } from "game/store.ts"
 
 export class ServerWorld implements World, Receiver {
 
-    server = true as const
-    client = false as const
+    readonly server = true
+    readonly client = false
     
     channel: ServerToClientsChannel
     entities = new Set<Entity>

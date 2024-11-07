@@ -47,10 +47,12 @@ export class Square extends Component<ViewProps> {
         const { state } = this.world
         const Marked = Store.get(entity, "Marked")
         const { Place } = entity as Entity<"Place">
-        
-        Store.get(state, "connection")
+
+        // HACK: not using the value returned by Store.get() because
+        // it doesn't do type narrowing, still needed for reactivity.
+        Store.get(state, "connected")
         const playable = Marked === undefined &&
-            ((state.connection === "ingame" &&
+            ((state.connected === "toworld" &&
                 state.game.state === "active")
                 ? state.game.player.sign === state.game.turn
                 : false)

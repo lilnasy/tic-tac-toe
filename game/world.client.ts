@@ -9,8 +9,8 @@ import { Store } from "game/store.ts"
 
 export class ClientWorld implements World, Receiver {
 
-    server = false as const
-    client = true as const
+    readonly server = false
+    readonly client = true
 
     channel: ClientToServerChannel
     entities = new Set<Entity>
@@ -31,7 +31,7 @@ export class ClientWorld implements World, Receiver {
     receive = update
     update = update
 
-    state = Store.create<WorldState>({ connection: "connecting" })
+    state = Store.create<ClientWorldState>({ connected: "connecting" })
 
     /**
      * A reference to the EntitiesView component is provided here
@@ -59,26 +59,26 @@ export class ClientWorld implements World, Receiver {
     }
 }
 
-type WorldState =
+type ClientWorldState =
     /**
      * The client is waiting for the connection to the server to be established.
      */
-    | { connection : "connecting" }
-    | { connection : "ingame", game: Gamestate }
-    | { connection : "disconnected" }
-
-type Gamestate =
+    | { connected: "connecting" }
     /**
      * The player may create a new world, or join one while in the lobby.
      */
-    | { state: "inlobby" }
+    | { connected: "tolobby" }
+    | { connected: "toworld", world: WorldData, game : GameState }
+    | { connected: "disconnected" }
+
+type GameState =
     /**
      * A new world has been created, and the player is waiting for an opponent to join.
      */
-    | { state: "waiting", world: WorldData }
-    | { state: "active",  world: WorldData, player: PlayerData, turn: XO }
-    | { state: "draw",    world: WorldData, player: PlayerData }
-    | { state: "victory", world: WorldData, player: PlayerData, winner: XO }
+    | { state: "waiting" }
+    | { state: "active",  player: PlayerData, turn: XO }
+    | { state: "draw",    player: PlayerData }
+    | { state: "victory", player: PlayerData, winner: XO }
 
 interface WorldData {
     name: string
