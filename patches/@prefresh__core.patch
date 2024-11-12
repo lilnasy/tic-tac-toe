@@ -1,0 +1,43 @@
+diff --git a/src/constants.js b/src/constants.js
+index b39d40371ec6e156678fb9ca2a2719aa94bb1b1b..5260b84312057693b76002dd7b79d036d70e7e85 100644
+--- a/src/constants.js
++++ b/src/constants.js
+@@ -1,13 +1,13 @@
+-export const VNODE_COMPONENT = '__c';
++export const VNODE_COMPONENT = '_component';
+ export const NAMESPACE = '__PREFRESH__';
+-export const COMPONENT_HOOKS = '__H';
+-export const HOOKS_LIST = '__';
+-export const EFFECTS_LIST = '__h';
+-export const RERENDER_COUNT = '__r';
+-export const CATCH_ERROR_OPTION = '__e';
+-export const COMPONENT_DIRTY = '__d';
+-export const VNODE_DOM = '__e';
+-export const VNODE_CHILDREN = '__k';
+-export const HOOK_VALUE = '__';
+-export const HOOK_ARGS = '__H';
+-export const HOOK_CLEANUP = '__c';
++export const COMPONENT_HOOKS = '__hooks';
++export const HOOKS_LIST = '_list';
++export const EFFECTS_LIST = '_pendingEffects';
++export const RERENDER_COUNT = '_rerenderCount';
++export const CATCH_ERROR_OPTION = '_catchError';
++export const COMPONENT_DIRTY = '_dirty';
++export const VNODE_DOM = '_dom';
++export const VNODE_CHILDREN = '_children';
++export const HOOK_VALUE = '_value';
++export const HOOK_ARGS = '_args';
++export const HOOK_CLEANUP = '_cleanup';
+diff --git a/src/index.js b/src/index.js
+index 6c80ef4ed9ca406299c2ed0271c87eb19e6011d5..0ca44d43722191e9adfd31e6bb331daf9b9c6341 100644
+--- a/src/index.js
++++ b/src/index.js
+@@ -54,7 +54,7 @@ function replaceComponent(OldType, NewType, resetHookState) {
+   pendingUpdates = pendingUpdates.filter(p => p[0] !== OldType);
+ 
+   vnodes.forEach(vnode => {
+-    if (!vnode.__c || !vnode.__c.__P) return;
++    if (!vnode._component || !vnode._component._parentDom) return;
+     // update the type in-place to reference the new component
+     vnode.type = NewType;
+ 

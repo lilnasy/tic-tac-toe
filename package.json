@@ -24,6 +24,7 @@
     "pnpm": {
         "patchedDependencies": {
             "@preact/preset-vite": "patches/@preact__preset-vite.patch",
+            "@prefresh/core": "patches/@prefresh__core.patch",
             "astro": "patches/astro.patch",
             "preact": "patches/preact.patch",
             "vite": "patches/vite.patch",
