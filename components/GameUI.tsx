@@ -209,8 +209,22 @@ class WaitingForOpponentScreen extends Component<WaitingForOpponentScreen.Props>
                     margin: 0;
                     transition: color 250ms;
                 `}>{name.replace("-", " ")}</h6>
-                {/** @ts-expect-error */ navigator.clipboard && <Icon.Button outline on-secondary-container class={css`--icon-size: 1.5rem;`} onClick={this.copy}><Icon.Copy/></Icon.Button>}
-                {navigator.share && <Icon.Button outline on-secondary-container class={css`--icon-size: 1.5rem;`} onClick={this.share}><Icon.Share/></Icon.Button>} 
+                {"clipboard" in navigator && <Icon.Button
+                    outline
+                    on-secondary-container
+                    class={css`--icon-size: 1.5rem;`}
+                    onClick={this.copy}
+                >
+                    <Icon.Copy/>
+                </Icon.Button>}
+                {"share" in navigator && <Icon.Button
+                    outline
+                    on-secondary-container
+                    class={css`--icon-size: 1.5rem;`}
+                    onClick={this.share}
+                >
+                    <Icon.Share/>
+                </Icon.Button>}
             </div>
             <p class={css`
                 grid-area: f;
@@ -271,7 +285,10 @@ class PopUp extends Component<Attributes.dialog> {
                 translate: 0 4rem;
             }
             &::backdrop {
-                background: light-dark(oklch(20% 0 0 / .2), oklch(90% 0 0 / .3));
+                background: light-dark(
+                    oklch(20% 0 0 / .2),
+                    oklch(90% 0 0 / .3)
+                );
                 backdrop-filter: blur(0.5rem);
                 transition: background 1s, backdrop-filter 250ms;
                 @starting-style {
@@ -293,7 +310,7 @@ namespace ActionButton {
 class ActionButton extends Component<ActionButton.Props> {
     #ref = createRef<HTMLButtonElement>()
     componentDidMount() {
-        this.#ref.current?.addEventListener("click", this)
+        this.#ref.current!.addEventListener("click", this)
     }
     handleEvent(event: JSX.TargetedMouseEvent<HTMLButtonElement>) {
         event.currentTarget.animate(
@@ -312,7 +329,12 @@ class ActionButton extends Component<ActionButton.Props> {
             padding: 0;
             line-height: 170%;
             border: none;
-            transition: background 250ms, color 250ms, opacity 1s, outline-color 250ms, scale 250ms;
+            transition:
+                background 250ms,
+                color 250ms,
+                opacity 1s,
+                outline-color 250ms,
+                scale 250ms;
             outline-width: 0.25rem;
             outline-offset: 0.25rem;
             &:hover, &:active {
