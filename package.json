@@ -23,6 +23,7 @@
     "packageManager": "pnpm@9.12.1",
     "pnpm": {
         "patchedDependencies": {
+            "@emotion/cache": "patches/@emotion__cache.patch",
             "@preact/preset-vite": "patches/@preact__preset-vite.patch",
             "@prefresh/core": "patches/@prefresh__core.patch",
             "astro": "patches/astro.patch",

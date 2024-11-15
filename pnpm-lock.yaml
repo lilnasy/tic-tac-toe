@@ -5,6 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
+  '@emotion/cache':
+    hash: s7kgtic6wq3oqiq2nccfi3wlxq
+    path: patches/@emotion__cache.patch
   '@preact/preset-vite':
     hash: wx4a2puiselz4n5hatk6npe6l4
     path: patches/@preact__preset-vite.patch
@@ -2367,7 +2370,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@emotion/cache@11.13.1':
+  '@emotion/cache@11.13.1(patch_hash=s7kgtic6wq3oqiq2nccfi3wlxq)':
     dependencies:
       '@emotion/memoize': 0.9.0
       '@emotion/sheet': 1.4.0
@@ -2378,7 +2381,7 @@ snapshots:
   '@emotion/css@11.13.4':
     dependencies:
       '@emotion/babel-plugin': 11.12.0
-      '@emotion/cache': 11.13.1
+      '@emotion/cache': 11.13.1(patch_hash=s7kgtic6wq3oqiq2nccfi3wlxq)
       '@emotion/serialize': 1.3.2
       '@emotion/sheet': 1.4.0
       '@emotion/utils': 1.4.1

@@ -1,0 +1,13 @@
+diff --git a/dist/emotion-cache.cjs.js b/dist/emotion-cache.cjs.js
+index 3019c2ec3195c20729f32ee76f39ce6559c72423..c8238cc7ad7a4c38e812b1c6f3cddbd82482f129 100644
+--- a/dist/emotion-cache.cjs.js
++++ b/dist/emotion-cache.cjs.js
+@@ -442,7 +442,7 @@ createCache(options
+   ) => string | void */
+ 
+ 
+-  var omnipresentPlugins = [compat, removeLabel];
++  var omnipresentPlugins = [removeLabel];
+ 
+   if (isBrowser) {
+     var currentSheet;
