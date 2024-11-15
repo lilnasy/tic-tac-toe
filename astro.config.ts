@@ -1,19 +1,16 @@
-import { fileURLToPath } from "node:url"
 import { defineConfig, type ViteUserConfig } from "astro/config"
 import node from "@withastro/node"
 import preact from "@preact/preset-vite"
 import emotion from "astro-emotion"
-import precompress from "./precompress.ts"
+import precompress from "./lib/precompress.ts"
+import fontLoader from "./lib/font-loader.ts"
+
 
 const vite: ViteUserConfig = {
-    plugins: [ preact() ],
+    assetsInclude: "font:*",
+    plugins: [ preact(), fontLoader() ],
     ssr: {
         noExternal: import.meta.env.PROD || undefined
-    },
-    resolve: {
-        alias: {
-            assets: fileURLToPath(new URL("./assets", import.meta.url))
-        }
     },
     build: {
         assetsInlineLimit: 0,

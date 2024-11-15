@@ -36,10 +36,10 @@ importers:
         version: 2.9.1(patch_hash=wx4a2puiselz4n5hatk6npe6l4)(@babel/core@7.26.0)(preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya))(vite@5.4.10(patch_hash=t7mv5eo4jnpkrovnpp7p2hvsn4)(@types/node@22.4.2))
       '@withastro/node':
         specifier: ^8.4.0
-        version: 8.4.0(astro@4.16.9(patch_hash=etcf34y5ycd4ewbhb2nylfitly)(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3))
+        version: 8.4.0(astro@4.16.13(patch_hash=etcf34y5ycd4ewbhb2nylfitly)(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3))
       astro:
-        specifier: ^4.16.9
-        version: 4.16.9(patch_hash=etcf34y5ycd4ewbhb2nylfitly)(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3)
+        specifier: ^4.16.13
+        version: 4.16.13(patch_hash=etcf34y5ycd4ewbhb2nylfitly)(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3)
       astro-emotion:
         specifier: ^2.0.0
         version: 2.0.0
@@ -61,6 +61,9 @@ importers:
       typescript:
         specifier: ^5.6.3
         version: 5.6.3
+      vite:
+        specifier: ^5.4.10
+        version: 5.4.10(patch_hash=t7mv5eo4jnpkrovnpp7p2hvsn4)(@types/node@22.4.2)
       ws:
         specifier: ^8.18.0
         version: 8.18.0(patch_hash=kx7tmpitapmudddeuody7gwvtq)
@@ -809,8 +812,8 @@ packages:
   astro-emotion@2.0.0:
     resolution: {integrity: sha512-VT5aZh8wAv3lkdlK+og2b2y1pcsNj1AW1gTm7NKJRpTOV4hmFN9MdK1j0FA3aKDmw9fJ6DqocaVlJMP9+eBOhw==}
 
-  astro@4.16.9:
-    resolution: {integrity: sha512-DFYzPZooVArKSGu969BBByUV44tJMVDPGKxgqWNFBaIrkvGljdVUqQSVwD+/iPYACoSkI8BRYvDMEBDkathIUQ==}
+  astro@4.16.13:
+    resolution: {integrity: sha512-Mtd76+BC0zLWqoXpf9xc731AhdH4MNh5JFHYdLRvSH0Nqn48hA64dPGh/cWsJvh/DZFmC0NTZusM1Qq2gyNaVg==}
     engines: {node: ^18.17.1 || ^20.3.0 || >=21.0.0, npm: '>=9.6.5', pnpm: '>=7.1.0'}
     hasBin: true
 
@@ -2713,7 +2716,7 @@ snapshots:
 
   '@types/babel__core@7.20.5':
     dependencies:
-      '@babel/parser': 7.25.7
+      '@babel/parser': 7.26.2
       '@babel/types': 7.26.0
       '@types/babel__generator': 7.6.8
       '@types/babel__template': 7.4.4
@@ -2725,7 +2728,7 @@ snapshots:
 
   '@types/babel__template@7.4.4':
     dependencies:
-      '@babel/parser': 7.25.7
+      '@babel/parser': 7.26.2
       '@babel/types': 7.26.0
 
   '@types/babel__traverse@7.20.6':
@@ -2768,10 +2771,10 @@ snapshots:
 
   '@ungap/structured-clone@1.2.0': {}
 
-  '@withastro/node@8.4.0(astro@4.16.9(patch_hash=etcf34y5ycd4ewbhb2nylfitly)(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3))':
+  '@withastro/node@8.4.0(astro@4.16.13(patch_hash=etcf34y5ycd4ewbhb2nylfitly)(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3))':
     dependencies:
       '@types/ws': 8.5.12
-      astro: 4.16.9(patch_hash=etcf34y5ycd4ewbhb2nylfitly)(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3)
+      astro: 4.16.13(patch_hash=etcf34y5ycd4ewbhb2nylfitly)(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3)
       send: 0.19.1
       server-destroy: 1.0.1
       ws: 8.18.0(patch_hash=kx7tmpitapmudddeuody7gwvtq)
@@ -2818,7 +2821,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  astro@4.16.9(patch_hash=etcf34y5ycd4ewbhb2nylfitly)(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3):
+  astro@4.16.13(patch_hash=etcf34y5ycd4ewbhb2nylfitly)(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3):
     dependencies:
       '@astrojs/compiler': 2.10.3
       '@astrojs/internal-helpers': 0.4.1
@@ -3436,7 +3439,7 @@ snapshots:
 
   magicast@0.3.5:
     dependencies:
-      '@babel/parser': 7.25.7
+      '@babel/parser': 7.26.2
       '@babel/types': 7.26.0
       source-map-js: 1.2.1
 
