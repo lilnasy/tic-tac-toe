@@ -1,15 +1,16 @@
-export interface Type {
+export { type Animal as Type }
+export interface Animal {
     readonly emoji: string
     readonly name: string
     readonly facingLeft: boolean
 }
-export function random(): Type {
+export function random(): Animal {
     return list[Math.floor(Math.random() * list.length)]
 }
-function e(emoji: string, name: string, facingLeft: boolean = false): Type {
+function e(emoji: string, name: string, facingLeft: boolean = false): Animal {
     return { emoji, name, facingLeft }
 }
-export const list: readonly Type[] = [
+export const list: readonly Animal[] = [
     e("🐶", "Dog"),
     e("🐱", "Cat"),
     e("🐭", "Mouse"),
@@ -46,7 +47,7 @@ export const list: readonly Type[] = [
     e("🐍", "Snake", true),
     e("🦎", "Lizard", true),
     e("🦖", "T-Rex", true),
-    e("🦕", "Triceratops", true),
+    e("🦕", "Sauropod", true),
     e("🐙", "Octopus"),
     e("🦑", "Squid"),
     e("🪼", "Jellyfish"),

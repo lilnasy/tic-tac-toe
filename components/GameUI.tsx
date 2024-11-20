@@ -1,13 +1,14 @@
-import { Component as PreactComponent, createRef, type JSX } from "preact"
+import { Component as PreactComponent, createRef } from "preact"
 import cx from "clsx/lite"
 import { css } from "astro:emotion"
-import { ClientWorld } from "game/world.client.ts"
+import { ClientWorld, type WorldData } from "game/world.client.ts"
 import { Store } from "game/store.ts"
-import { Component, WorldContext, type Attributes } from "./component.ts"
-import { Board } from "./Game.tsx"
-import { ExitPresence } from "./ExitPresence.tsx"
+import { Component, WorldContext } from "./component.ts"
+import { Game } from "./Game.tsx"
+import { ExitPresence, type AnimatesOut } from "./ExitPresence.tsx"
 import { ColorMixer } from "./ColorMixer.tsx"
-import * as Icon from "./Icons.tsx"
+import * as Symbols from "./Symbols.tsx"
+import { ActionButton } from "./ActionButton.tsx"
 
 export function GameUISSR() {
     return <TitleScreen loading/>
@@ -22,30 +23,33 @@ export class GameUI extends PreactComponent {
         const url = new URL(location.href)
         url.protocol = url.protocol.replace("http", "ws")
         url.pathname = "/connect"
-        this.#world = new ClientWorld(new WebSocket(url))
+        if (import.meta.env.DEV) {
+            this.#world = (globalThis as any).world ??= new ClientWorld(new WebSocket(url))
+        } else {
+            this.#world = new ClientWorld(new WebSocket(url))
+        }
     }
     
     // called when one of the stores used in render() gets updated
     handleEvent() {
         this.forceUpdate()
     }
-    
+
     render() {
         const { state } = this.#world
+
         // HACK: not using the value returned by Store.get() because
         // it doesn't do type narrowing, still needed for reactivity.
         Store.get(state, "connected")
+
         return <WorldContext.Provider value={this.#world}>
-            <ExitPresence  timeout={1000}>{
+            <ExitPresence timeout={1000}>{
                 state.connected === "connecting" ? <TitleScreen connecting/> :
-                state.connected === "disconnected" ? <TitleScreen connecting/> :
+                state.connected === "disconnected"  ? <TitleScreen/> :
+                state.connected === "connectingtoworld" ? <TitleScreen connecting="toworld"/> :
                 state.connected === "tolobby" ? <TitleScreen/> :
-                state.connected === "toworld" ?
-                    state.game.state === "waiting" ? <WaitingForOpponentScreen name={state.world.name}/> :
-                    state.game.state === "active" ? <Board/> :
-                    state.game.state === "draw" ? <><Board/><GameEndDialog draw/></> :
-                    state.game.state === "victory" ? <><Board/><GameEndDialog victory={state.game.winner}/></> : <></>
-                : <></>
+                state.connected === "toworld" ? <WaitingForOpponentScreen world={state.world.name}/> :
+                state.connected === "togame" ? <Game {...state}/> : <></>
             }</ExitPresence>
             <ColorMixer class={css`place-self: end;`}/>
         </WorldContext.Provider>
@@ -54,12 +58,13 @@ export class GameUI extends PreactComponent {
 
 namespace TitleScreen {
     export interface Props {
-        connecting?: true
+        class?: string
+        connecting?: true | "toworld"
         loading?: true
     }
 }
 
-class TitleScreen extends Component<TitleScreen.Props> {
+class TitleScreen extends Component<TitleScreen.Props> implements AnimatesOut {
     
     new() {
         this.update("NewWorld")
@@ -70,6 +75,39 @@ class TitleScreen extends Component<TitleScreen.Props> {
         if (typeof worldName !== "string") return
         this.update("JoinWorld", { world: worldName.replace(" ", "-") })
     }
+
+    componentWillLeave(leave: () => void) {
+        const upwards: Keyframe[] = [{}, { translate: "0 -10rem" }]
+        const downwards: Keyframe[] = [{}, { translate: "0 5rem" } ]
+        const fadeOut: Keyframe[] = [{}, { opacity: 0 }]
+        
+        // to prevent visual noise, we animate differently when in a loading state
+        const leaveQuickly = this.props.connecting || this.props.loading
+        
+        if (!leaveQuickly) {
+            const options = {
+                duration: 750,
+                // elastic in, ease out
+                easing: "cubic-bezier(0.75, -0.75, 0.25, 1)"
+            } as const satisfies KeyframeAnimationOptions
+
+            for (const h1 of this.#titleText) {
+                const element: HTMLHeadingElement = (h1 as any)._dom
+                element.animate(upwards, options)
+            }
+            
+            for (const button of this.#buttons) {
+                const element: HTMLButtonElement = (button as any)._dom
+                element.animate(downwards, options)
+            }
+        }
+
+        const container = this.#base.current
+        const animation = container!.animate(fadeOut, { duration: leaveQuickly ? 250 : 500 })
+        animation.finished.then(leave)
+    }
+
+    #base = createRef<HTMLDivElement>()
 
     #titleText = ["TIC", "TAC", "TOE"].map((text, i) => <h1 class={css`
         font-weight: 400;
@@ -102,69 +140,51 @@ class TitleScreen extends Component<TitleScreen.Props> {
             animation: ellipsis linear 3s infinite;
             content: "";
         }
-    `}>{this.props.loading ? "loading" : "connecting"}</p>
+    `}>{
+        this.props.loading ? "loading" :
+        this.props.connecting === true ? "connecting" :
+        `connecting to world '${this.props.connecting?.replace("-", " ")}'`
+    }</p>
 
     #buttons = [
         <ActionButton onClick={this.new} primary>New Game</ActionButton>,
         <ActionButton onClick={this.join} secondary>Join</ActionButton>
     ]
 
-    #base = createRef<HTMLDivElement>()
-
-    componentWillLeave(leave: () => void) {        
-        // we dont want to spend too much time in animations if
-        // a shared link to a world was opened, in which case,
-        // the buttons will not even have been rendered yet
-        const leaveQuickly = this.props.connecting || this.props.loading
-        if (!leaveQuickly) {
-            for (const h1 of this.#titleText) {
-                const element: HTMLHeadingElement = (h1 as any)._dom
-                element.animate([{}, { translate: "0 -10rem" }], { duration: 750, easing: "cubic-bezier(0.75, -0.75, 0.25, 1)" })
-            }
-            for (const button of this.#buttons) {
-                const element: HTMLButtonElement = (button as any)._dom
-                element.animate([{}, { translate: "0 5rem" } ], { duration: 750, easing: "cubic-bezier(0.75, -0.75, 0.25, 1)" })
-            }
-        }
-        const div = this.#base.current
-        const animation = div!.animate([{}, { opacity: 0 }], { duration: leaveQuickly ? 250 : 500 })
-        animation.finished.then(leave)
-    }
-
-    shouldComponentUpdate() {
-        return true
-    }
-
     render(props: typeof this.props) {
-        return <div class={css`
+        return <title-screen class={cx(props.class, css`
             display: grid;
             transition: opacity 250ms;
-        `} ref={this.#base}>
+        `)} ref={this.#base}>
             <h1 class={css`contain: strict;`}>TIC TAC TOE</h1>
             {this.#titleText}
             {props.loading || props.connecting ? this.#connecting : this.#buttons}
-        </div>
+        </title-screen>
     }
 }
 
 namespace WaitingForOpponentScreen {
     export interface Props {
-        name: string
+        class?: string
+        world: WorldData["name"]
     }
 }
 
 class WaitingForOpponentScreen extends Component<WaitingForOpponentScreen.Props> {
+    
     copy() {
-        navigator.clipboard.writeText(this.props.name.replace(" ", "-"))
+        navigator.clipboard.writeText(this.props.world.replace(" ", "-"))
     }
+    
     share() {
         navigator.share({
             title: "Tic Tac Toe",
             url: location.href
         }).catch(() => {})
     }
-    render({ name }: typeof this.props) {
-        return <div class={css`
+
+    render(props: typeof this.props) {
+        return <waiting-screen class={cx(props.class, css`
             display: grid;
             place-items: center;
             grid-template-areas:
@@ -175,7 +195,7 @@ class WaitingForOpponentScreen extends Component<WaitingForOpponentScreen.Props>
             row-gap: 1rem;
             transition: opacity 250ms 250ms;
             @starting-style { opacity: 0; }
-        `}>
+        `)}>
             <p class={css`
                 grid-area: b;
                 color: var(--primary);
@@ -208,23 +228,21 @@ class WaitingForOpponentScreen extends Component<WaitingForOpponentScreen.Props>
                     font-weight: inherit;
                     margin: 0;
                     transition: color 250ms;
-                `}>{name.replace("-", " ")}</h6>
-                {"clipboard" in navigator && <Icon.Button
-                    outline
-                    on-secondary-container
-                    class={css`--icon-size: 1.5rem;`}
+                `}>{props.world.replace("-", " ")}</h6>
+                {"clipboard" in navigator && <Symbols.Button
+                    icon="content_copy"
+                    colors="on-secondary-container"
+                    style="outline"
+                    size="medium"
                     onClick={this.copy}
-                >
-                    <Icon.Copy/>
-                </Icon.Button>}
-                {"share" in navigator && <Icon.Button
-                    outline
-                    on-secondary-container
-                    class={css`--icon-size: 1.5rem;`}
+                />}
+                {"share" in navigator && <Symbols.Button
+                    icon="ios_share"
+                    colors="on-secondary-container"
+                    style="outline"
+                    size="medium"
                     onClick={this.share}
-                >
-                    <Icon.Share/>
-                </Icon.Button>}
+                />}
             </div>
             <p class={css`
                 grid-area: f;
@@ -238,124 +256,6 @@ class WaitingForOpponentScreen extends Component<WaitingForOpponentScreen.Props>
                     content: "";
                 }
             `}>waiting for the other player</p>
-        </div>
-    }
-}
-
-namespace GameEndDialog {
-    export type Props = 
-        | { draw: true, victory?: undefined }
-        | { draw?: undefined, victory: "X" | "O" }
-}
-
-class GameEndDialog extends Component<GameEndDialog.Props> {
-    playAgain() {
-        this.update("RequestRematch")
-    }
-    render(props: typeof this.props) {
-        return <PopUp>
-            <p>{ props.draw ? "Draw" : "You Win!" }</p>
-            <ActionButton secondary onClick={this.playAgain}>Play Again</ActionButton>
-        </PopUp>
-    }
-}
-
-class PopUp extends Component<Attributes.dialog> {
-    #ref = createRef<HTMLDialogElement>()
-    componentDidMount() {
-        this.#ref.current?.showModal()
-    }
-    componentWillUnmount() {
-        this.#ref.current?.close()
-    }
-    render(props: typeof this.props) {
-        return <dialog {...props} ref={this.#ref} class={css`
-            &[open] {
-                display: grid;
-            }
-            place-items: center;
-            width: min(20rem, 100dvw);
-            background: var(--secondary-container);
-            color: var(--on-secondary-container);
-            border-radius: 1rem;
-            transition-property: opacity, translate;
-            transition-duration: 1s;
-            @starting-style {
-                opacity: 0;
-                translate: 0 4rem;
-            }
-            &::backdrop {
-                background: light-dark(
-                    oklch(20% 0 0 / .2),
-                    oklch(90% 0 0 / .3)
-                );
-                backdrop-filter: blur(0.5rem);
-                transition: background 1s, backdrop-filter 250ms;
-                @starting-style {
-                    background: transparent;
-                    backdrop-filter: blur(0);
-                }
-            }
-        `}/>
-    }
-}
-
-namespace ActionButton {
-    export interface Props extends Attributes.button {
-        primary?: true
-        secondary?: true    
-    }
-}
-
-class ActionButton extends Component<ActionButton.Props> {
-    #ref = createRef<HTMLButtonElement>()
-    componentDidMount() {
-        this.#ref.current!.addEventListener("click", this)
-    }
-    handleEvent(event: JSX.TargetedMouseEvent<HTMLButtonElement>) {
-        event.currentTarget.animate(
-            [{}, { scale: 0.9 }, {}],
-            { duration: 250, easing: "cubic-bezier(0.5, 0.5, 0.5, 1.5)" }
-        )
-    }
-    render({ primary, secondary, ...props }: typeof this.props) {
-        return <button {...props} ref={this.#ref} class={cx(props.class, css`
-            font-family: inherit;
-            font-size: inherit;
-            height: 3rem;
-            width: 8rem;
-            border-radius: 1.5rem;
-            margin: 0.5rem;
-            padding: 0;
-            line-height: 170%;
-            border: none;
-            transition:
-                background 250ms,
-                color 250ms,
-                opacity 1s,
-                outline-color 250ms,
-                scale 250ms;
-            outline-width: 0.25rem;
-            outline-offset: 0.25rem;
-            &:hover, &:active {
-                outline-style: dashed;
-            }
-            &:focus-visible {
-                outline-style: solid;
-            }
-            &:not([disabled]) {
-                cursor: pointer;
-                &:hover { scale: 1.1; }
-            }
-            @starting-style { opacity: 0; }
-        `, primary && css`
-            background: var(--primary);
-            outline-color: var(--primary);
-            color: var(--on-primary);
-        `, secondary && css`
-            background: var(--secondary);
-            outline-color: var(--secondary);
-            color: var(--on-secondary);
-        `)}/>
+        </waiting-screen>
     }
 }

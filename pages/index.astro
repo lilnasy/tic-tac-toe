@@ -1,10 +1,9 @@
 ---
-import favicon from "./_favicon.svg"
+import favicon from "assets/xo.svg"
 import { h } from "preact"
 import { renderToString } from "preact-render-to-string"
 import { GameUISSR } from "components/GameUI.tsx"
 import font from "font:family=Sue Ellen Francisco"
-import "../tokens.css"
 ---
 <html lang="en">
 	<head>
@@ -16,54 +15,78 @@ import "../tokens.css"
 		<link rel="icon" type="image/svg+xml" href={favicon.src} />
 		<link rel="preload" as="font" type="font/woff2" href={font} crossorigin/>
 		<style is:global>
-			@font-face {
-				font-family: "Sue Ellen Francisco";
-				font-style: normal;
-				font-weight: 400;
-				font-display: block;
-				src: url("font:family=Sue Ellen Francisco") format('woff2');
-				unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-			}
-			body {
-				font-family: "Sue Ellen Francisco";
-				margin: 0;
-				height: 100dvh;
-				display: grid;
-				place-items: center;
-				font-size: 2rem;
-				background: var(--primary-container);
-				transition: background 250ms;
-				color-scheme: light dark;
-			}
-			body > * {
-				grid-area: 1 / 1;
-			}
-			@media (prefers-color-scheme: dark) {
-				body[data-switch-color-scheme] {
-					color-scheme: light;
+			@import url("../tokens.css") layer(tokens);
+			@layer fonts {
+				@font-face {
+					font-family: "Sue Ellen Francisco";
+					font-style: normal;
+					font-weight: 400;
+					font-display: swap;
+					src: url("font:family=Sue Ellen Francisco") format("woff2");
+					unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+				}
+				@font-face {
+					font-family: "Outfit";
+					font-style: normal;
+					font-weight: 700;
+					font-display: swap;
+					src: url("font:family=Outfit:wght@700&text=Change Name") format("woff2");
+					unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+				}
+				@font-face {
+					font-family: "Material Symbols Rounded";
+					src: url("font:family=Material Symbols Rounded&icon_names=content_copy,edit,invert_colors,ios_share,palette") format("woff2");
 				}
 			}
-			@media (prefers-color-scheme: light) {
-				body[data-switch-color-scheme] {
-					color-scheme: dark;
+			@layer page {
+				body {
+					font-family: "Sue Ellen Francisco";
+					margin: 0;
+					height: 100dvh;
+					display: grid;
+					place-items: center;
+					font-size: 2rem;
+					background: var(--primary-container);
+					transition: background 250ms;
+					color-scheme: light dark;
+					interpolate-size: allow-keywords;
 				}
-			}
-			@keyframes ellipsis {
-				0%, 32% { content: "." }
-				34%, 66% { content: ".." }
-				68%, 100% { content: "..." }
+				body > * {
+					grid-area: 1 / 1;
+				}
+				@media (prefers-color-scheme: dark) {
+					body[data-switch-color-scheme] {
+						color-scheme: light;
+					}
+				}
+				@media (prefers-color-scheme: light) {
+					body[data-switch-color-scheme] {
+						color-scheme: dark;
+					}
+				}
+				@keyframes ellipsis {
+					0%, 32% { content: "." }
+					34%, 66% { content: ".." }
+					68%, 100% { content: "..." }
+				}
 			}
 		</style>
 		<script>
-			import { h, hydrate } from "preact"
+			import { h, hydrate, render } from "preact"
 			import { GameUI } from "components/GameUI.tsx"
 			import "components/component-store-reactivity.ts"
 			
 			if (import.meta.env.DEV) await import("preact/debug")
 			if ("Iterator" in window === false) await import("iterator-helpers-polyfill")
 
-			hydrate(h(GameUI, {}), document.body)
+			if (import.meta.env.DEV) {
+				render(h(GameUI, {}), document.body)
+			} else {
+				hydrate(h(GameUI, {}), document.body)
+			}
 		</script>
 	</head>
-	<body><Fragment set:html={renderToString(h(GameUISSR, {}))}/></body>
+	<body>
+		{import.meta.env.DEV ? <Fragment set:html={renderToString(h(GameUISSR, {}))}/> : null}
+	</body>
 </html>

@@ -1,7 +1,6 @@
 import type { Entity, Line, Place } from "game/entity.ts"
 import type { Player, PlayerData } from "game/player.ts"
 
-
 /**
  * All communication between the systems, and between server and
  * the clients must happen in the form of these messages.
@@ -21,7 +20,7 @@ export interface MessageRegistry {
     RematchRequested: RematachRequested
 
     /* COLOR SYNCING */
-    ColorsUpdated: ColorsUpdated
+    SyncColors: SyncColors
     UpdateColors: UpdateColors
 
     /* CLIENT-ONLY CONNECTION-MANAGEMENT MESSAGE */
@@ -79,7 +78,11 @@ export interface Ready {}
  * systems when 2 players are connected and ready.
  */
 export interface Start {
-    player: PlayerData
+    opponent: PlayerData.WithSign
+    /**
+     * The sign of the local player..
+     */
+    sign: "X" | "O"
     /**
      * The sign of the player who will make the first move.
      */
@@ -125,16 +128,16 @@ export interface RematachRequested {}
  * A message indicating that there was an update to the
  * colors which should be sent to the other players.
  */
-export interface ColorsUpdated {}
+export interface SyncColors {}
 
 /**
  * A message indicating that either the color scheme or hue
  * should be updated. When sent across network, includes both
  * fields so that other players can fully synchronise.
  */
-export interface UpdateColors extends ColorsUpdated {
+export interface UpdateColors {
     hue?: number
-    dark?: boolean
+    scheme?: "dark" | "light" | "switch"
 }
 
 /**
@@ -183,6 +186,7 @@ export interface AddPlayer {
  */
 export interface JoinedWorld {
     world: string
+    player: PlayerData
     reconnect: {
         /**
          * A unique id sent by the server to each player when they

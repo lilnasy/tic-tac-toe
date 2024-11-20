@@ -27,7 +27,7 @@ const vite: ViteUserConfig = {
 // https://astro.build/config
 export default defineConfig({
     srcDir: ".",
-    integrations: [ emotion(), precompress ],
+    integrations: [ emotion({ stylisPlugins: [] }), precompress ],
     adapter: node({ mode: "standalone" }),
     output: "server",
     server: {

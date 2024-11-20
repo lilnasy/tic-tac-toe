@@ -31,7 +31,13 @@ export class ClientWorld implements World, Receiver {
     receive = update
     update = update
 
-    state = Store.create<ClientWorldState>({ connected: "connecting" })
+    #state = Store.create<ClientWorld.State>({ connected: "connecting" })
+    get state() {
+        return this.#state
+    }
+    set state(newState) {
+        Store.assign(this.#state, newState)
+    }
 
     /**
      * A reference to the EntitiesView component is provided here
@@ -59,6 +65,10 @@ export class ClientWorld implements World, Receiver {
     }
 }
 
+export namespace ClientWorld {
+    export type State = ClientWorldState
+}
+
 type ClientWorldState =
     /**
      * The client is waiting for the connection to the server to be established.
@@ -68,28 +78,46 @@ type ClientWorldState =
      * The player may create a new world, or join one while in the lobby.
      */
     | { connected: "tolobby" }
-    | { connected: "toworld", world: WorldData, game : GameState }
-    | { connected: "disconnected" }
-
-type GameState =
+    /**
+     * Waiting for the server response when joining through a shared link.
+     */
+    | { connected: "connectingtoworld", world: WorldData }
     /**
      * A new world has been created, and the player is waiting for an opponent to join.
      */
-    | { state: "waiting" }
-    | { state: "active",  player: PlayerData, turn: XO }
-    | { state: "draw",    player: PlayerData }
-    | { state: "victory", player: PlayerData, winner: XO }
+    | { connected: "toworld", world: WorldData, player: PlayerData }
+    /**
+     * The game is on, ready to send and receive moves.
+     */
+    | { connected: "togame", world: WorldData, player: PlayerData.WithSign, game: GameState, opponent: PlayerData.WithSign }
+    | { connected: "disconnected" }
 
-interface WorldData {
+type GameState =
+    | { state: "active", turn: XO }
+    | { state: "draw" }
+    | { state: "victory", winner: XO }
+
+export interface WorldData {
     name: string
 }
 
 type XO = "X" | "O"
 
+/**
+ * Simulates worst case latency (400ms) by delaying the delivery of received messages.
+ */
+function simulateLatency(receiver: Receiver, ...args: Parameters<Receiver["receive"]>) {
+    setTimeout(setTimeOutCallback, 400, receiver, args)
+}
+
+function setTimeOutCallback(receiver: Receiver, args: Parameters<Receiver["receive"]>) {
+    receiver.receive(...args)
+}
+
 class ClientToServerChannel implements Channel {
     
     constructor(readonly websocket: WebSocket) {
-        if (websocket.readyState === WebSocket.OPEN) this.handleEvent(new Event("open"))
+        if (websocket.readyState === WebSocket.OPEN) queueMicrotask(() => this.handleEvent(new Event("open")))
         else websocket.addEventListener("open", this, { once: true })
         websocket.addEventListener("message", this)
         websocket.addEventListener("close", this, { once: true })
@@ -136,7 +164,11 @@ class ClientToServerChannel implements Channel {
             for (const message in messageAndData) {
                 const data = messageAndData[message]
                 for (const receiver of this.#receivers) {
-                    receiver.receive(message as keyof MessageRegistry, data)
+                    if (import.meta.env.DEV) {
+                        simulateLatency(receiver, message as keyof MessageRegistry, data)
+                    } else {
+                        receiver.receive(message as keyof MessageRegistry, data)
+                    }
                 }
             } 
         }

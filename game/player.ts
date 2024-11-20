@@ -3,15 +3,21 @@ import type { Channel, Receiver } from "game/channel.ts"
 import type * as Animal from "game/animals.ts"
 
 export interface PlayerData {
+    name?: string
     animal: Animal.Type
-    sign: "X" | "O"
+}
+
+export namespace PlayerData {
+    export interface WithSign extends PlayerData {
+        sign: "X" | "O"
+    }
 }
 
 export type PlayerState = 
     | { connection: "pending" }
     | { connection: "connected" }
-    | { connection: "ingame", data: PlayerData }
-    | { connection: "rematching", data: PlayerData }
+    | { connection: "inworld",    name?: string, animal: Animal.Type }
+    | { connection: "ingame",     name?: string, animal: Animal.Type, sign: "X" | "O" }
     | { connection: "disconnected" }
 
 export class Player implements Channel {
@@ -19,11 +25,6 @@ export class Player implements Channel {
     id = crypto.randomUUID().slice(0, 8)
     state: PlayerState = { connection: "pending" }
     #websocket: WebSocket
-
-    #name?: string
-    name() {
-        return this.#name ?? (this.state.connection === "ingame" ? this.state.data.animal.name : undefined)
-    }
 
     constructor(websocket: WebSocket) {
         if (websocket.readyState === WebSocket.OPEN) {
@@ -42,10 +43,11 @@ export class Player implements Channel {
         const [ data = {} ] = _data
         // if the current player was the one who created this message, dont bother echoing it back
         if (Player.get(data) === this) return
-        if (this.#websocket.readyState !== WebSocket.OPEN) {
-            return console.error(new Error(`closed connection not cleaned up`, { cause: this }))
+        if (this.#websocket.readyState === WebSocket.OPEN) {
+            this.#websocket.send(JSON.stringify({ [message]: data }))
+        } else {
+            console.error(new Error(`There was an attempt to send a message to a closed connection.`, { cause: this }))
         }
-        this.#websocket.send(JSON.stringify({ [message]: data }))
     }
 
     #receivers = new Set<Receiver>
@@ -63,7 +65,7 @@ export class Player implements Channel {
      * from a message originally created by that Player.
      */
     static get(messageData: {}): Player | undefined {
-        return Metadata.get(messageData as Metadata)
+        return Sender.get(messageData)
     }
 
     static notFound(message: keyof MessageRegistry, data: {}) {
@@ -85,8 +87,8 @@ export class Player implements Channel {
             for (const message in messageAndData) {
                 const data = messageAndData[message]
                 /*
-                * Special case some messages to also include the `Player`
-                * object corresponding to the sender as a hidden field.
+                * Special case some messages and attach the `Player`
+                * who sent the message as a hidden field.
                 */
                 if (
                     message === "Mark" ||
@@ -94,7 +96,7 @@ export class Player implements Channel {
                     message === "JoinWorld" ||
                     message === "RequestRematch"
                 ) {
-                    Metadata.set(data, this)
+                    Sender.set(data, this)
                 }
                 for (const receiver of this.#receivers) {
                     receiver.receive(message as keyof MessageRegistry, data)
@@ -104,20 +106,20 @@ export class Player implements Channel {
     }
 }
 
-class Metadata extends class { constructor(x: {}) { return x } } {
-    #data: unknown
-    static #create(object: {}): Metadata {
-        return new Metadata(object)
+class Sender extends class { constructor(x: {}) { return x } } {
+    #sender: Player | undefined
+    static #attach(object: {}) {
+        return new Sender(object)
     }
-    static set(object: Metadata, data: unknown) {
-        if (#data in object) {
-            object.#data = data
+    static set(object: Sender, sender: Player) {
+        if (#sender in object) {
+            object.#sender = sender
         } else {
-            Metadata.#create(object).#data = data
+            Sender.#attach(object).#sender = sender
         }
     }
-    static get<T>(object: Metadata): T | undefined {
-        if (#data in object) return object.#data as T
+    static get(object: {}): Player | undefined {
+        if (#sender in object) return object.#sender
     }
 }
 

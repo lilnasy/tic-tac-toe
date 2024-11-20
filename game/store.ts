@@ -1,8 +1,6 @@
 export class Store extends class { constructor(x: {}) { return x } } {
     #et = new EventTarget
 
-    static #update = new Event("update")
-
     static create<Store extends {}>(storeData: Store): Store {
         return new Store(storeData) as unknown as Store
     }
@@ -16,7 +14,7 @@ export class Store extends class { constructor(x: {}) { return x } } {
         if (store[prop] === value) return
         /** @ts-expect-error */
         store[prop] = value
-        store.#et.dispatchEvent(Store.#update)
+        store.#et.dispatchEvent(update)
     }
 
     static assign<Store extends {}>(store: Store, newstore: Store) {
@@ -26,7 +24,7 @@ export class Store extends class { constructor(x: {}) { return x } } {
             /** @ts-expect-error */
             store[key] = newstore[key]
         }
-        store.#et.dispatchEvent(Store.#update)
+        store.#et.dispatchEvent(update)
     }
 
     static #usedStores: Set<Store> | undefined
@@ -63,3 +61,5 @@ export class Store extends class { constructor(x: {}) { return x } } {
         console.error(new Error("object is not a store", { cause: store }))
     }
 }
+
+const update = new Event("update")

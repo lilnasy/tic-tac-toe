@@ -8,14 +8,9 @@ import type { JoinWorld, MessageRegistry, NewWorld, Disconnected } from "game/me
 /**
  * The lobby is responsible for creating new worlds where games can be played, and adding newly-connected players to those #worlds.
  */
-export const { lobby } = class Lobby implements Receiver {
+export const lobby = new class Lobby implements Receiver {
     
-    /**
-     * Singleton instance of the Lobby class.
-     */
-    static lobby = import.meta.env.DEV ? (((globalThis as any).lobby as Lobby) ??= new Lobby) : new Lobby
-
-    #worlds = new Map<string, ServerWorld>
+    #worlds = new Map<string, ServerWorld>()
 
     enter(weboscket: WebSocket) {
         const player = new Player(weboscket)

@@ -1,10 +1,11 @@
-import type { MessageRegistry } from "game/messages.ts"
+import type { MessageRegistry, UpdateColors } from "game/messages.ts"
 import type { Entity, Line, Place } from "game/entity.ts"
 import type { ClientWorld } from "game/world.client.ts"
 import type { ServerWorld } from "game/world.server.ts"
+import { metadata } from "game/metadata.ts"
 import { Store } from "game/store.ts"
 import { isServer } from "game/client-server.ts"
-import { Player, type PlayerData } from "game/player.ts"
+import { Player } from "game/player.ts"
 import * as Animal from "game/animals.ts"
 
 export const markerSystemClient: System<"client"> = {
@@ -13,9 +14,9 @@ export const markerSystemClient: System<"client"> = {
         const { channel, entities, state } = world
         
         if (
-            state.connected !== "toworld" ||
+            state.connected !== "togame" ||
             state.game.state !== "active" ||
-            state.game.turn !== state.game.player.sign
+            state.game.turn !== state.player.sign
         ) {
             return
         }
@@ -42,7 +43,7 @@ export const markerSystemServer: System<"server"> = {
         if (
             player.state.connection !== "ingame" ||
             world.state.connection !== "ingame" ||
-            player.state.data.sign !== world.state.turn
+            player.state.sign !== world.state.turn
         ) {
             return
         }
@@ -52,7 +53,7 @@ export const markerSystemServer: System<"server"> = {
         )
 
         if (unmarkedSquare) {
-            Store.set(unmarkedSquare, "Marked", player.state.data.sign)
+            Store.set(unmarkedSquare, "Marked", player.state.sign)
             return world.update("Switch")
         }
     }
@@ -110,31 +111,42 @@ function makesLine(line: Line, board: Array<Place>) {
 }
 
 export const turnSystemClient: System<"client"> = {
-    onSwitch(data, { state }) {
+    onSwitch(data, world) {
+        const { state } = world
         if (
-            state.connected !== "toworld" ||
+            state.connected !== "togame" ||
             state.game.state !== "active"
         ) {
             return
         }
         const turn = data.to ?? (state.game.turn === "X" ? "O" : "X")
-        Store.assign(state, { ...state, game: { ...state.game, turn } })
+        world.state = {
+            ...state,
+            game: {
+                ...state.game,
+                turn
+            }
+        }
     }
 }
 
 export const turnSystemServer: System<"server"> = {
-    onSwitch(data, { channel, state }) {
-        if (state.connection === "ingame") {
-            const to = data.to ?? state.turn === "X" ? "O" : "X"
-            Store.assign(state, { ...state, turn: to })
-            channel.send("Switch", { to })
+    onSwitch(data, world) {
+        if (world.state.connection === "ingame") {
+            const to = data.to ?? world.state.turn === "X" ? "O" : "X"
+            world.state = {
+                ...world.state,
+                turn: to
+            }
+            world.channel.send("Switch", { to })
         }
     }
 }
 
 export const gameLoopSystemClient: System<"client"> = {
-    onStart({ player, turn }, world) {
+    onStart({ opponent, sign, turn }, world) {
         const { entities, state } = world
+
         if (state.connected !== "toworld") {
             return
         }
@@ -151,47 +163,51 @@ export const gameLoopSystemClient: System<"client"> = {
             }
             world.spawn(unmarkedSquare)
         }
-        Store.assign(state, {
+
+        world.state = {
             ...state,
+            connected: "togame",
             game: {
-                ...state.game,
                 state: "active",
-                player,
                 turn,
-            }
-        })
+            },
+            player: {
+                ...state.player,
+                sign
+            },
+            opponent
+        }
     },
-    onDraw(_, { state }) {
+    onDraw(_, world) {
+        const { state } = world
         if (
-            state.connected !== "toworld" ||
+            state.connected !== "togame" ||
             state.game.state !== "active"
         ) {
             return
         }
-        Store.assign(state, {
+        world.state = {
             ...state,
             game: {
-                ...state.game,
                 state: "draw",
             }
-        })
+        }
     },
     onVictory({ line }, world) {
         const { state } = world
         if (
-            state.connected !== "toworld" ||
+            state.connected !== "togame" ||
             state.game.state !== "active"
         ) {
             return
         }
-        Store.assign(world.state, {
+        world.state = {
             ...state,
             game: {
-                ...state.game,
                 state: "victory",
                 winner: state.game.turn
             }
-        })
+        }
         world.spawn({
             Line: line,
             View: "Strikethrough"
@@ -223,20 +239,35 @@ export const gameLoopSystemServer: System<"server"> = {
         
         const signs: ("X" | "O")[] = Math.random() < 0.5 ? [ "X", "O" ] : [ "O", "X" ]
         const firstTurn = Math.random() < 0.5 ? "X" : "O"
-        Store.assign(world.state, { connection: "ingame", turn: firstTurn })
+        world.state = { connection: "ingame", turn: firstTurn }
 
+        const participatingPlayers: [Player, Animal.Type, "X" | "O"][] = []
+        
         for (const player of players) {
-            if (
-                player.state.connection === "connected" ||
-                player.state.connection === "rematching"
-            ) {
-                const data: PlayerData = {
-                    animal: Animal.random(),
-                    sign: signs.pop()!
-                }
-                player.state = { connection: "ingame", data }
-                player.send("Start", { player: data, turn: firstTurn })
+            if (player.state.connection === "inworld") {
+                const animal = player.state.animal
+                const sign = signs.pop()!
+                participatingPlayers.push([player, animal, sign])
             }
+        }
+
+        if (participatingPlayers.length === 2) {
+            const [
+                [ player1, animal1, sign1 ],
+                [ player2, animal2, sign2 ]
+            ] = participatingPlayers
+            player1.state = { connection: "ingame", animal: animal1, sign: sign1 }
+            player2.state = { connection: "ingame", animal: animal2, sign: sign2 }
+            player1.send("Start", { 
+                turn: firstTurn,
+                sign: sign1,
+                opponent: { animal: animal2, sign: sign2 }
+            })
+            player2.send("Start", {
+                turn: firstTurn,
+                sign: sign2,
+                opponent: { animal: animal1, sign: sign1 }
+            })
         }
     },
     onRequestRematch(data, world) {
@@ -244,8 +275,13 @@ export const gameLoopSystemServer: System<"server"> = {
         const requestingPlayer = Player.get(data)
         if (requestingPlayer === undefined) return Player.notFound("RequestRematch", data)
         if (requestingPlayer.state.connection !== "ingame") return
-        requestingPlayer.state = { connection: "rematching", data: requestingPlayer.state.data }
-        if (players.size === 2 && players.values().every(p => p.state.connection === "rematching")) {
+        
+        requestingPlayer.state = {
+            ...requestingPlayer.state,
+            connection: "inworld"
+        }
+
+        if (players.size === 2 && players.values().every(p => p.state.connection === "inworld")) {
             return world.update("Ready")
         }
         for (const player of players) {
@@ -256,35 +292,64 @@ export const gameLoopSystemServer: System<"server"> = {
 }
 
 export const colorSystemClient: System<"client"> = {
-    onColorsUpdated(_, { channel }) {
+    onConnected(_, world) {
+        const _scheme = localStorage.getItem("color.scheme")
+        const _hue = localStorage.getItem("color.hue") 
+        if (_scheme !== null || _hue !== null) {
+            const scheme =
+                _scheme === "dark" ? "dark" :
+                _scheme === "light" ? "light" :
+                undefined
+            const hue = _hue === null ? undefined : Number(_hue)
+            world.update("UpdateColors", { hue, scheme })
+            world.channel.send("UpdateColors", { hue, scheme })
+        }
+    },
+    onSyncColors(_, { channel }) {
         const { body, documentElement } = document
-        const prefersDark = matchMedia('(prefers-color-scheme: dark)').matches
+        const prefersDark = matchMedia("(prefers-color-scheme: dark)").matches
         const switched = body.hasAttribute("data-switch-color-scheme")
         const dark = Boolean(Number(prefersDark) ^ Number(switched))
+        const scheme = dark ? "dark" : "light"
         
         const _hue = parseInt(documentElement.style.getPropertyValue("--base-hue"))
         const hue = Number.isFinite(_hue) ? _hue : 0
         
-        channel.send("UpdateColors", { hue, dark })
+        channel.send("UpdateColors", { hue, scheme })
     },
     onUpdateColors(update) {
         const { body, documentElement } = document
-        if (update.dark !== undefined) {
-            const prefersDark = matchMedia('(prefers-color-scheme: dark)').matches
+        if (update.scheme !== undefined) {
+            const prefersDark = matchMedia("(prefers-color-scheme: dark)").matches
             const switched = body.hasAttribute("data-switch-color-scheme")
             const alreadyDark = Boolean(Number(prefersDark) ^ Number(switched))
-            const toggle = Boolean(Number(alreadyDark) ^ Number(update.dark))
-            if (toggle) body.toggleAttribute("data-switch-color-scheme")
+            const toSwitch = update.scheme === "switch" || Boolean(Number(alreadyDark) ^ Number(update.scheme === "dark"))
+            if (toSwitch) {
+                body.toggleAttribute("data-switch-color-scheme")
+                localStorage.setItem("color.scheme", alreadyDark ? "light" : "dark")
+            } else {
+                localStorage.setItem("color.scheme", alreadyDark ? "dark" : "light")
+            }
         }
         if (update.hue !== undefined) {
+            localStorage.setItem("color.hue", String(update.hue))
             documentElement.style.setProperty("--base-hue", String(update.hue))
         }
-    },
+    }
 }
 
+const colors = metadata<UpdateColors>("colors")
+
 export const colorSystemServer: System<"server"> = {
-    onUpdateColors(color, { channel }) {
-        channel.send("UpdateColors", color)
+    onAddPlayer({ player }, world) {
+        const UpdateColors = colors.get(world)
+        if (UpdateColors !== undefined) {
+            player.send("UpdateColors", UpdateColors)
+        }
+    },
+    onUpdateColors(color, world) {
+        colors.set(world, color)
+        world.channel.send("UpdateColors", color)
     }
 }
 
@@ -292,8 +357,20 @@ export const syncSystemClient: System<"client"> = {
     onSync(updatedEntity, world) {
         const { Sync: { id } } = updatedEntity
         const entity = world.entities.values().find(e => e.Sync?.id === id)
-        if (entity) Store.assign(entity, updatedEntity)
-        else console.error(new Error("Server sent Sync message for an entity that does not exist in the client world.", { cause: updatedEntity }))
+        if (entity) {
+            Store.assign(entity, {
+                ...updatedEntity,
+                // View is a client only state, preserve it during sync
+                View: entity.View
+            })
+        } else {
+            console.error(
+                new Error(
+                    "Server sent Sync message for an entity that does not exist in the client world.",
+                    { cause: updatedEntity }
+                )
+            )
+        }
     }
 }
 
@@ -313,21 +390,25 @@ export const syncSystemServer: System<"server"> = {
 
 export const connectionSystemClient: System<"client"> = {
     onConnected(_, world) {
-        Store.assign(world.state, {
-            connected: "tolobby",
-        })
         const url = new URL(location.href)
         const [ segment1, segment2 ] = url.pathname.split("/").filter(Boolean)
         if (segment1 === "world" && typeof segment2 === "string") {
-            Store.assign(world.state, { connected: "connecting" })
+            world.state = {
+                connected: "connectingtoworld",
+                world: { name: segment2 }
+            }
             world.update("JoinWorld", {
                 world: segment2,
                 reconnectId: sessionStorage.getItem(`reconnectId:${segment2}`) ?? undefined
             })
+        } else {
+            world.state = {
+                connected: "tolobby"
+            }
         }
     },
     onDisconnected(_, world) {
-        Store.assign(world.state, { connected: "disconnected" })
+        world.state = { connected: "disconnected" }
     },
     onNewWorld(_, world) {
         world.channel.send("NewWorld")
@@ -335,23 +416,23 @@ export const connectionSystemClient: System<"client"> = {
     onJoinWorld(data, world) {
         world.channel.send("JoinWorld", data)
     },
-    onJoinedWorld(data, { state }) {
+    onJoinedWorld(data, world) {
         if ("id" in data.reconnect) {            
             sessionStorage.setItem(`reconnectId:${data.world}`, data.reconnect.id)
         }
-        Store.assign(state, {
+        world.state = {
             connected: "toworld",
             world: { name: data.world },
-            game: { state: "waiting" }
-        })
+            player: data.player
+        }
         history.pushState(null, "", `/world/${data.world}`)
     },
     onWorldNotFound(data) {
-        alert(`World '${data.world.replace("-", " ")}' does not exist. The game may have ended, or all the player may have left.`)
+        alert(`A game with the code '${data.world.replace("-", " ")}' does not exist. It may have ended, or all the players may have left.`)
         location.href = "/"
     },
     onWorldOccupied(data) {
-        alert(`World '${data.world.replace("-", " ")}' already has enough players.`)
+        alert(`The game with the code '${data.world.replace("-", " ")}' already has enough players.`)
         location.href = "/"
     }
 }
@@ -365,17 +446,28 @@ export const connectionSystemServer: System<"server"> = {
                 .find(p => p.id === reconnectId)
             if (dplayer !== undefined) {
                 player.id = reconnectId
-                player.state = dplayer.state
+                player.state = { connection: "connected" }
                 disconnectedPlayers.delete(dplayer)
             }
         }
+        if (player.state.connection !== "connected") {
+            return
+        }
         if (players.size < 2) {
             players.add(player)
+            player.state = {
+                connection: "inworld",
+                animal: Animal.random()
+            }
             player.send("JoinedWorld", {
                 world: name,
+                player: {
+                    name: player.state.name,
+                    animal: player.state.animal
+                },
                 reconnect: { id: player.id },
             })
-            if (players.size === 2 && players.values().every(p => p.state.connection === "connected")) {
+            if (players.size === 2 && players.values().every(p => p.state.connection === "inworld")) {
                 world.update("Ready")
             }
             /** subscribe the world to the message being sent by the player */

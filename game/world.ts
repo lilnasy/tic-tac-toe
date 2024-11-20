@@ -4,8 +4,6 @@ import type { Channel } from "game/channel.ts"
 import type { System } from "game/systems.ts"
 
 export interface World {
-    server: boolean
-    client: boolean
     channel: Channel
     entities: Set<Entity>
     systems: System<"client" | "server" | "both">[]

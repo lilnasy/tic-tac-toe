@@ -2,15 +2,16 @@ import { createRef } from "preact"
 import cx from "clsx/lite"
 import { css } from "astro:emotion"
 import { Component, type Attributes } from "./component.ts"
-import * as Icon from "./Icons.tsx"
+import * as Symbols from "./Symbols.tsx"
 
-export class ColorMixer extends Component<Attributes.div> {
+
+export class ColorMixer extends Component<Attributes.element> {
 
     #colorWheelDialogRef = createRef<HTMLDialogElement>()
 
     switchScheme() {
-        document.body.toggleAttribute("data-switch-color-scheme")
-        this.update("ColorsUpdated")
+        this.update("UpdateColors", { scheme: "switch" })
+        this.update("SyncColors")
     }
 
     toggleColorWheel() {
@@ -20,18 +21,24 @@ export class ColorMixer extends Component<Attributes.div> {
     }
 
     render(props: typeof this.props) {
-        return <div {...props} class={cx(props.class, css`
+        return <color-mixer {...props} class={cx(props.class, css`
             display: grid;
             grid:
                 "a b"
                 "c d";
             margin: 1rem;
             transition: opacity 250ms;
+            z-index: var(--z-color-mixer);
             @starting-style { opacity: 0; }
         `)}>
-            <Icon.Button filledOnHover class={css`grid-area: d;`} onClick={this.toggleColorWheel}>
-                <Icon.Palette/>
-            </Icon.Button>
+            <Symbols.Button
+                icon="palette"
+                style="filled-on-hover"
+                colors="primary"
+                size="large"
+                class={css`grid-area: d;`}
+                onClick={this.toggleColorWheel}
+            />
             <dialog ref={this.#colorWheelDialogRef} class={css`
                 &[open] {
                     display: grid;
@@ -69,12 +76,17 @@ export class ColorMixer extends Component<Attributes.div> {
                     background-image: conic-gradient(in oklch longer hue, oklch(0.7 0.15 0),oklch(0.7 0.15 360));
                     mask-image: radial-gradient(circle farthest-side at center, transparent 36%, white 38%, white 98%, transparent 100%);
                 `}/>
-                <Icon.Button filledOnHover class={css`grid-area: 1 / 1;`} onClick={this.switchScheme}>
-                    <Icon.InvertColors/>
-                </Icon.Button>
+                <Symbols.Button
+                    icon="invert_colors"
+                    style="filled-on-hover"
+                    colors="primary"
+                    size="large"
+                    class={css`grid-area: 1 / 1;`}
+                    onClick={this.switchScheme}
+                />
                 <HueWheelThumb class={css`grid-area: 1 / 1;`}/>
             </dialog>
-        </div>
+        </color-mixer>
     }
 }
 
@@ -107,7 +119,7 @@ class HueWheelThumb extends Component<Attributes.input> {
             this.#ac?.abort()
             this.#ac = undefined
             input.toggleAttribute("data-grabbing", false)
-            this.update("ColorsUpdated")
+            this.update("SyncColors")
         } else if (type === "pointermove") {
             /**
              * Schedule updating of hue for later to ensure that multiple
@@ -138,6 +150,7 @@ class HueWheelThumb extends Component<Attributes.input> {
     render(props: typeof this.props) {
         return <input type="range" min="0" max="360" ref={this.#ref} class={cx(props.class, css`
             --size: 2.5rem;
+            --donut: radial-gradient(circle farthest-side at center, transparent 74%, white 76%, white 98%, transparent 100%);
             background: transparent;
             touch-action: none;
             translate:
@@ -158,14 +171,14 @@ class HueWheelThumb extends Component<Attributes.input> {
                 background: var(--primary);
                 transition: background 250ms;
                 cursor: grab;
-                mask-image: radial-gradient(circle farthest-side at center, transparent 74%, white 76%, white 98%, transparent 100%);
+                mask-image: var(--donut);
             }
             &::-moz-range-thumb {
                 position: absolute;
                 background: var(--primary);
                 transition: background 250ms;
                 cursor: grab;
-                mask-image: radial-gradient(circle farthest-side at center, transparent 74%, white 76%, white 98%, transparent 100%);
+                mask-image: var(--donut);
             }
             &[data-grabbing]::-webkit-slider-thumb  {
                 cursor: grabbing;

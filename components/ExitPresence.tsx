@@ -27,14 +27,14 @@ export class ExitPresence extends Component<Props> {
     #leavingChild: ComponentChild | undefined = undefined
     
     componentWillReceiveProps(nextProps: any): void {
-        const { children } = this.props as any
+        const { children, timeout = 300 } = this.props as any
         const nextChildren = nextProps.children as any
         if (children.type !== nextChildren.type) {
             const { _component } = children
             if (_component && "componentWillLeave" in _component) {
                 this.#leavingChild = children
                 _component.componentWillLeave(this.#leave)
-                setTimeout(this.#leave, this.props.timeout ?? 300)
+                setTimeout(this.#leave, timeout)
             }
         }
     }
@@ -48,4 +48,8 @@ export class ExitPresence extends Component<Props> {
     render() {
         return this.#leavingChild ?? this.props.children
     }
+}
+
+export interface AnimatesOut {
+    componentWillLeave(leave: () => void): unknown
 }
