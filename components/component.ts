@@ -27,6 +27,12 @@ export abstract class Component<P = {}, S = {}> extends Base<P, S> {
     }
 }
 
+/**
+ * Allow dashed HTML tags.
+ * I sometimes use them instead of divs, as they are semantically the
+ * same as `div` (both have no semantic meaning), but make the dom
+ * legible for me in devtools.
+ */
 declare module "preact" {
     namespace JSX {
         interface IntrinsicElements {
@@ -35,6 +41,10 @@ declare module "preact" {
     }
 }
 
+/**
+ * Shorthands for getting attributes for prop types.
+ * Allows using `Attributes.button` instead of `JSX.HTMLAttributes<HTMLButtonElement>`.
+ */
 export namespace Attributes {
     export interface button extends JSX.HTMLAttributes<HTMLButtonElement> {}
     export interface dialog extends JSX.HTMLAttributes<HTMLDialogElement> {}

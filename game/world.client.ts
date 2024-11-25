@@ -52,10 +52,20 @@ export class ClientWorld implements World, Receiver {
     }
 
     spawn<State extends keyof States>(entity: Entity<State>) {
-        const _entity = Store.create(entity)
+        
+        const _entity = Store.create<Entity<State>>({
+            Marked: entity.Marked,
+            Place: entity.Place,
+            Line: entity.Line,
+            Sync: entity.Sync,
+            View: entity.View,
+            ...entity
+        } satisfies Record<keyof States, unknown>)
+
         this.update("Spawn", _entity)
         this.entities.add(_entity)
         this.EntitiesView?.forceUpdate()
+        
         return _entity
     }
 

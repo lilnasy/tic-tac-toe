@@ -1,3 +1,17 @@
+/**
+ * An enitity is a behavior-less, mutable, serializable
+ * object that may have some of the following states.
+ * 
+ * Presence of a particular state in an entity means that
+ * relevant systems may act on it.
+ * 
+ * For example, Networking related systems are only
+ * concerned with entities that have the `Sync` state.
+ * 
+ * Similarly, the game logic systems are only concerned
+ * with entities that have the `Place` state.
+ */
+
 export type Entity<State extends keyof States = never> =
     Partial<States> &
     Required<Pick<States, State>>
