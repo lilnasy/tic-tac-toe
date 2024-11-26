@@ -4,7 +4,7 @@ import type { Data, MessageRegistry } from "game/messages.ts"
 import { type World, update } from "game/world.ts"
 import { colorSystemServer, connectionSystemServer, gameLoopSystemServer, lineCheckSystem, markerSystemServer, syncSystemServer, turnSystemServer, type System } from "game/systems.ts"
 import { Player } from "game/player.ts"
-import { Store } from "game/store.ts"
+import * as Store from "game/store.ts"
 
 export class ServerWorld implements World, Receiver {
 

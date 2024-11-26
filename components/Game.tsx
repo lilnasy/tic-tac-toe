@@ -1,6 +1,6 @@
 import cx from "clsx/lite"
 import { css } from "astro:emotion"
-import { Component, type Attributes } from "./component.ts"
+import { Component, type Attributes, type Events } from "./component.ts"
 import { Board } from "./Board.tsx"
 import type { ClientWorld } from "game/world.client.ts"
 import { createRef } from "preact"
@@ -8,9 +8,10 @@ import { getKeyframesForChildren } from "./animation.ts"
 import * as Symbols from "./Symbols.tsx"
 import { ActionButton } from "./ActionButton.tsx"
 
-
 export function Game(props: Extract<ClientWorld.State, { connected: "togame" }>) {
+    
     const { game } = props
+
     return <game-container class={css`
         display: grid;
         --board-size: min(100dvw, calc(100dvh - 6rem));
@@ -32,11 +33,12 @@ namespace GameStatusHeader {
 }
 
 class GameStatusHeader extends Component<GameStatusHeader.Props, { editing: boolean }> {
-    #ref = createRef<HTMLDivElement>()
+    
+    #ref = createRef<HTMLElement>()
 
     state = { editing: false }
 
-    async componentDidMount() {
+    componentDidMount() {
         const element = this.#ref.current!
         const elementRect = element.getBoundingClientRect()
         const parentRect = element.parentElement!.getBoundingClientRect()
@@ -70,6 +72,20 @@ class GameStatusHeader extends Component<GameStatusHeader.Props, { editing: bool
                 })
             }
         })
+    }
+
+    handleEvent(event: Events.button.click | Events.input.keyDown | Events.input.focusOut) {
+        if (event instanceof MouseEvent) {
+            this.setState({ editing: true })
+        } else if (event instanceof KeyboardEvent) {
+            if (event.key === "Enter")
+                this.setState({ editing: false })
+            else if (event.key === "Escape") {
+                this.setState({ editing: false })
+            }
+        } else if (event instanceof FocusEvent) {
+            this.setState({ editing: false })
+        }
     }
 
     render(props: typeof this.props, state: typeof this.state) {
@@ -106,8 +122,8 @@ class GameStatusHeader extends Component<GameStatusHeader.Props, { editing: bool
                 color-scheme: light;
                 background-color: var(--surface);
                 width: 4rem;
-                height: 4rem;
-                border-radius: 50%;
+                aspect-ratio: 1;
+                clip-path: circle();
                 font-size: 2rem;
                 transition-property: background-color;
                 transition-duration: 250ms;
@@ -122,11 +138,8 @@ class GameStatusHeader extends Component<GameStatusHeader.Props, { editing: bool
                     value={animal.name}
                     ref={input => input?.focus()}
                     maxLength={20}
-                    onKeyDown={e => {
-                        if (e.key === "Escape") return this.setState({ editing: false })
-                        if (e.key === "Enter") return this.setState({ editing: false })
-                    }}
-                    onFocusOut={() => this.setState({ editing: false })}
+                    onKeyDown={this}
+                    onFocusOut={this}
                     class={css`
                         grid-area: name;
                         background-color: transparent;
@@ -141,9 +154,6 @@ class GameStatusHeader extends Component<GameStatusHeader.Props, { editing: bool
                     grid-area: name;
                     color: var(--on-surface);
                     margin: 0;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
                     transition: color 250ms;
                 `}>{animal.name}</p>
             }
@@ -154,7 +164,7 @@ class GameStatusHeader extends Component<GameStatusHeader.Props, { editing: bool
                 style="outline"
                 size="small"
                 disabled={state.editing}
-                onClick={() => this.setState({ editing: true })}
+                onClick={this}
                 class={css`
                     grid-area: edit;
                     overflow: hidden;
@@ -183,25 +193,33 @@ namespace GameEndDialog {
 }
 
 class GameEndDialog extends Component<GameEndDialog.Props> {
-    playAgain() {
-        this.update("RequestRematch")
+
+    handleEvent(event: Events.button.click) {
+        if (event.currentTarget.dataset.playAgain) {
+            this.update("RequestRematch")
+        }
     }
+
     render(props: typeof this.props) {
         return <PopUp class={props.class}>
             <p>{ props.draw ? "Draw" : "You Win!" }</p>
-            <ActionButton secondary onClick={this.playAgain}>Play Again</ActionButton>
+            <ActionButton data-play-again secondary onClick={this}>Play Again</ActionButton>
         </PopUp>
     }
 }
 
 class PopUp extends Component<Attributes.dialog> {
+    
     #ref = createRef<HTMLDialogElement>()
+    
     componentDidMount() {
         this.#ref.current?.showModal()
     }
+    
     componentWillUnmount() {
         this.#ref.current?.close()
     }
+    
     render(props: typeof this.props) {
         return <dialog {...props} ref={this.#ref} class={cx(props.class, css`
             &[open] {

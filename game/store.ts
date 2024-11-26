@@ -1,65 +1,62 @@
-export class Store extends class { constructor(x: {}) { return x } } {
-    #et = new EventTarget
+import { metadata } from "lib/metadata.ts"
 
-    static create<Store extends {}>(storeData: Store): Store {
-        return new Store(storeData) as unknown as Store
-    }
+/**
+ * A store is a mutable object that can be subscribed to for updates.
+ * Implemented using `EventTarget`.
+ */
 
-    static set<
-        Store extends {},
-        Prop extends keyof Store,
-        Value extends Store[Prop]
-    >(store: Store, prop: Prop, value: Value) {
-        if (#et in store === false) return this.#notStore(store)
-        if (store[prop] === value) return
-        /** @ts-expect-error */
-        store[prop] = value
-        store.#et.dispatchEvent(update)
-    }
+const et = metadata<EventTarget>()
+const UPDATE = "update"
+const update = new Event(UPDATE)
 
-    static assign<Store extends {}>(store: Store, newstore: Store) {
-        if (#et in store === false) return this.#notStore(store)
-        const keys = Object.keys(store).concat(Object.keys(newstore))
-        for (const key of keys) {
-            /** @ts-expect-error */
-            store[key] = newstore[key]
-        }
-        store.#et.dispatchEvent(update)
-    }
-
-    static #usedStores: Set<Store> | undefined
-
-    static track() {
-        this.#usedStores = new Set
-    }
-
-    static get<
-        Store extends {},
-        Prop extends keyof Store
-    >(store: Store, prop: Prop) {
-        Store.#usedStores?.add(store as any)
-        return store[prop]
-    }
-
-    static untrack() {
-        const usedStores = this.#usedStores
-        this.#usedStores = undefined
-        return usedStores
-    }
-
-    static listen<Store extends {}>(store: Store, listener: EventListenerOrEventListenerObject, options?: AddEventListenerOptions) {
-        if (#et in store === false) return this.#notStore(store)
-        return store.#et.addEventListener("update", listener, options)
-    }
-
-    static stopListening<Store extends {}>(store: Store, listener: EventListenerOrEventListenerObject) {
-        if (#et in store === false) return this.#notStore(store)
-        return store.#et.removeEventListener("update", listener)
-    }
-
-    static #notStore(store: unknown) {
-        console.error(new Error("object is not a store", { cause: store }))
-    }
+export function create<Store extends {}>(storeData: Store) {
+    et.set(storeData, new EventTarget)
+    return storeData
 }
 
-const update = new Event("update")
+export function set<
+    Store extends {},
+    Prop extends keyof Store,
+    Value extends Store[Prop]
+>(store: Store, prop: Prop, value: Value) {
+    const target = et.get(store)
+    if (target === undefined) return notStore(store)
+    if (store[prop] === value) return
+    store[prop] = value
+    target.dispatchEvent(update)
+}
+
+export function assign<Store extends {}>(store: Store, newStore: Store) {
+    const target = et.get(store)
+    if (target === undefined) return notStore(store)
+    const keys = Object.keys(store).concat(Object.keys(newStore))
+    for (const key of keys) {
+        /** @ts-expect-error */
+        store[key] = newStore[key]
+    }
+    target.dispatchEvent(update)
+}
+
+export function listen<Store extends {}>(
+    store: Store,
+    listener: EventListenerOrEventListenerObject,
+    options?: AddEventListenerOptions
+) {
+    const target = et.get(store)
+    if (target === undefined) return notStore(store)
+    return target.addEventListener(UPDATE, listener, options)
+}
+
+export function stopListening<Store extends {}>(
+    store: Store,
+    listener: EventListenerOrEventListenerObject
+) {
+    const target = et.get(store)
+    if (target === undefined) return notStore(store)
+    return target.removeEventListener(UPDATE, listener)
+}
+
+function notStore(store: unknown) {
+    console.error(new Error("object is not a store", { cause: store }))
+}
+

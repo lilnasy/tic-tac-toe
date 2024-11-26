@@ -2,10 +2,10 @@ import { Component as PreactComponent, createRef } from "preact"
 import cx from "clsx/lite"
 import { css } from "astro:emotion"
 import { ClientWorld, type WorldData } from "game/world.client.ts"
-import { Store } from "game/store.ts"
-import { Component, WorldContext } from "./component.ts"
+import * as Store from "game/store.ts"
+import { Component, WorldContext, type Events } from "./component.ts"
 import { Game } from "./Game.tsx"
-import { ExitPresence, type AnimatesOut } from "./ExitPresence.tsx"
+import { ExitPresence, type AnimatesOut } from "./ExitPresence.ts"
 import { ColorMixer } from "./ColorMixer.tsx"
 import * as Symbols from "./Symbols.tsx"
 import { ActionButton } from "./ActionButton.tsx"
@@ -16,31 +16,23 @@ export function GameUISSR() {
 
 export class GameUI extends PreactComponent {
     
-    #world: ClientWorld
-    
-    constructor() {
-        super()
-        const url = new URL(location.href)
-        url.protocol = url.protocol.replace("http", "ws")
-        url.pathname = "/connect"
-        if (import.meta.env.DEV) {
-            this.#world = (globalThis as any).world ??= new ClientWorld(new WebSocket(url))
-        } else {
-            this.#world = new ClientWorld(new WebSocket(url))
-        }
+    #world = ClientWorld.connect()
+
+    componentDidMount() {
+        Store.listen(this.#world.state, this)
+    }
+
+    componentWillUnmount() {
+        Store.stopListening(this.#world.state, this)
     }
     
     // called when one of the stores used in render() gets updated
-    handleEvent() {
-        this.forceUpdate()
+    handleEvent(event: Event) {
+        if (event.type === "update") this.forceUpdate()
     }
 
     render() {
         const { state } = this.#world
-
-        // HACK: not using the value returned by Store.get() because
-        // it doesn't do type narrowing, still needed for reactivity.
-        Store.get(state, "connected")
 
         return <WorldContext.Provider value={this.#world}>
             <ExitPresence timeout={1000}>{
@@ -66,14 +58,14 @@ namespace TitleScreen {
 
 class TitleScreen extends Component<TitleScreen.Props> implements AnimatesOut {
     
-    new() {
-        this.update("NewWorld")
-    }
-
-    join() {
-        const worldName = prompt("Enter world name")
-        if (typeof worldName !== "string") return
-        this.update("JoinWorld", { world: worldName.replace(" ", "-") })
+    handleEvent(event: Events.button.click) {
+        if (event.currentTarget.dataset.new) {
+            this.update("NewWorld")
+        } else if (event.currentTarget.dataset.join) {
+            const worldName = prompt("Enter world name")
+            if (typeof worldName !== "string") return
+            this.update("JoinWorld", { world: worldName.replace(" ", "-") })
+        }
     }
 
     componentWillLeave(leave: () => void) {
@@ -147,8 +139,8 @@ class TitleScreen extends Component<TitleScreen.Props> implements AnimatesOut {
     }</p>
 
     #buttons = [
-        <ActionButton onClick={this.new} primary>New Game</ActionButton>,
-        <ActionButton onClick={this.join} secondary>Join</ActionButton>
+        <ActionButton data-new onClick={this} primary>New Game</ActionButton>,
+        <ActionButton data-join onClick={this} secondary>Join</ActionButton>
     ]
 
     render(props: typeof this.props) {

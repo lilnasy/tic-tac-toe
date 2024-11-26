@@ -15,7 +15,7 @@
         "canvas-confetti": "^1.9.3",
         "clsx": "^2.1.1",
         "iterator-helpers-polyfill": "^3.0.1",
-        "preact": "^10.24.3",
+        "preact": "^10.25.0",
         "preact-render-to-string": "^6.5.11",
         "typescript": "^5.6.3",
         "vite": "^5.4.10",

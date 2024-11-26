@@ -5,7 +5,7 @@ import type { PlayerData } from "game/player.ts"
 import type { Component } from "components/component.ts"
 import { type World, update } from "game/world.ts"
 import { type System, colorSystemClient, connectionSystemClient, gameLoopSystemClient, lineCheckSystem, markerSystemClient, syncSystemClient, turnSystemClient } from "game/systems.ts"
-import { Store } from "game/store.ts"
+import * as Store from "game/store.ts"
 
 export class ClientWorld implements World, Receiver {
 
@@ -49,6 +49,17 @@ export class ClientWorld implements World, Receiver {
     constructor(websocket: WebSocket) {
         const channel = this.channel = new ClientToServerChannel(websocket)
         channel.subscribe(this)
+    }
+
+    static connect() {
+        const url = new URL(location.href)
+        url.protocol = url.protocol.replace("http", "ws")
+        url.pathname = "/connect"
+        if (import.meta.env.DEV) {
+            return ((globalThis as any).world as ClientWorld) ??= new ClientWorld(new WebSocket(url))
+        } else {
+            return new ClientWorld(new WebSocket(url))
+        }
     }
 
     spawn<State extends keyof States>(entity: Entity<State>) {

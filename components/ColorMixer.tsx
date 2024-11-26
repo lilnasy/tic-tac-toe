@@ -1,23 +1,23 @@
 import { createRef } from "preact"
 import cx from "clsx/lite"
 import { css } from "astro:emotion"
-import { Component, type Attributes } from "./component.ts"
+import { Component, type Attributes, type Events } from "./component.ts"
 import * as Symbols from "./Symbols.tsx"
 
 
-export class ColorMixer extends Component<Attributes.element> {
+export class ColorMixer extends Component<Attributes> {
 
     #colorWheelDialogRef = createRef<HTMLDialogElement>()
 
-    switchScheme() {
-        this.update("UpdateColors", { scheme: "switch" })
-        this.update("SyncColors")
-    }
-
-    toggleColorWheel() {
-        const dialog = this.#colorWheelDialogRef.current
-        if (dialog?.open) dialog.close()
-        else dialog?.show()
+    handleEvent(event: Events.button.click) {
+        if (event.currentTarget.dataset.switchScheme) {
+            this.update("UpdateColors", { scheme: "switch" })
+            this.update("SyncColors")
+        } else if (event.currentTarget.dataset.toggleColorWheel) {
+            const dialog = this.#colorWheelDialogRef.current
+            if (dialog?.open) dialog.close()
+            else dialog?.show()
+        }
     }
 
     render(props: typeof this.props) {
@@ -32,12 +32,13 @@ export class ColorMixer extends Component<Attributes.element> {
             @starting-style { opacity: 0; }
         `)}>
             <Symbols.Button
+                data-toggle-color-wheel
                 icon="palette"
                 style="filled-on-hover"
                 colors="primary"
                 size="large"
                 class={css`grid-area: d;`}
-                onClick={this.toggleColorWheel}
+                onClick={this}
             />
             <dialog ref={this.#colorWheelDialogRef} class={css`
                 &[open] {
@@ -77,12 +78,13 @@ export class ColorMixer extends Component<Attributes.element> {
                     mask-image: radial-gradient(circle farthest-side at center, transparent 36%, white 38%, white 98%, transparent 100%);
                 `}/>
                 <Symbols.Button
+                    data-switch-scheme
                     icon="invert_colors"
                     style="filled-on-hover"
                     colors="primary"
                     size="large"
                     class={css`grid-area: 1 / 1;`}
-                    onClick={this.switchScheme}
+                    onClick={this}
                 />
                 <HueWheelThumb class={css`grid-area: 1 / 1;`}/>
             </dialog>

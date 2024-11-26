@@ -1,6 +1,18 @@
-export function metadata<Value>(key: string) {
+/**
+ * A way to attach additional hidden properties to an object.
+ * 
+ * Example:
+ * ```ts
+ * const hiddenProperty = metadata<string>("optional label")
+ * const obj = {}
+ * hiddenProperty.set(obj, "value")
+ * // obj looks the same as before, just a plain object
+ * console.log(obj) // {}
+ * console.log(hiddenProperty.get(obj)) // "value"
+ * ```
+ */
+export function metadata<Value>() {
     return class GetterSetter extends Stamper {
-        static readonly name = key
         #value: Value | undefined
         static set(object: unknown, value: Value) {
             if (
@@ -28,6 +40,10 @@ export function metadata<Value>(key: string) {
     }
 }
 
+/**
+ * Allows subclasses to stamp private fields onto an
+ * object without altering the object's prototype.
+ */
 class Stamper {
     constructor(object: unknown) {
         return object as any

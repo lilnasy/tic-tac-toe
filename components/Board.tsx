@@ -1,10 +1,9 @@
 import cx from "clsx/lite"
 import { css } from "astro:emotion"
-import { Store } from "game/store.ts"
 import type { Entity } from "game/entity.ts"
-import { Component, type Attributes } from "./component.ts"
+import { Component, type Attributes, type Events } from "./component.ts"
 
-export function Board(props: Attributes.element) {
+export function Board(props: Attributes) {
     return <xo-board {...props} class={cx(props.class, css`
         display: grid;
         container-type: size;
@@ -54,7 +53,7 @@ interface ViewProps {
 
 class Square extends Component<ViewProps> {
 
-    mark() {
+    handleEvent(_: Events.button.click) {
         const { Place: place } = this.props.entity
         if (place) this.update("Mark", { place })
         else console.error(new Error("The entity provided to the Square View does not have the required states", { cause: this.props.entity }))
@@ -62,11 +61,7 @@ class Square extends Component<ViewProps> {
 
     render({ entity }: typeof this.props) {
         const { state } = this.world
-        const Marked = Store.get(entity, "Marked")
-        const { Place } = entity as Entity<"Place">
-        // HACK: not using the value returned by Store.get() because
-        // it doesn't do type narrowing, still needed for reactivity.
-        Store.get(state, "connected")
+        const { Marked, Place } = entity as Entity<"Place">
         
         const playable = Marked === undefined &&
             state.connected === "togame" &&
@@ -88,16 +83,15 @@ class Square extends Component<ViewProps> {
                 gridRow: Math.ceil(Place / 3),
                 gridColumn: ((Place - 1) % 3) + 1
             }}
-            onClick={this.mark}
+            onClick={this}
             disabled={ playable === false }
         >{Marked || null}</button>
     }
 }
 
-function Strikethrough(props: ViewProps) {
-    const line = Store.get(props.entity, "Line")
-    if (line === null || line === undefined) return <></>
-    const [ a, b, c ] = line
+function Strikethrough({ entity }: ViewProps) {
+    if (entity.Line === null || entity.Line === undefined) return <></>
+    const [ a, b, c ] = entity.Line
     const placement = a * 100 + b * 10 + c
 
     return <svg

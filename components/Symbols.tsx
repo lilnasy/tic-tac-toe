@@ -1,6 +1,6 @@
 import { css } from "astro:emotion"
 import cx from "clsx/lite"
-import { Component, type Attributes } from "./component.ts"
+import type { Attributes } from "./component.ts"
 
 export namespace Button {
     export interface Props extends Omit<Attributes.button, "size"> {
@@ -12,32 +12,30 @@ export namespace Button {
     }
 }
 
-export class Button extends Component<Button.Props> {
-    render({
-        icon,
-        label,
-        style,
-        size,
-        colors,
-        ...props
-    }: typeof this.props) {
-        return <button
-            {...props}
-            {...data({
-                primary: colors === "primary",
-                onsecondarycontainer: colors === "on-secondary-container",
-                onsurface: colors === "on-surface",
-                filledonhover: style === "filled-on-hover",
-                outline: style === "outline",
-                small: size === "small",
-                medium: size === "medium",
-                large: size === "large",
-            })}
-            class={cx(props.class, symbolButtonClass)}>
-            { icon && <span aria-hidden>{icon}</span> }
-            { label && <label aria-hidden>{label}</label> }
-        </button>
-    }
+export function Button({
+    icon,
+    label,
+    colors,
+    style,
+    size,
+    ...props
+}: Button.Props) {
+    return <button
+        {...props}
+        {...data({
+            primary: colors === "primary",
+            onsecondarycontainer: colors === "on-secondary-container",
+            onsurface: colors === "on-surface",
+            filledonhover: style === "filled-on-hover",
+            outline: style === "outline",
+            small: size === "small",
+            medium: size === "medium",
+            large: size === "large",
+        })}
+        class={cx(props.class, symbolButtonClass)}>
+        { icon && <span aria-hidden>{icon}</span> }
+        { label && <label aria-hidden>{label}</label> }
+    </button>
 }
 
 const symbolButtonClass = css`@layer symbol {
@@ -91,7 +89,7 @@ const symbolButtonClass = css`@layer symbol {
     }
     
     &:not(:has(label)) {
-        aspect-ratio: 1 / 1;
+        aspect-ratio: 1;
     }
     &:has(label) {
         grid-template-areas: "icon label";

@@ -18,7 +18,7 @@ patchedDependencies:
     hash: etcf34y5ycd4ewbhb2nylfitly
     path: patches/astro.patch
   preact:
-    hash: nmwo7i2pfqokqkren3uyzcqkya
+    hash: pu2xh54fust2rxsjbdauaiavzq
     path: patches/preact.patch
   vite:
     hash: t7mv5eo4jnpkrovnpp7p2hvsn4
@@ -33,7 +33,7 @@ importers:
     devDependencies:
       '@preact/preset-vite':
         specifier: ^2.9.1
-        version: 2.9.1(patch_hash=wx4a2puiselz4n5hatk6npe6l4)(@babel/core@7.26.0)(preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya))(vite@5.4.10(patch_hash=t7mv5eo4jnpkrovnpp7p2hvsn4)(@types/node@22.4.2))
+        version: 2.9.1(patch_hash=wx4a2puiselz4n5hatk6npe6l4)(@babel/core@7.26.0)(preact@10.25.0(patch_hash=pu2xh54fust2rxsjbdauaiavzq))(vite@5.4.10(patch_hash=t7mv5eo4jnpkrovnpp7p2hvsn4)(@types/node@22.4.2))
       '@withastro/node':
         specifier: ^8.4.0
         version: 8.4.0(astro@4.16.13(patch_hash=etcf34y5ycd4ewbhb2nylfitly)(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.6.3))
@@ -53,11 +53,11 @@ importers:
         specifier: ^3.0.1
         version: 3.0.1
       preact:
-        specifier: ^10.24.3
-        version: 10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya)
+        specifier: ^10.25.0
+        version: 10.25.0(patch_hash=pu2xh54fust2rxsjbdauaiavzq)
       preact-render-to-string:
         specifier: ^6.5.11
-        version: 6.5.11(preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya))
+        version: 6.5.11(preact@10.25.0(patch_hash=pu2xh54fust2rxsjbdauaiavzq))
       typescript:
         specifier: ^5.6.3
         version: 5.6.3
@@ -1638,8 +1638,8 @@ packages:
     peerDependencies:
       preact: '>=10'
 
-  preact@10.24.3:
-    resolution: {integrity: sha512-Z2dPnBnMUfyQfSQ+GBdsGa16hz35YmLmtTLhM169uW944hYL6xzTYkJjC07j+Wosz733pMWx0fgON3JNw1jJQA==}
+  preact@10.25.0:
+    resolution: {integrity: sha512-6bYnzlLxXV3OSpUxLdaxBmE7PMOu0aR3pG6lryK/0jmvcDFPlcXGQAt5DpK3RITWiDrfYZRI0druyaK/S9kYLg==}
 
   preferred-pm@4.0.0:
     resolution: {integrity: sha512-gYBeFTZLu055D8Vv3cSPox/0iTPtkzxpLroSYYA7WXgRi31WCJ51Uyl8ZiPeUUjyvs2MBzK+S8v9JVUgHU/Sqw==}
@@ -2586,13 +2586,13 @@ snapshots:
 
   '@oslojs/encoding@1.1.0': {}
 
-  '@preact/preset-vite@2.9.1(patch_hash=wx4a2puiselz4n5hatk6npe6l4)(@babel/core@7.26.0)(preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya))(vite@5.4.10(patch_hash=t7mv5eo4jnpkrovnpp7p2hvsn4)(@types/node@22.4.2))':
+  '@preact/preset-vite@2.9.1(patch_hash=wx4a2puiselz4n5hatk6npe6l4)(@babel/core@7.26.0)(preact@10.25.0(patch_hash=pu2xh54fust2rxsjbdauaiavzq))(vite@5.4.10(patch_hash=t7mv5eo4jnpkrovnpp7p2hvsn4)(@types/node@22.4.2))':
     dependencies:
       '@babel/code-frame': 7.25.7
       '@babel/core': 7.26.0
       '@babel/plugin-transform-react-jsx': 7.25.7(@babel/core@7.26.0)
       '@babel/plugin-transform-react-jsx-development': 7.25.7(@babel/core@7.26.0)
-      '@prefresh/vite': 2.4.6(preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya))(vite@5.4.10(patch_hash=t7mv5eo4jnpkrovnpp7p2hvsn4)(@types/node@22.4.2))
+      '@prefresh/vite': 2.4.6(preact@10.25.0(patch_hash=pu2xh54fust2rxsjbdauaiavzq))(vite@5.4.10(patch_hash=t7mv5eo4jnpkrovnpp7p2hvsn4)(@types/node@22.4.2))
       '@rollup/pluginutils': 4.2.1
       babel-plugin-transform-hook-names: 1.0.2(@babel/core@7.26.0)
       debug: 4.3.7
@@ -2608,20 +2608,20 @@ snapshots:
 
   '@prefresh/babel-plugin@0.5.1': {}
 
-  '@prefresh/core@1.5.2(patch_hash=tmn6tcoevyzdc3shske7bxarui)(preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya))':
+  '@prefresh/core@1.5.2(patch_hash=tmn6tcoevyzdc3shske7bxarui)(preact@10.25.0(patch_hash=pu2xh54fust2rxsjbdauaiavzq))':
     dependencies:
-      preact: 10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya)
+      preact: 10.25.0(patch_hash=pu2xh54fust2rxsjbdauaiavzq)
 
   '@prefresh/utils@1.2.0': {}
 
-  '@prefresh/vite@2.4.6(preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya))(vite@5.4.10(patch_hash=t7mv5eo4jnpkrovnpp7p2hvsn4)(@types/node@22.4.2))':
+  '@prefresh/vite@2.4.6(preact@10.25.0(patch_hash=pu2xh54fust2rxsjbdauaiavzq))(vite@5.4.10(patch_hash=t7mv5eo4jnpkrovnpp7p2hvsn4)(@types/node@22.4.2))':
     dependencies:
       '@babel/core': 7.25.7
       '@prefresh/babel-plugin': 0.5.1
-      '@prefresh/core': 1.5.2(patch_hash=tmn6tcoevyzdc3shske7bxarui)(preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya))
+      '@prefresh/core': 1.5.2(patch_hash=tmn6tcoevyzdc3shske7bxarui)(preact@10.25.0(patch_hash=pu2xh54fust2rxsjbdauaiavzq))
       '@prefresh/utils': 1.2.0
       '@rollup/pluginutils': 4.2.1
-      preact: 10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya)
+      preact: 10.25.0(patch_hash=pu2xh54fust2rxsjbdauaiavzq)
       vite: 5.4.10(patch_hash=t7mv5eo4jnpkrovnpp7p2hvsn4)(@types/node@22.4.2)
     transitivePeerDependencies:
       - supports-color
@@ -3885,11 +3885,11 @@ snapshots:
       picocolors: 1.1.0
       source-map-js: 1.2.1
 
-  preact-render-to-string@6.5.11(preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya)):
+  preact-render-to-string@6.5.11(preact@10.25.0(patch_hash=pu2xh54fust2rxsjbdauaiavzq)):
     dependencies:
-      preact: 10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya)
+      preact: 10.25.0(patch_hash=pu2xh54fust2rxsjbdauaiavzq)
 
-  preact@10.24.3(patch_hash=nmwo7i2pfqokqkren3uyzcqkya): {}
+  preact@10.25.0(patch_hash=pu2xh54fust2rxsjbdauaiavzq): {}
 
   preferred-pm@4.0.0:
     dependencies:

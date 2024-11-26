@@ -1,9 +1,9 @@
+import { metadata } from "lib/metadata.ts"
 import type { MessageRegistry, UpdateColors } from "game/messages.ts"
 import type { Entity, Line, Place } from "game/entity.ts"
 import type { ClientWorld } from "game/world.client.ts"
 import type { ServerWorld } from "game/world.server.ts"
-import { metadata } from "game/metadata.ts"
-import { Store } from "game/store.ts"
+import * as Store from "game/store.ts"
 import { isServer } from "game/client-server.ts"
 import { Player } from "game/player.ts"
 import * as Animal from "game/animals.ts"
@@ -338,7 +338,7 @@ export const colorSystemClient: System<"client"> = {
     }
 }
 
-const colors = metadata<UpdateColors>("colors")
+const colors = metadata<UpdateColors>()
 
 export const colorSystemServer: System<"server"> = {
     onAddPlayer({ player }, world) {

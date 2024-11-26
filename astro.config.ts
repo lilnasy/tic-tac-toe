@@ -8,7 +8,7 @@ import fontLoader from "./lib/font-loader.ts"
 
 const vite: ViteUserConfig = {
     assetsInclude: "font:*",
-    plugins: [ preact(), fontLoader() ],
+    plugins: [ preact({ reactAliasesEnabled: false }), fontLoader() ],
     ssr: {
         noExternal: import.meta.env.PROD || undefined
     },

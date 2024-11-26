@@ -74,7 +74,6 @@ import font from "font:family=Sue Ellen Francisco"
 		<script>
 			import { h, hydrate, render } from "preact"
 			import { GameUI } from "components/GameUI.tsx"
-			import "components/component-store-reactivity.ts"
 			
 			if (import.meta.env.DEV) await import("preact/debug")
 			if ("Iterator" in window === false) await import("iterator-helpers-polyfill")
