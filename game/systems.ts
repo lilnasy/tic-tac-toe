@@ -1,10 +1,9 @@
+import { effect } from "@preact/signals-core"
 import { metadata } from "lib/metadata.ts"
 import type { MessageRegistry, UpdateColors } from "game/messages.ts"
 import type { Entity, Line, Place } from "game/entity.ts"
 import type { ClientWorld } from "game/world.client.ts"
 import type { ServerWorld } from "game/world.server.ts"
-import * as Store from "game/store.ts"
-import { isServer } from "game/client-server.ts"
 import { Player } from "game/player.ts"
 import * as Animal from "game/animals.ts"
 
@@ -26,7 +25,7 @@ export const markerSystemClient: System<"client"> = {
         )
         
         if (unmarkedSquare) {
-            Store.set(unmarkedSquare, "Marked", state.game.turn)
+            unmarkedSquare.Marked = state.game.turn
             channel.send("Mark", marked)
             world.update("Switch")
         }
@@ -53,7 +52,7 @@ export const markerSystemServer: System<"server"> = {
         )
 
         if (unmarkedSquare) {
-            Store.set(unmarkedSquare, "Marked", player.state.sign)
+            unmarkedSquare.Marked = player.state.sign
             return world.update("Switch")
         }
     }
@@ -90,7 +89,7 @@ export const lineCheckSystem: System = {
             if (makesLine(line, markedWithX)) winner = "X"
             if (makesLine(line, markedWithO)) winner = "O"
             if (winner !== undefined) {
-                if (isServer) {
+                if (world.server) {
                     return world.channel.send("Victory", { winner, line })
                 } else {
                     return world.update("Victory", { winner, line })
@@ -99,7 +98,7 @@ export const lineCheckSystem: System = {
         }
 
         if (markedPlaces === 9) {
-            if (isServer) world.channel.send("Draw")
+            if (world.server) world.channel.send("Draw")
             else world.update("Draw")
         }
     }
@@ -147,7 +146,10 @@ export const gameLoopSystemClient: System<"client"> = {
     onStart({ opponent, sign, turn }, world) {
         const { entities, state } = world
 
-        if (state.connected !== "toworld") {
+        if (
+            state.connected !== "toworld" &&
+            state.connected !== "togame"
+        ) {
             return
         }
         
@@ -229,14 +231,6 @@ export const gameLoopSystemServer: System<"server"> = {
             world.despawn(entity)
         }
         
-        for (let place = 1; place <= 9; place++) {
-            const unmarkedSquare: Entity<"Place" | "Sync"> = {
-                Place: place as Place,
-                Sync: { id: `square${place}` }
-            }
-            world.spawn(unmarkedSquare)
-        }
-        
         const signs: ("X" | "O")[] = Math.random() < 0.5 ? [ "X", "O" ] : [ "O", "X" ]
         const firstTurn = Math.random() < 0.5 ? "X" : "O"
         world.state = { connection: "ingame", turn: firstTurn }
@@ -252,12 +246,15 @@ export const gameLoopSystemServer: System<"server"> = {
         }
 
         if (participatingPlayers.length === 2) {
+            
             const [
                 [ player1, animal1, sign1 ],
                 [ player2, animal2, sign2 ]
             ] = participatingPlayers
+            
             player1.state = { connection: "ingame", animal: animal1, sign: sign1 }
             player2.state = { connection: "ingame", animal: animal2, sign: sign2 }
+            
             player1.send("Start", { 
                 turn: firstTurn,
                 sign: sign1,
@@ -268,6 +265,14 @@ export const gameLoopSystemServer: System<"server"> = {
                 sign: sign2,
                 opponent: { animal: animal1, sign: sign1 }
             })
+            
+            for (let place = 1; place <= 9; place++) {
+                const unmarkedSquare: Entity<"Place" | "Sync"> = {
+                    Place: place as Place,
+                    Sync: { id: `square${place}` }
+                }
+                world.spawn(unmarkedSquare)
+            }
         }
     },
     onRequestRematch(data, world) {
@@ -358,11 +363,12 @@ export const syncSystemClient: System<"client"> = {
         const { Sync: { id } } = updatedEntity
         const entity = world.entities.values().find(e => e.Sync?.id === id)
         if (entity) {
-            Store.assign(entity, {
-                ...updatedEntity,
+            for (const key of Object.keys(updatedEntity).concat(Object.keys(entity))) {
                 // View is a client only state, preserve it during sync
-                View: entity.View
-            })
+                if (key === "View") continue
+                /** @ts-expect-error */
+                entity[key] = updatedEntity[key]
+            }
         } else {
             console.error(
                 new Error(
@@ -383,7 +389,8 @@ export const syncSystemServer: System<"server"> = {
                 return console.error(new Error("A networked entity is being spawned with an ID that's already used by another entity in the world.", { cause: entity }))
             }
             // server announces all mutations done to networked entities to all connected players
-            Store.listen(entity, () => channel.send("Sync", entity as Entity<"Sync">))
+            // TODO: does this gc?
+            effect(() => channel.send("Sync", entity as Entity<"Sync">))
         }
     }
 }

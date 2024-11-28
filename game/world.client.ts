@@ -1,11 +1,11 @@
+import { ReactiveSet } from "lib/reactive-set.ts"
+import { signal } from "lib/signal-decorator.ts"
 import type { Channel, Receiver } from "game/channel.ts"
-import type { Entity, States } from "game/entity.ts"
 import type { Data, MessageRegistry } from "game/messages.ts"
 import type { PlayerData } from "game/player.ts"
-import type { Component } from "components/component.ts"
-import { type World, update } from "game/world.ts"
+import { type Entity, type States, create } from "game/entity.ts"
 import { type System, colorSystemClient, connectionSystemClient, gameLoopSystemClient, lineCheckSystem, markerSystemClient, syncSystemClient, turnSystemClient } from "game/systems.ts"
-import * as Store from "game/store.ts"
+import { type World, update } from "game/world.ts"
 
 export class ClientWorld implements World, Receiver {
 
@@ -13,7 +13,7 @@ export class ClientWorld implements World, Receiver {
     readonly client = true
 
     channel: ClientToServerChannel
-    entities = new Set<Entity>
+    entities = new ReactiveSet<Entity>
     systems: System<"both" | "client">[] = [
         colorSystemClient,
         connectionSystemClient,
@@ -31,20 +31,7 @@ export class ClientWorld implements World, Receiver {
     receive = update
     update = update
 
-    #state = Store.create<ClientWorld.State>({ connected: "connecting" })
-    get state() {
-        return this.#state
-    }
-    set state(newState) {
-        Store.assign(this.#state, newState)
-    }
-
-    /**
-     * A reference to the EntitiesView component is provided here
-     * when it renders so that the world can update it when entities
-     * are spawned and despawned.
-     */
-    EntitiesView: Component | undefined
+    @signal accessor state: ClientWorld.State = { connected: "connecting" }
 
     constructor(websocket: WebSocket) {
         const channel = this.channel = new ClientToServerChannel(websocket)
@@ -62,27 +49,15 @@ export class ClientWorld implements World, Receiver {
         }
     }
 
-    spawn<State extends keyof States>(entity: Entity<State>) {
-        
-        const _entity = Store.create<Entity<State>>({
-            Marked: entity.Marked,
-            Place: entity.Place,
-            Line: entity.Line,
-            Sync: entity.Sync,
-            View: entity.View,
-            ...entity
-        } satisfies Record<keyof States, unknown>)
-
-        this.update("Spawn", _entity)
-        this.entities.add(_entity)
-        this.EntitiesView?.forceUpdate()
-        
-        return _entity
+    spawn<State extends keyof States = never>(entityData: Entity<State>) {
+        const entity = create(entityData)
+        this.update("Spawn", entity)
+        this.entities.add(entity)
+        return entity
     }
 
     despawn(entity: Entity) {
         this.entities.delete(entity)
-        this.EntitiesView?.forceUpdate()
     }
 }
 

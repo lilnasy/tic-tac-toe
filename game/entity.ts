@@ -12,9 +12,29 @@
  * with entities that have the `Place` state.
  */
 
+import { signal } from "@preact/signals-core"
+
 export type Entity<State extends keyof States = never> =
     Partial<States> &
     Required<Pick<States, State>>
+
+export function create<State extends keyof States>(entity: Entity<State>) {
+    const version = signal(0)
+    return new Proxy(entity, {
+        get(target, key: keyof Entity<State>) {
+            version.value
+            return target[key]
+        },
+        set<T extends typeof entity>(target: T, key: keyof T, value: T[keyof T]) {
+            const old = target[key]
+            if (old !== value) {
+                target[key] = value
+                version.value++
+            }
+            return true
+        }
+    })
+}
 
 export interface States {
     Marked: Marked
@@ -28,7 +48,7 @@ export interface States {
  * A square on the tic tac toe board gets the marked
  * state when a player marks on that square's place.
  */
-export type Marked = "X" | "O"
+type Marked = "X" | "O"
 
 /**
  * The Place state is contained by the Square entity,
@@ -51,7 +71,7 @@ export type Line = readonly [ Place, Place, Place ]
  * It is used to find and update the client version when
  * the server version mutates.
  */
-export interface Sync {
+interface Sync {
     id: string
 }
 
@@ -59,4 +79,4 @@ export interface Sync {
  * The name of the component with which the entity 
  * should be rendered.
  */
-export type View = "Square" | "Strikethrough"
+type View = "Square" | "Strikethrough"

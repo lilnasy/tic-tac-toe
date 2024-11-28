@@ -1,0 +1,156 @@
+diff --git a/package.json b/package.json
+index 970307782916aeee9d430b191a054294eed75577..232778f0e67a18504aec9a875a75b5ee88fbbde3 100644
+--- a/package.json
++++ b/package.json
+@@ -1,5 +1,6 @@
+ {
+   "name": "@preact/signals",
++  "type": "module",
+   "version": "1.3.1",
+   "license": "MIT",
+   "description": "Manage state with style in Preact",
+@@ -18,19 +19,8 @@
+     "type": "opencollective",
+     "url": "https://opencollective.com/preact"
+   },
+-  "amdName": "preactSignals",
+-  "main": "dist/signals.js",
+-  "module": "dist/signals.module.js",
+-  "unpkg": "dist/signals.min.js",
+-  "types": "dist/signals.d.ts",
+-  "source": "src/index.ts",
+   "exports": {
+-    ".": {
+-      "types": "./dist/signals.d.ts",
+-      "browser": "./dist/signals.module.js",
+-      "import": "./dist/signals.mjs",
+-      "require": "./dist/signals.js"
+-    }
++    ".": "./src/index.ts"
+   },
+   "mangle": "../../mangle.json",
+   "files": [
+diff --git a/src/index.ts b/src/index.ts
+index 79550801c3b180eb13712d734e280cafc7d2e911..7bd05c2e4f13d06fe0b4bbb1264aa3bc9542ff90 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -9,15 +9,15 @@ import {
+ 	type ReadonlySignal,
+ 	untracked,
+ } from "@preact/signals-core";
+-import {
++import type {
+ 	VNode,
+-	OptionsTypes,
+ 	HookFn,
+ 	Effect,
+ 	PropertyUpdater,
+ 	AugmentedComponent,
+ 	AugmentedElement as Element,
+-} from "./internal";
++} from "./internal.d.ts";
++import { OptionsTypes } from "./internal.d.ts"
+ 
+ export {
+ 	signal,
+@@ -81,10 +81,10 @@ function SignalValue(this: AugmentedComponent, { data }: { data: Signal }) {
+ 
+ 	const s = useMemo(() => {
+ 		// mark the parent component as having computeds so it gets optimized
+-		let v = this.__v;
+-		while ((v = v.__!)) {
+-			if (v.__c) {
+-				v.__c._updateFlags |= HAS_COMPUTEDS;
++		let v = this._vnode;
++		while ((v = v._parent!)) {
++			if (v._component) {
++				v._component._updateFlags |= HAS_COMPUTEDS;
+ 				break;
+ 			}
+ 		}
+@@ -125,7 +125,7 @@ Object.defineProperties(Signal.prototype, {
+ 	// Setting a VNode's _depth to 1 forces Preact to clone it before modifying:
+ 	// https://github.com/preactjs/preact/blob/d7a433ee8463a7dc23a05111bb47de9ec729ad4d/src/diff/children.js#L77
+ 	// @todo remove this for Preact 11
+-	__b: { configurable: true, value: 1 },
++	_depth: { configurable: true, value: 1 },
+ });
+ 
+ /** Inject low-level property/attribute bindings for Signals into Preact's diff */
+@@ -155,7 +155,7 @@ hook(OptionsTypes.RENDER, (old, vnode) => {
+ 
+ 	let updater;
+ 
+-	let component = vnode.__c;
++	let component = vnode._component;
+ 	if (component) {
+ 		component._updateFlags &= ~HAS_PENDING_UPDATE;
+ 
+@@ -189,7 +189,7 @@ hook(OptionsTypes.DIFFED, (old, vnode) => {
+ 
+ 	// vnode._dom is undefined during string rendering,
+ 	// so we use this to skip prop subscriptions during SSR.
+-	if (typeof vnode.type === "string" && (dom = vnode.__e as Element)) {
++	if (typeof vnode.type === "string" && (dom = vnode._dom as Element)) {
+ 		let props = vnode.__np;
+ 		let renderedProps = vnode.props;
+ 		if (props) {
+@@ -261,7 +261,7 @@ function createPropUpdater(
+ /** Unsubscribe from Signals when unmounting components/vnodes */
+ hook(OptionsTypes.UNMOUNT, (old, vnode: VNode) => {
+ 	if (typeof vnode.type === "string") {
+-		let dom = vnode.__e as Element | undefined;
++		let dom = vnode._dom as Element | undefined;
+ 		// vnode._dom is undefined during string rendering
+ 		if (dom) {
+ 			const updaters = dom._updaters;
+@@ -274,7 +274,7 @@ hook(OptionsTypes.UNMOUNT, (old, vnode: VNode) => {
+ 			}
+ 		}
+ 	} else {
+-		let component = vnode.__c;
++		let component = vnode._component;
+ 		if (component) {
+ 			const updater = component._updater;
+ 			if (updater) {
+diff --git a/src/internal.d.ts b/src/internal.d.ts
+index 436ac029ad499c5ed5a865d4fec4fc540240b14c..cf8e03dd91eed0345291c2585fb417c12bbf24ee 100644
+--- a/src/internal.d.ts
++++ b/src/internal.d.ts
+@@ -18,28 +18,28 @@ export interface AugmentedElement extends HTMLElement {
+ }
+ 
+ export interface AugmentedComponent extends Component<any, any> {
+-	__v: VNode;
++	_vnode: VNode;
+ 	_updater?: Effect;
+ 	_updateFlags: number;
+ }
+ 
+ export interface VNode<P = any> extends preact.VNode<P> {
+ 	/** The component instance for this VNode */
+-	__c: AugmentedComponent;
++	_component: AugmentedComponent;
+ 	/** The parent VNode */
+-	__?: VNode;
++	_parent?: VNode;
+ 	/** The DOM node for this VNode */
+-	__e?: Element | Text;
++	_dom?: Element | Text;
+ 	/** Props that had Signal values before diffing (used after diffing to subscribe) */
+ 	__np?: Record<string, any> | null;
+ }
+ 
+ export const enum OptionsTypes {
+-	HOOK = "__h",
+-	DIFF = "__b",
++	HOOK = "_hook",
++	DIFF = "_diff",
+ 	DIFFED = "diffed",
+-	RENDER = "__r",
+-	CATCH_ERROR = "__e",
++	RENDER = "_render",
++	CATCH_ERROR = "_catchError",
+ 	UNMOUNT = "unmount",
+ }
+ 

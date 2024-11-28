@@ -8,7 +8,15 @@ import fontLoader from "./lib/font-loader.ts"
 
 const vite: ViteUserConfig = {
     assetsInclude: "font:*",
-    plugins: [ preact({ reactAliasesEnabled: false }), fontLoader() ],
+    plugins: [
+        fontLoader(),
+        preact({
+            reactAliasesEnabled: false,
+            babel: {
+                plugins: [[ "@babel/plugin-proposal-decorators", { version: "2023-11" } ]]
+            }
+        }),
+    ],
     ssr: {
         noExternal: import.meta.env.PROD || undefined
     },

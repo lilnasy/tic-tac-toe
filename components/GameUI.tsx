@@ -2,7 +2,6 @@ import { Component as PreactComponent, createRef } from "preact"
 import cx from "clsx/lite"
 import { css } from "astro:emotion"
 import { ClientWorld, type WorldData } from "game/world.client.ts"
-import * as Store from "game/store.ts"
 import { Component, WorldContext, type Events } from "./component.ts"
 import { Game } from "./Game.tsx"
 import { ExitPresence, type AnimatesOut } from "./ExitPresence.ts"
@@ -17,14 +16,6 @@ export function GameUISSR() {
 export class GameUI extends PreactComponent {
     
     #world = ClientWorld.connect()
-
-    componentDidMount() {
-        Store.listen(this.#world.state, this)
-    }
-
-    componentWillUnmount() {
-        Store.stopListening(this.#world.state, this)
-    }
     
     // called when one of the stores used in render() gets updated
     handleEvent(event: Event) {

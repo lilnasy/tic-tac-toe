@@ -23,12 +23,6 @@ function CrissCrossFrame(props: Attributes.svg) {
 }
 
 class EntitiesView extends Component {
-    componentDidMount() {
-        this.world.EntitiesView = this
-    }
-    componentWillUnmount() {
-        this.world.EntitiesView = undefined
-    }
     render() {
         return this.world.entities
             .values()

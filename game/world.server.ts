@@ -1,10 +1,9 @@
-import type { Entity, States } from "game/entity.ts"
 import type { Channel, Receiver } from "game/channel.ts"
 import type { Data, MessageRegistry } from "game/messages.ts"
+import { type Entity, type States, create } from "game/entity.ts"
 import { type World, update } from "game/world.ts"
 import { colorSystemServer, connectionSystemServer, gameLoopSystemServer, lineCheckSystem, markerSystemServer, syncSystemServer, turnSystemServer, type System } from "game/systems.ts"
 import { Player } from "game/player.ts"
-import * as Store from "game/store.ts"
 
 export class ServerWorld implements World, Receiver {
 
@@ -31,18 +30,18 @@ export class ServerWorld implements World, Receiver {
     /**
      * A static object containing global state related to the game.
      */
-    state = Store.create<Gamestate>({ connection: "waiting" })
+    state: Gamestate = { connection: "waiting" }
     
     constructor(readonly name: string) {
         const channel = this.channel = new ServerToClientsChannel(this.players)
         channel.subscribe(this)
     }
 
-    spawn<State extends keyof States>(entity: Entity<State>) {
-        const _entity = Store.create(entity)
-        this.update("Spawn", _entity)
-        this.entities.add(_entity)
-        return _entity
+    spawn<State extends keyof States>(entityData: Entity<State>) {
+        const entity = create(entityData)
+        this.update("Spawn", entity)
+        this.entities.add(entity)
+        return entity
     }
 
     despawn(entity: Entity) {
