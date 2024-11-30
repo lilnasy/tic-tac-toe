@@ -39,30 +39,28 @@ import font from "font:family=Sue Ellen Francisco"
 				}
 			}
 			@layer page {
-				body {
-					font-family: "Sue Ellen Francisco";
-					margin: 0;
-					height: 100dvh;
-					display: grid;
-					place-items: center;
-					font-size: 2rem;
-					background: var(--primary-container);
-					transition: background 250ms;
+				:root {
 					color-scheme: light dark;
 					interpolate-size: allow-keywords;
 				}
+				:root[data-light] {
+					color-scheme: light;
+				}
+				:root[data-dark] {
+					color-scheme: dark;
+				}
+				body {
+					display: grid;
+					place-items: center;
+					height: 100dvh;
+					margin: 0;
+					background: var(--primary-container);
+					transition: background 250ms;
+					font-family: "Sue Ellen Francisco";
+					font-size: 2rem;
+				}
 				body > * {
 					grid-area: 1 / 1;
-				}
-				@media (prefers-color-scheme: dark) {
-					body[data-switch-color-scheme] {
-						color-scheme: light;
-					}
-				}
-				@media (prefers-color-scheme: light) {
-					body[data-switch-color-scheme] {
-						color-scheme: dark;
-					}
 				}
 				@keyframes ellipsis {
 					0%, 32% { content: "." }
@@ -74,6 +72,20 @@ import font from "font:family=Sue Ellen Francisco"
 		<script>
 			import { h, hydrate, render } from "preact"
 			import { GameUI } from "components/GameUI.tsx"
+			import sw from "../service-worker.ts?worker&url"
+
+			if (import.meta.env.PROD) {
+				const { serviceWorker } = navigator
+				const { controller } = serviceWorker
+				if (controller && controller.scriptURL.endsWith(sw) === false) {
+					serviceWorker
+						.getRegistrations()
+						.then(regs => Promise.all(regs.map(reg => reg.unregister())))
+						.then(() => serviceWorker.register(sw, { scope: "/", type: "module" }))
+				} else {
+					serviceWorker.register(sw, { scope: "/", type: "module" })
+				}
+			}
 			
 			if (import.meta.env.DEV) await import("preact/debug")
 			if ("Iterator" in window === false) await import("iterator-helpers-polyfill")

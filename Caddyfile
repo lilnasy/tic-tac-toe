@@ -1,5 +1,6 @@
 sillystring.party:443 {
         @static path /_astro/*
+        @service_worker path /_astro/service-worker-*.js
         @redeploy {
                 method PATCH
                 path /redeploy
@@ -12,6 +13,7 @@ sillystring.party:443 {
         }
         route {
                 header @static Cache-Control "public, max-age=31536000, immutable"
+                header @service_worker Service-Worker-Allowed "/"
                 file_server @static {
                         root /app/dist/client
                         precompressed br gzip

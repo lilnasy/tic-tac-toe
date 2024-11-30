@@ -1,5 +1,6 @@
 import { effect } from "@preact/signals-core"
 import { metadata } from "lib/metadata.ts"
+import { get, set } from "lib/indexed-kv.ts"
 import type { MessageRegistry, UpdateColors } from "game/messages.ts"
 import type { Entity, Line, Place } from "game/entity.ts"
 import type { ClientWorld } from "game/world.client.ts"
@@ -297,48 +298,45 @@ export const gameLoopSystemServer: System<"server"> = {
 }
 
 export const colorSystemClient: System<"client"> = {
-    onConnected(_, world) {
-        const _scheme = localStorage.getItem("color.scheme")
-        const _hue = localStorage.getItem("color.hue") 
-        if (_scheme !== null || _hue !== null) {
+    async onConnected(_, world) {
+        const [ _scheme, _hue ] = await get("color.scheme", "color.hue")
+        if (_scheme !== undefined || _hue !== undefined) {
             const scheme =
                 _scheme === "dark" ? "dark" :
                 _scheme === "light" ? "light" :
                 undefined
-            const hue = _hue === null ? undefined : Number(_hue)
+            const hue = typeof _hue === "number" ? _hue : undefined
             world.update("UpdateColors", { hue, scheme })
             world.channel.send("UpdateColors", { hue, scheme })
         }
     },
-    onSyncColors(_, { channel }) {
-        const { body, documentElement } = document
-        const prefersDark = matchMedia("(prefers-color-scheme: dark)").matches
-        const switched = body.hasAttribute("data-switch-color-scheme")
-        const dark = Boolean(Number(prefersDark) ^ Number(switched))
-        const scheme = dark ? "dark" : "light"
-        
-        const _hue = parseInt(documentElement.style.getPropertyValue("--base-hue"))
-        const hue = Number.isFinite(_hue) ? _hue : 0
-        
-        channel.send("UpdateColors", { hue, scheme })
+    async onSyncColors(_, { channel }) {
+        const [ scheme, hue ] = await get("color.scheme", "color.hue")
+        if (
+            (scheme === undefined || scheme === "light" || scheme === "dark") &&
+            (hue === undefined || typeof hue === "number")
+        ) {
+            channel.send("UpdateColors", { hue, scheme })
+        }
     },
-    onUpdateColors(update) {
-        const { body, documentElement } = document
+    async onUpdateColors(update) {
+        const { documentElement } = document
         if (update.scheme !== undefined) {
-            const prefersDark = matchMedia("(prefers-color-scheme: dark)").matches
-            const switched = body.hasAttribute("data-switch-color-scheme")
-            const alreadyDark = Boolean(Number(prefersDark) ^ Number(switched))
-            const toSwitch = update.scheme === "switch" || Boolean(Number(alreadyDark) ^ Number(update.scheme === "dark"))
-            if (toSwitch) {
-                body.toggleAttribute("data-switch-color-scheme")
-                localStorage.setItem("color.scheme", alreadyDark ? "light" : "dark")
-            } else {
-                localStorage.setItem("color.scheme", alreadyDark ? "dark" : "light")
+            let { scheme } = update
+            if (scheme === "switch") {
+                const _scheme = await get("color.scheme")
+                if (_scheme === "light") scheme = "dark"
+                else if (_scheme === "dark") scheme = "light"
+                else if (matchMedia("(prefers-color-scheme: dark)").matches) scheme = "light"
+                else scheme = "dark"
             }
+            documentElement.toggleAttribute("data-dark", scheme === "dark")
+            documentElement.toggleAttribute("data-light", scheme === "light")
+            await set("color.scheme", scheme)
         }
         if (update.hue !== undefined) {
-            localStorage.setItem("color.hue", String(update.hue))
             documentElement.style.setProperty("--base-hue", String(update.hue))
+            await set("color.hue", update.hue)
         }
     }
 }

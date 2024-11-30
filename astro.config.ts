@@ -29,6 +29,9 @@ const vite: ViteUserConfig = {
                 assetFileNames: '_astro/[hash][extname]'
             }
         }
+    },
+    worker: {
+        format: "es"
     }
 }
 
@@ -39,7 +42,7 @@ export default defineConfig({
     adapter: node({ mode: "standalone" }),
     output: "server",
     server: {
-        host: import.meta.env.DEV ? "0.0.0.0" : "127.0.0.1"
+        host: import.meta.env.DEV ? "0.0.0.0" : "127.0.0.1",
     },
     devToolbar: { enabled: false },
     vite
