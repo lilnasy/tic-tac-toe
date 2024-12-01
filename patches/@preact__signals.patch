@@ -1,5 +1,5 @@
 diff --git a/package.json b/package.json
-index 970307782916aeee9d430b191a054294eed75577..232778f0e67a18504aec9a875a75b5ee88fbbde3 100644
+index 970307782916aeee9d430b191a054294eed75577..888caa5ee6fe02767b5d836ece7897d2592bb925 100644
 --- a/package.json
 +++ b/package.json
 @@ -1,5 +1,6 @@
@@ -9,7 +9,7 @@ index 970307782916aeee9d430b191a054294eed75577..232778f0e67a18504aec9a875a75b5ee
    "version": "1.3.1",
    "license": "MIT",
    "description": "Manage state with style in Preact",
-@@ -18,19 +19,8 @@
+@@ -18,18 +19,12 @@
      "type": "opencollective",
      "url": "https://opencollective.com/preact"
    },
@@ -20,18 +20,20 @@ index 970307782916aeee9d430b191a054294eed75577..232778f0e67a18504aec9a875a75b5ee
 -  "types": "dist/signals.d.ts",
 -  "source": "src/index.ts",
    "exports": {
--    ".": {
+     ".": {
 -      "types": "./dist/signals.d.ts",
 -      "browser": "./dist/signals.module.js",
 -      "import": "./dist/signals.mjs",
 -      "require": "./dist/signals.js"
--    }
-+    ".": "./src/index.ts"
++      "node": "./dist/signals.module.js",
++      "browser": "./src/index.ts",
++      "production": "./src/index.ts",
++      "types": "./src/index.ts"
+     }
    },
    "mangle": "../../mangle.json",
-   "files": [
 diff --git a/src/index.ts b/src/index.ts
-index 79550801c3b180eb13712d734e280cafc7d2e911..7bd05c2e4f13d06fe0b4bbb1264aa3bc9542ff90 100644
+index 79550801c3b180eb13712d734e280cafc7d2e911..0bbf511c76305d343337d4961b52285dd20c8004 100644
 --- a/src/index.ts
 +++ b/src/index.ts
 @@ -9,15 +9,15 @@ import {
@@ -49,7 +51,7 @@ index 79550801c3b180eb13712d734e280cafc7d2e911..7bd05c2e4f13d06fe0b4bbb1264aa3bc
  	AugmentedElement as Element,
 -} from "./internal";
 +} from "./internal.d.ts";
-+import { OptionsTypes } from "./internal.d.ts"
++import { OptionsTypes } from "./internal.d.ts";
  
  export {
  	signal,

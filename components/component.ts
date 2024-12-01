@@ -1,4 +1,4 @@
-import { Component as Base, createContext, type JSX } from "preact"
+import { Component as Base, createContext, options, type JSX } from "preact"
 import type { ClientWorld } from "game/world.client.ts"
 import type { Data, MessageRegistry } from "game/messages.ts"
 
@@ -55,4 +55,45 @@ export namespace Events {
         export interface keyDown extends JSX.TargetedKeyboardEvent<HTMLInputElement> {}
         export interface focusOut extends JSX.TargetedFocusEvent<HTMLInputElement> {}
     }
+}
+
+/**
+ * Hooks into preact internals to treat `data-` props
+ * **with boolean values** as boolean attributes.
+ * 
+ * If the value is `true`, the attribute is rendered,
+ * otherwise it is omitted.
+ * 
+ * For example, this jsx:
+ * ```jsx
+ * <button data-hover="true" />
+ * <button data-hover="false" />
+ * <button data-hover={true} />
+ * <button data-hover={false} />
+ * ```
+ * ...would render this html:
+ * ```html
+ * <button data-hover="true"></button>
+ * <button data-hover="false"></button>
+ * <button data-hover></button>
+ * <button></button>
+ * ```
+ * 
+ * This behavior matches svelte's behavior and my own
+ * expectations, but preact made the switch to become
+ * compatible with react.
+ * https://github.com/preactjs/preact/issues/3717
+ */
+const vnode = options.vnode
+options.vnode = function (node) {
+    if (typeof node.type === "string") {
+        const { props } = node
+        for (const key in props) {
+            const value = props[key as keyof typeof props]
+            if (key.startsWith("data-") && typeof value === "boolean") {
+                props[key as keyof typeof props] = value ? "" : null
+            }
+        }
+    }
+    return vnode?.(node)
 }

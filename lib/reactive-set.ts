@@ -1,8 +1,12 @@
-import { signal } from "@preact/signals"
+import { signal } from "@preact/signals-core"
 
 export class ReactiveSet<T> implements Set<T> {
     
-    [Symbol.toStringTag] = "ReactiveSet"
+    declare [Symbol.toStringTag]: "ReactiveSet"
+
+    static {
+        this.prototype[Symbol.toStringTag] = "ReactiveSet"
+    }
     
     // The underlying set that all updates are applied to, and
     // from which all values are read.

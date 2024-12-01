@@ -71,7 +71,19 @@ import font from "font:family=Sue Ellen Francisco"
 		</style>
 		<script>
 			import { h, hydrate, render } from "preact"
+			import "@preact/signals"
 			import { GameUI } from "components/GameUI.tsx"
+			
+			if (import.meta.env.DEV) await import("preact/debug")
+			if ("Iterator" in window === false) await import("iterator-helpers-polyfill")
+
+			if (import.meta.env.DEV) {
+				render(h(GameUI, {}), document.body)
+			} else {
+				hydrate(h(GameUI, {}), document.body)
+			}
+		</script>
+		<script>
 			import sw from "../service-worker.ts?worker&url"
 
 			if (import.meta.env.PROD) {
@@ -85,15 +97,6 @@ import font from "font:family=Sue Ellen Francisco"
 				} else {
 					serviceWorker.register(sw, { scope: "/", type: "module" })
 				}
-			}
-			
-			if (import.meta.env.DEV) await import("preact/debug")
-			if ("Iterator" in window === false) await import("iterator-helpers-polyfill")
-
-			if (import.meta.env.DEV) {
-				render(h(GameUI, {}), document.body)
-			} else {
-				hydrate(h(GameUI, {}), document.body)
 			}
 		</script>
 	</head>

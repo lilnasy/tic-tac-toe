@@ -8,17 +8,21 @@ import { getKeyframesForChildren } from "./animation.ts"
 import * as Symbols from "./Symbols.tsx"
 import { ActionButton } from "./ActionButton.tsx"
 
-export function Game(props: Extract<ClientWorld.State, { connected: "togame" }>) {
-    
-    const { game } = props
+export namespace Game {
+    export interface Props {
+        state: Extract<ClientWorld.State, { connected: "togame" }>
+    }
+}
 
+export function Game({ state }: Game.Props) {
+    const { game } = state
     return <game-container class={css`
         display: grid;
         --board-size: min(100dvw, calc(100dvh - 6rem));
         grid-template-rows: 6rem var(--board-size);
         width: var(--board-size);
     `}>
-        <GameStatusHeader game={props}/>
+        <GameStatusHeader player={state.player}/>
         <Board/>
         { game.state === "draw" && <GameEndDialog draw/> }
         { game.state === "victory" && <GameEndDialog victory={game.winner}/> }
@@ -28,7 +32,7 @@ export function Game(props: Extract<ClientWorld.State, { connected: "togame" }>)
 namespace GameStatusHeader {
     export interface Props {
         class?: string
-        game: Extract<ClientWorld.State, { connected: "togame" }>
+        player: Extract<ClientWorld.State, { connected: "togame" }>["player"]
     }
 }
 
@@ -74,7 +78,7 @@ class GameStatusHeader extends Component<GameStatusHeader.Props, { editing: bool
         })
     }
 
-    handleEvent(event: Events.button.click | Events.input.keyDown | Events.input.focusOut) {
+    #handleEvent = (event: Events.button.click | Events.input.keyDown | Events.input.focusOut) => {
         if (event instanceof MouseEvent) {
             this.setState({ editing: true })
         } else if (event instanceof KeyboardEvent) {
@@ -89,9 +93,9 @@ class GameStatusHeader extends Component<GameStatusHeader.Props, { editing: bool
     }
 
     render(props: typeof this.props, state: typeof this.state) {
-        const { player: { animal } } = props.game
+        const { player: { animal } } = props
         return <game-status
-            data-editing={state.editing ? "" : null}
+            data-editing={state.editing}
             ref={this.#ref}
             class={cx(props.class, css`
                 display: grid;
@@ -117,7 +121,7 @@ class GameStatusHeader extends Component<GameStatusHeader.Props, { editing: bool
                 transition-property: background-color, color;
                 transition-duration: 250ms;
             `}/>
-            <div data-flip={animal.facingLeft ? "" : null} class={css`
+            <div data-flip={animal.facingLeft} class={css`
                 grid-area: avatar;
                 color-scheme: light;
                 background-color: var(--surface);
@@ -138,8 +142,8 @@ class GameStatusHeader extends Component<GameStatusHeader.Props, { editing: bool
                     value={animal.name}
                     ref={input => input?.focus()}
                     maxLength={20}
-                    onKeyDown={this}
-                    onFocusOut={this}
+                    onKeyDown={this.#handleEvent}
+                    onFocusOut={this.#handleEvent}
                     class={css`
                         grid-area: name;
                         background-color: transparent;
@@ -164,7 +168,7 @@ class GameStatusHeader extends Component<GameStatusHeader.Props, { editing: bool
                 style="outline"
                 size="small"
                 disabled={state.editing}
-                onClick={this}
+                onClick={this.#handleEvent}
                 class={css`
                     grid-area: edit;
                     overflow: hidden;
@@ -193,17 +197,10 @@ namespace GameEndDialog {
 }
 
 class GameEndDialog extends Component<GameEndDialog.Props> {
-
-    handleEvent(event: Events.button.click) {
-        if (event.currentTarget.dataset.playAgain) {
-            this.update("RequestRematch")
-        }
-    }
-
     render(props: typeof this.props) {
         return <PopUp class={props.class}>
             <p>{ props.draw ? "Draw" : "You Win!" }</p>
-            <ActionButton data-play-again secondary onClick={this}>Play Again</ActionButton>
+            <ActionButton secondary onClick={() => this.update("RequestRematch")}>Play Again</ActionButton>
         </PopUp>
     }
 }

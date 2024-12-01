@@ -1,6 +1,7 @@
+import { createMutable } from "lib/mutable-store.ts"
 import type { Channel, Receiver } from "game/channel.ts"
 import type { Data, MessageRegistry } from "game/messages.ts"
-import { type Entity, type States, create } from "game/entity.ts"
+import { type Entity, type States } from "game/entity.ts"
 import { type World, update } from "game/world.ts"
 import { colorSystemServer, connectionSystemServer, gameLoopSystemServer, lineCheckSystem, markerSystemServer, syncSystemServer, turnSystemServer, type System } from "game/systems.ts"
 import { Player } from "game/player.ts"
@@ -38,7 +39,7 @@ export class ServerWorld implements World, Receiver {
     }
 
     spawn<State extends keyof States>(entityData: Entity<State>) {
-        const entity = create(entityData)
+        const entity = createMutable(entityData)
         this.update("Spawn", entity)
         this.entities.add(entity)
         return entity

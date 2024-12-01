@@ -12,29 +12,9 @@
  * with entities that have the `Place` state.
  */
 
-import { signal } from "@preact/signals-core"
-
 export type Entity<State extends keyof States = never> =
     Partial<States> &
     Required<Pick<States, State>>
-
-export function create<State extends keyof States>(entity: Entity<State>) {
-    const version = signal(0)
-    return new Proxy(entity, {
-        get(target, key: keyof Entity<State>) {
-            version.value
-            return target[key]
-        },
-        set<T extends typeof entity>(target: T, key: keyof T, value: T[keyof T]) {
-            const old = target[key]
-            if (old !== value) {
-                target[key] = value
-                version.value++
-            }
-            return true
-        }
-    })
-}
 
 export interface States {
     Marked: Marked

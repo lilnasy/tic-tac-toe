@@ -1,9 +1,9 @@
+import { createMutable, store } from "lib/mutable-store.ts"
 import { ReactiveSet } from "lib/reactive-set.ts"
-import { signal } from "lib/signal-decorator.ts"
 import type { Channel, Receiver } from "game/channel.ts"
 import type { Data, MessageRegistry } from "game/messages.ts"
 import type { PlayerData } from "game/player.ts"
-import { type Entity, type States, create } from "game/entity.ts"
+import { type Entity, type States } from "game/entity.ts"
 import { type System, colorSystemClient, connectionSystemClient, gameLoopSystemClient, lineCheckSystem, markerSystemClient, syncSystemClient, turnSystemClient } from "game/systems.ts"
 import { type World, update } from "game/world.ts"
 
@@ -31,7 +31,7 @@ export class ClientWorld implements World, Receiver {
     receive = update
     update = update
 
-    @signal accessor state: ClientWorld.State = { connected: "connecting" }
+    @store accessor state: ClientWorld.State = { connected: "connecting" }
 
     constructor(websocket: WebSocket) {
         const channel = this.channel = new ClientToServerChannel(websocket)
@@ -50,7 +50,7 @@ export class ClientWorld implements World, Receiver {
     }
 
     spawn<State extends keyof States = never>(entityData: Entity<State>) {
-        const entity = create(entityData)
+        const entity = createMutable(entityData)
         this.update("Spawn", entity)
         this.entities.add(entity)
         return entity
@@ -100,14 +100,22 @@ export interface WorldData {
 type XO = "X" | "O"
 
 /**
- * Simulates worst case latency (400ms) by delaying the delivery of received messages.
+ * Randomly simulates bad or good latency by delaying the delivery of received messages.
+ * Bad latency sometimes results in lack of visual feedback, can be fixed by loading states.
+ * Good latency can make transitions appear flashy, can be fixed by artificial delays.
  */
 function simulateLatency(receiver: Receiver, ...args: Parameters<Receiver["receive"]>) {
-    setTimeout(setTimeOutCallback, 400, receiver, args)
+    queue.push([receiver, args])
+    setTimeout(dequeue, Math.random() < 0.5 ? 1000 : 150)
 }
 
-function setTimeOutCallback(receiver: Receiver, args: Parameters<Receiver["receive"]>) {
-    receiver.receive(...args)
+const queue = new Array<[Receiver, Parameters<Receiver["receive"]>]>()
+
+function dequeue() {
+    for (const [receiver, args] of queue) {
+        receiver.receive(...args)
+    }
+    queue.length = 0
 }
 
 class ClientToServerChannel implements Channel {

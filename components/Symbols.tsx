@@ -22,16 +22,14 @@ export function Button({
 }: Button.Props) {
     return <button
         {...props}
-        {...data({
-            primary: colors === "primary",
-            onsecondarycontainer: colors === "on-secondary-container",
-            onsurface: colors === "on-surface",
-            filledonhover: style === "filled-on-hover",
-            outline: style === "outline",
-            small: size === "small",
-            medium: size === "medium",
-            large: size === "large",
-        })}
+        data-primary={colors === "primary"}
+        data-onsecondarycontainer={colors === "on-secondary-container"}
+        data-onsurface={colors === "on-surface"}
+        data-filledonhover={style === "filled-on-hover"}
+        data-outline={style === "outline"}
+        data-small={size === "small"}
+        data-medium={size === "medium"}
+        data-large={size === "large"}
         class={cx(props.class, symbolButtonClass)}>
         { icon && <span aria-hidden>{icon}</span> }
         { label && <label aria-hidden>{label}</label> }
@@ -138,12 +136,3 @@ const symbolButtonClass = css`@layer symbol {
         }
     }
 }`
-
-function data(object: Record<string, boolean | undefined | null>): Record<string, ""> {
-    const attributes = {}
-    for (const key in object) {
-        // @ts-expect-error
-        if (object[key]) attributes[`data-${key}`] = ""
-    }
-    return attributes
-}

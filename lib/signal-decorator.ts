@@ -1,9 +1,9 @@
-import { type Signal, signal as _signal } from "@preact/signals"
+import { type Signal, signal as preactSignal } from "@preact/signals"
 
 // The function is described in terms of this interface to
 // keep hover info from becoming too noisy.
-interface AccessorDecorator {
-    <This, Value>(
+export interface AccessorDecorator<RequiredValue = unknown> {
+    <This, Value extends RequiredValue>(
         target: ClassAccessorDecoratorTarget<This, Value>,
         context: ClassAccessorDecoratorContext<This, Value>
     ): ClassAccessorDecoratorResult<This, Value>
@@ -16,7 +16,7 @@ interface AccessorDecorator {
  * Example:
  *
  * ```js
- * import { signal } from "lib/reactive.ts"
+ * import { signal } from "lib/signal-decorator.ts"
  *
  * class BearStore {
  * 
@@ -70,7 +70,7 @@ function decorator<This, Value>(
          * so this is correct.
          * @ts-expect-error */
         init(value) {
-            return _signal(value) satisfies ReturnType<typeof get>
+            return preactSignal(value) satisfies ReturnType<typeof get>
         },
         get() {
             return get.call(this).value

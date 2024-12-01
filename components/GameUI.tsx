@@ -1,8 +1,8 @@
-import { Component as PreactComponent, createRef } from "preact"
+import { createRef, type RenderableProps } from "preact"
 import cx from "clsx/lite"
 import { css } from "astro:emotion"
 import { ClientWorld, type WorldData } from "game/world.client.ts"
-import { Component, WorldContext, type Events } from "./component.ts"
+import { Component, WorldContext } from "./component.ts"
 import { Game } from "./Game.tsx"
 import { ExitPresence, type AnimatesOut } from "./ExitPresence.ts"
 import { ColorMixer } from "./ColorMixer.tsx"
@@ -10,53 +10,87 @@ import * as Symbols from "./Symbols.tsx"
 import { ActionButton } from "./ActionButton.tsx"
 
 export function GameUISSR() {
-    return <TitleScreen loading/>
+    return <LoadingScreen text="loading"/>
 }
 
-export class GameUI extends PreactComponent {
-    
-    #world = ClientWorld.connect()
-    
-    // called when one of the stores used in render() gets updated
-    handleEvent(event: Event) {
-        if (event.type === "update") this.forceUpdate()
-    }
-
-    render() {
-        const { state } = this.#world
-
-        return <WorldContext.Provider value={this.#world}>
-            <ExitPresence timeout={1000}>{
-                state.connected === "connecting" ? <TitleScreen connecting/> :
-                state.connected === "disconnected"  ? <TitleScreen/> :
-                state.connected === "connectingtoworld" ? <TitleScreen connecting="toworld"/> :
-                state.connected === "tolobby" ? <TitleScreen/> :
-                state.connected === "toworld" ? <WaitingForOpponentScreen world={state.world.name}/> :
-                state.connected === "togame" ? <Game {...state}/> : <></>
-            }</ExitPresence>
-            <ColorMixer class={css`place-self: end;`}/>
-        </WorldContext.Provider>
-    }
+export function GameUI() {
+    const world = ClientWorld.connect()
+    return <WorldContext.Provider value={world}>
+        <ScreenRouter world={world}/>
+        <ColorMixer class={css`place-self: end;`}/>
+    </WorldContext.Provider>
 }
 
-namespace TitleScreen {
+function ScreenRouter({ world }: { world: ClientWorld }) {
+
+    const { state } = world
+
+    return <ExitPresence timeout={1000}>{
+
+        state.connected === "connecting" ?
+            <LoadingScreen text="connecting"/> :
+
+        state.connected === "disconnected" ?
+            <LoadingScreen text="disconnected"/> :
+
+        state.connected === "connectingtoworld" ?
+            <LoadingScreen text={`connecting to ${state.world.name.replace("-", " ")}`}/> :
+
+        state.connected === "tolobby" ?
+            <TitleScreen/> :
+
+        state.connected === "toworld" ?
+            <WaitingForOpponentScreen world={state.world.name}/> :
+
+        state.connected === "togame" ?
+            <Game state={state}/> : <></>
+
+    }</ExitPresence>
+}
+
+namespace LoadingScreen {
     export interface Props {
         class?: string
-        connecting?: true | "toworld"
-        loading?: true
+        text: string
     }
 }
 
-class TitleScreen extends Component<TitleScreen.Props> implements AnimatesOut {
-    
-    handleEvent(event: Events.button.click) {
-        if (event.currentTarget.dataset.new) {
-            this.update("NewWorld")
-        } else if (event.currentTarget.dataset.join) {
-            const worldName = prompt("Enter world name")
-            if (typeof worldName !== "string") return
-            this.update("JoinWorld", { world: worldName.replace(" ", "-") })
+function LoadingScreen(props: RenderableProps<LoadingScreen.Props>) {
+    return <loading-screen class={css`
+        display: grid;
+        transition: opacity 250ms;
+        @starting-style {
+            opacity: 0;
         }
+    `}>
+        <TitleText/>
+        <p class={css`
+            height: 8rem;
+            margin: 0;
+            text-align: center;
+            color: var(--primary);
+            transition: opacity 250ms 250ms;
+            @starting-style { opacity: 0; }
+            &:after {
+                display: inline-block;
+                width: 0;
+                animation: ellipsis linear 3s infinite;
+                content: "";
+            }
+        `}>{props.text}</p>
+    </loading-screen>
+}
+
+class TitleScreen extends Component implements AnimatesOut {
+    
+    #container = createRef<HTMLDivElement>()
+
+    #newWorld = () => this.update("NewWorld")
+
+    #joinWorld = () => {
+        const worldName = prompt("Enter world name")
+        if (typeof worldName !== "string") return
+        this.update("JoinWorld", { world: worldName.replace(" ", "-") })
     }
 
     componentWillLeave(leave: () => void) {
@@ -65,85 +99,68 @@ class TitleScreen extends Component<TitleScreen.Props> implements AnimatesOut {
         const fadeOut: Keyframe[] = [{}, { opacity: 0 }]
         
         // to prevent visual noise, we animate differently when in a loading state
-        const leaveQuickly = this.props.connecting || this.props.loading
+        const leaveQuickly = false
+        const container = this.#container.current
         
         if (!leaveQuickly) {
-            const options = {
+            const options: KeyframeAnimationOptions = {
                 duration: 750,
                 // elastic in, ease out
                 easing: "cubic-bezier(0.75, -0.75, 0.25, 1)"
-            } as const satisfies KeyframeAnimationOptions
+            }
 
-            for (const h1 of this.#titleText) {
-                const element: HTMLHeadingElement = (h1 as any)._dom
+            for (const element of container!.querySelectorAll("h1")) {
                 element.animate(upwards, options)
             }
             
-            for (const button of this.#buttons) {
-                const element: HTMLButtonElement = (button as any)._dom
-                element.animate(downwards, options)
+            for (const button of container!.querySelectorAll("button")) {
+                button.animate(downwards, options)
             }
         }
 
-        const container = this.#base.current
         const animation = container!.animate(fadeOut, { duration: leaveQuickly ? 250 : 500 })
         animation.finished.then(leave)
     }
 
-    #base = createRef<HTMLDivElement>()
-
-    #titleText = ["TIC", "TAC", "TOE"].map((text, i) => <h1 class={css`
-        font-weight: 400;
-        font-size: 5rem;
-        text-align: center;
-        color: var(--primary);
-        line-height: 5rem;
-        margin: 0;
-        pointer-events: none;
-        transition:
-            color 250ms,
-            translate 1s var(--stagger),
-            opacity 1s var(--stagger);
-        @starting-style {
-            translate: 0 3rem;
-            opacity: 0;
-        }
-    `} aria-hidden style={{ "--stagger": `${i * 250}ms` }}>{text}</h1>)
-
-    #connecting = <p class={css`
-        height: 8rem;
-        margin: 0;
-        text-align: center;
-        color: var(--primary);
-        transition: opacity 250ms 250ms;
-        @starting-style { opacity: 0; }
-        &:after {
-            display: inline-block;
-            width: 0;
-            animation: ellipsis linear 3s infinite;
-            content: "";
-        }
-    `}>{
-        this.props.loading ? "loading" :
-        this.props.connecting === true ? "connecting" :
-        `connecting to world '${this.props.connecting?.replace("-", " ")}'`
-    }</p>
-
-    #buttons = [
-        <ActionButton data-new onClick={this} primary>New Game</ActionButton>,
-        <ActionButton data-join onClick={this} secondary>Join</ActionButton>
-    ]
-
-    render(props: typeof this.props) {
-        return <title-screen class={cx(props.class, css`
+    render() {
+        return <title-screen class={css`
             display: grid;
             transition: opacity 250ms;
-        `)} ref={this.#base}>
-            <h1 class={css`contain: strict;`}>TIC TAC TOE</h1>
-            {this.#titleText}
-            {props.loading || props.connecting ? this.#connecting : this.#buttons}
+        `} ref={this.#container}>
+            <TitleText/>
+            <ActionButton onClick={this.#newWorld} primary>New Game</ActionButton>
+            <ActionButton onClick={this.#joinWorld} secondary>Join</ActionButton>
         </title-screen>
     }
+}
+
+function TitleText() {
+    return <>
+        <h1 class={css`contain: strict;`}>TIC TAC TOE</h1>
+        {["TIC", "TAC", "TOE"].map((text, i) =>
+            <h1
+                aria-hidden
+                class={css`
+                    font-weight: 400;
+                    font-size: 5rem;
+                    text-align: center;
+                    color: var(--primary);
+                    line-height: 5rem;
+                    margin: 0;
+                    pointer-events: none;
+                    transition:
+                        color 250ms,
+                        translate 1s var(--stagger),
+                        opacity 1s var(--stagger);
+                    @starting-style {
+                        translate: 0 3rem;
+                        opacity: 0;
+                    }
+                `}
+                style={{ "--stagger": `${i * 250}ms` }}
+            >{text}</h1>
+        )}
+    </>
 }
 
 namespace WaitingForOpponentScreen {
@@ -155,16 +172,14 @@ namespace WaitingForOpponentScreen {
 
 class WaitingForOpponentScreen extends Component<WaitingForOpponentScreen.Props> {
     
-    copy() {
+    #copy = () =>
         navigator.clipboard.writeText(this.props.world.replace(" ", "-"))
-    }
     
-    share() {
+    #share = () =>
         navigator.share({
             title: "Tic Tac Toe",
             url: location.href
         }).catch(() => {})
-    }
 
     render(props: typeof this.props) {
         return <waiting-screen class={cx(props.class, css`
@@ -217,14 +232,14 @@ class WaitingForOpponentScreen extends Component<WaitingForOpponentScreen.Props>
                     colors="on-secondary-container"
                     style="outline"
                     size="medium"
-                    onClick={this.copy}
+                    onClick={this.#copy}
                 />}
                 {"share" in navigator && <Symbols.Button
                     icon="ios_share"
                     colors="on-secondary-container"
                     style="outline"
                     size="medium"
-                    onClick={this.share}
+                    onClick={this.#share}
                 />}
             </div>
             <p class={css`

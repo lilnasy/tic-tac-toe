@@ -1,7 +1,7 @@
 import cx from "clsx/lite"
 import { css } from "astro:emotion"
 import type { Entity } from "game/entity.ts"
-import { Component, type Attributes, type Events } from "./component.ts"
+import { Component, type Attributes } from "./component.ts"
 
 export function Board(props: Attributes) {
     return <xo-board {...props} class={cx(props.class, css`
@@ -46,17 +46,10 @@ interface ViewProps {
 }
 
 class Square extends Component<ViewProps> {
-
-    handleEvent(_: Events.button.click) {
-        const { Place: place } = this.props.entity
-        if (place) this.update("Mark", { place })
-        else console.error(new Error("The entity provided to the Square View does not have the required states", { cause: this.props.entity }))
-    }
-
     render({ entity }: typeof this.props) {
         const { state } = this.world
         const { Marked, Place } = entity as Entity<"Place">
-        
+
         const playable = Marked === undefined &&
             state.connected === "togame" &&
             state.game.state === "active" &&
@@ -77,14 +70,14 @@ class Square extends Component<ViewProps> {
                 gridRow: Math.ceil(Place / 3),
                 gridColumn: ((Place - 1) % 3) + 1
             }}
-            onClick={this}
+            onClick={() => this.update("Mark", { place: this.props.entity.Place! })}
             disabled={ playable === false }
         >{Marked || null}</button>
     }
 }
 
 function Strikethrough({ entity }: ViewProps) {
-    if (entity.Line === null || entity.Line === undefined) return <></>
+    if (entity.Line === undefined) return <></>
     const [ a, b, c ] = entity.Line
     const placement = a * 100 + b * 10 + c
 
