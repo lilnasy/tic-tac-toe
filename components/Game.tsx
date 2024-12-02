@@ -105,7 +105,6 @@ class GameStatusHeader extends Component<GameStatusHeader.Props, { editing: bool
                 place-self: start center;
                 text-align: center;
                 padding: 1rem 2rem;
-                z-index: var(--z-game-status);
                 &:is(:hover, :focus-within):not([data-editing]) {
                     grid-template-columns: auto 1rem auto 1rem auto;
                 }
@@ -226,7 +225,6 @@ class PopUp extends Component<Attributes.dialog> {
             width: min(20rem, 100dvw);
             background: var(--secondary-container);
             color: var(--on-secondary-container);
-            z-index: var(--z-pop-up);
             border-radius: 1rem;
             transition-property: opacity, translate;
             transition-duration: 1s;

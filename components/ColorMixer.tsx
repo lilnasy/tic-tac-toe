@@ -28,7 +28,7 @@ export class ColorMixer extends Component<Attributes> {
                 "c d";
             margin: 1rem;
             transition: opacity 250ms;
-            z-index: var(--z-color-mixer);
+            isolation: isolate;
             @starting-style { opacity: 0; }
         `)}>
             <Symbols.Button

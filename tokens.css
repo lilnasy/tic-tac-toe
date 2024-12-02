@@ -1,9 +1,4 @@
 :root {
-    /* centrally managed z-indexes to avoid conflicts, and to control them like layers */
-    --z-game-status: 1;
-    --z-color-mixer: 2;
-    --z-pop-up: 3;
-
     --base-hue: 0;
     --primary: light-dark(
         oklch(30% 0.12 var(--base-hue)),
