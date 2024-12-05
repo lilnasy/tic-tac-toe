@@ -202,26 +202,34 @@ class WaitingForOpponentScreen extends Component<WaitingForOpponentScreen.Props>
                 text-align: center;
                 line-height: 120%;
             `}>Share this code with a friend to play against them.</p>
-            <div class={css`
+            <world-name class={css`
                 grid-area: d;
                 display: grid;
                 place-items: center;
-                &:has(> *:nth-child(2)):not(:has(> *:nth-child(3))) {
-                    grid-template-columns: auto 1fr;
-                }
                 &:has(> *:nth-child(3)) {
-                    grid-template-columns: auto 1fr 1fr;
+                    grid-template-areas:
+                        "a a"
+                        "b c";
+                    & > h6:first-child {
+                        grid-area: a;
+                    }
+                    & > *:nth-child(2) {
+                        place-self: end;
+                    }
+                    & > *:nth-child(3) {
+                        place-self: start;
+                    }
                 }
-                column-gap: 1rem;
+                gap: 1rem;
                 border-radius: 1rem;
                 padding: 1rem;
-                outline: 2px solid var(--on-secondary-container);
+                filter: drop-shadow(8px 16px 16px oklch(from var(--on-secondary-container) l c h / 0.25));
                 background-color: var(--secondary-container);
                 color: var(--on-secondary-container);
-                transition: outline-color 250ms, background-color 250ms;
+                transition: background-color, color, filter;
+                transition-duration: 250ms;
             `}>
                 <h6 class={css`
-                    text-align: center;
                     font-size: 3rem;
                     font-weight: inherit;
                     margin: 0;
@@ -229,19 +237,21 @@ class WaitingForOpponentScreen extends Component<WaitingForOpponentScreen.Props>
                 `}>{props.world.replace("-", " ")}</h6>
                 {"clipboard" in navigator && <Symbols.Button
                     icon="content_copy"
+                    label="Copy"
                     colors="on-secondary-container"
                     style="outline"
-                    size="medium"
+                    size="small"
                     onClick={this.#copy}
                 />}
                 {"share" in navigator && <Symbols.Button
                     icon="ios_share"
+                    label="Share"
                     colors="on-secondary-container"
                     style="outline"
-                    size="medium"
+                    size="small"
                     onClick={this.#share}
                 />}
-            </div>
+            </world-name>
             <p class={css`
                 grid-area: f;
                 color: var(--primary);
