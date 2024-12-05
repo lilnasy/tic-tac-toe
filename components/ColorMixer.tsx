@@ -23,11 +23,16 @@ export class ColorMixer extends Component<Attributes> {
     render(props: typeof this.props) {
         return <color-mixer {...props} class={cx(props.class, css`
             display: grid;
-            grid:
-                "a b"
-                "c d";
+            grid: "a" "b";
             margin: 1rem;
-            transition: opacity 250ms;
+            border-radius: 1rem;
+            background-color: transparent;
+            &:has(dialog[open]) {
+                background-color: var(--secondary-container);
+            }
+            filter: drop-shadow(8px 16px 16px oklch(from var(--primary) l c h / 0.5));
+            transition-property: background-color, filter, opacity;
+            transition-duration: 250ms;
             isolation: isolate;
             @starting-style { opacity: 0; }
         `)}>
@@ -36,8 +41,30 @@ export class ColorMixer extends Component<Attributes> {
                 style="filled-on-hover"
                 colors="primary"
                 size="large"
-                class={css`grid-area: d;`}
                 onClick={this.#toggleColorWheel}
+                class={css`
+                    grid-area: b;
+                    place-self: end;
+                    display: revert-layer;
+                    color-mixer:has(dialog[open]) > & {
+                        display: none;
+                    }
+                `}
+            />
+            <Symbols.Button
+                icon="close"
+                style="filled-on-hover"
+                colors="primary"
+                size="large"
+                onClick={this.#toggleColorWheel}
+                class={css`
+                    grid-area: b;
+                    place-self: end;
+                    display: none;
+                    color-mixer:has(dialog[open]) > & {
+                        display: revert-layer;
+                    }
+                `}
             />
             <dialog ref={this.#colorWheelDialogRef} class={css`
                 &[open] {
@@ -47,12 +74,10 @@ export class ColorMixer extends Component<Attributes> {
                 position: static;
                 width: 10rem;
                 height: 10rem;
-                background-color: var(--primary-container);
-                outline: solid 0.25rem;
-                outline-color: var(--primary);
+                background-color: transparent;
                 transition-behavior: allow-discrete;
                 transition-duration: 250ms;
-                transition-property: background-color, display, opacity, outline-color, scale, translate;
+                transition-property: background-color, display, opacity, scale, translate;
                 place-items: center;
                 border: none;
                 margin: 0;
@@ -60,12 +85,12 @@ export class ColorMixer extends Component<Attributes> {
                 @starting-style {
                     opacity: 0;
                     scale: 0.75;
-                    translate: 3rem 3rem;
+                    translate: 0 3rem;
                 }
                 &:not([open])  {
                     opacity: 0;
                     scale: 0.75;
-                    translate: 3rem 3rem;
+                    translate: 0 3rem;
                 }
             `}>
                 <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" alt="Hue wheel track" class={css`
