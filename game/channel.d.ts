@@ -1,4 +1,4 @@
-import type { MessageRegistry } from "game/messages.ts"
+import type { MessageRegistry } from "game/messages.d.ts"
 
 /**
  * Channel provides a type-safe way of communication between the server and the clients.

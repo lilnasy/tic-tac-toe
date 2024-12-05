@@ -1,4 +1,4 @@
-import type { Entity, Line, Place } from "game/entity.ts"
+import type { Entity, Line, Place } from "game/entity.d.ts"
 import type { Player, PlayerData } from "game/player.ts"
 
 /**

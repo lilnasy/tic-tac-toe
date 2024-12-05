@@ -1,11 +1,11 @@
 import { createMutable, store } from "lib/mutable-store.ts"
 import { ReactiveSet } from "lib/reactive-set.ts"
-import type { Channel, Receiver } from "game/channel.ts"
-import type { Data, MessageRegistry } from "game/messages.ts"
+import type { Channel, Receiver } from "game/channel.d.ts"
+import type { Data, MessageRegistry } from "game/messages.d.ts"
 import type { PlayerData } from "game/player.ts"
-import { type Entity, type States } from "game/entity.ts"
+import type { Entity, States } from "game/entity.d.ts"
+import type { World } from "game/world.d.ts"
 import { type System, colorSystemClient, connectionSystemClient, gameLoopSystemClient, lineCheckSystem, markerSystemClient, syncSystemClient, turnSystemClient } from "game/systems.ts"
-import { type World, update } from "game/world.ts"
 
 export class ClientWorld implements World, Receiver {
 
@@ -24,13 +24,6 @@ export class ClientWorld implements World, Receiver {
         syncSystemClient
     ]
 
-    /*
-     * The client can be trusting of the server.
-     * Send all received events directly to all systems using `update()`.
-     */
-    receive = update
-    update = update
-
     @store accessor state: ClientWorld.State = { connected: "connecting" }
 
     constructor(websocket: WebSocket) {
@@ -48,6 +41,22 @@ export class ClientWorld implements World, Receiver {
             return new ClientWorld(new WebSocket(url))
         }
     }
+
+    update<Message extends keyof MessageRegistry>(
+        message: Message,
+        ..._data: Data<Message>
+    ) {
+        const [ data = {} ] = _data
+        for (const system of this.systems) {
+            system[`on${message}`]?.(data as any, this as any)
+        }
+    }
+
+    /*
+     * The client can be trusting of the server.
+     * Send all received events directly to all systems using `update()`.
+     */
+    receive = this.update
 
     spawn<State extends keyof States = never>(entityData: Entity<State>) {
         const entity = createMutable(entityData)

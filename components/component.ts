@@ -1,6 +1,6 @@
 import { Component as Base, createContext, options, type JSX } from "preact"
 import type { ClientWorld } from "game/world.client.ts"
-import type { Data, MessageRegistry } from "game/messages.ts"
+import type { Data, MessageRegistry } from "game/messages.d.ts"
 
 export const WorldContext = createContext<ClientWorld>({} as any)
 

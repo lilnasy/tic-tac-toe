@@ -1,6 +1,6 @@
 import cx from "clsx/lite"
 import { css } from "astro:emotion"
-import type { Entity } from "game/entity.ts"
+import type { Entity } from "game/entity.d.ts"
 import { Component, type Attributes } from "./component.ts"
 
 export function Board(props: Attributes) {

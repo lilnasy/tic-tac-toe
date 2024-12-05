@@ -1,5 +1,5 @@
-import type { Data, MessageRegistry } from "game/messages.ts"
-import type { Channel, Receiver } from "game/channel.ts"
+import type { Data, MessageRegistry } from "game/messages.d.ts"
+import type { Channel, Receiver } from "game/channel.d.ts"
 import type * as Animal from "game/animals.ts"
 
 export interface PlayerData {

@@ -1,8 +1,8 @@
 import { createMutable } from "lib/mutable-store.ts"
-import type { Channel, Receiver } from "game/channel.ts"
-import type { Data, MessageRegistry } from "game/messages.ts"
-import { type Entity, type States } from "game/entity.ts"
-import { type World, update } from "game/world.ts"
+import type { Channel, Receiver } from "game/channel.d.ts"
+import type { Data, MessageRegistry } from "game/messages.d.ts"
+import type { Entity, States } from "game/entity.d.ts"
+import type { World } from "game/world.d.ts"
 import { colorSystemServer, connectionSystemServer, gameLoopSystemServer, lineCheckSystem, markerSystemServer, syncSystemServer, turnSystemServer, type System } from "game/systems.ts"
 import { Player } from "game/player.ts"
 
@@ -26,8 +26,6 @@ export class ServerWorld implements World, Receiver {
     players = new Set<Player>
     disconnectedPlayers = new Set<Player>
     
-    update = update
-    
     /**
      * A static object containing global state related to the game.
      */
@@ -36,6 +34,26 @@ export class ServerWorld implements World, Receiver {
     constructor(readonly name: string) {
         const channel = this.channel = new ServerToClientsChannel(this.players)
         channel.subscribe(this)
+    }
+
+    update<Message extends keyof MessageRegistry>(
+        message: Message,
+        ..._data: Data<Message>
+    ) {
+        const [ data = {} ] = _data
+        for (const system of this.systems) {
+            system[`on${message}`]?.(data as any, this as any)
+        }
+    }
+    
+    /**
+     * To prevent reverse engineering and cheating, only certain messages sent by players
+     * are allowed to have an effect on the server world.
+     */
+    static #messageAllowlist: ReadonlyArray<keyof MessageRegistry> = [ "Disconnected", "UpdateColors", "Mark", "RequestRematch" ]
+    
+    receive<Message extends keyof MessageRegistry>(message: Message, data: MessageRegistry[Message]) {
+        if (ServerWorld.#messageAllowlist.includes(message)) this.update(message, data)
     }
 
     spawn<State extends keyof States>(entityData: Entity<State>) {
@@ -47,16 +65,6 @@ export class ServerWorld implements World, Receiver {
 
     despawn(entity: Entity) {
         this.entities.delete(entity)
-    }
-    
-    /**
-     * To prevent reverse engineering and cheating, only certain messages sent by players
-     * are allowed to have an effect on the server world.
-     */
-    static #messageAllowlist: ReadonlyArray<keyof MessageRegistry> = [ "Disconnected", "UpdateColors", "Mark", "RequestRematch" ]
-    
-    receive<Message extends keyof MessageRegistry>(message: Message, data: MessageRegistry[Message]) {
-        if (ServerWorld.#messageAllowlist.includes(message)) this.update(message, data)
     }
 }
 

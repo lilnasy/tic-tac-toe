@@ -2,8 +2,8 @@ import { WebSocket } from "@withastro/node/websocket"
 import { generateProjectName as generateWorldName } from "vendor/withastro/cli-kit"
 import { ServerWorld } from "game/world.server.ts"
 import { Player } from "game/player.ts"
-import type { Receiver } from "game/channel.ts"
-import type { JoinWorld, MessageRegistry, NewWorld, Disconnected } from "game/messages.ts"
+import type { Receiver } from "game/channel.d.ts"
+import type { JoinWorld, MessageRegistry, NewWorld, Disconnected } from "game/messages.d.ts"
 
 /**
  * The lobby is responsible for creating new worlds where games can be played, and adding newly-connected players to those #worlds.
