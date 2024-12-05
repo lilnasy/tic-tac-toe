@@ -27,6 +27,10 @@ export class ActionButton extends Component<ActionButton.Props> {
             font-size: inherit;
             height: 3rem;
             width: 8rem;
+            background-color: var(--bg);
+            outline-color: var(--bg);
+            color: var(--fg);
+            filter: drop-shadow(8px 16px 16px oklch(from var(--bg) l c h / 0.5));
             border-radius: 1.5rem;
             margin: 0.5rem;
             padding: 0;
@@ -52,13 +56,11 @@ export class ActionButton extends Component<ActionButton.Props> {
             }
             @starting-style { opacity: 0; }
         `, primary && css`
-            background-color: var(--primary);
-            outline-color: var(--primary);
-            color: var(--on-primary);
+            --bg: var(--primary);
+            --fg: var(--on-primary);
         `, secondary && css`
-            background-color: var(--secondary);
-            outline-color: var(--secondary);
-            color: var(--on-secondary);
+            --bg: var(--secondary);
+            --fg: var(--on-secondary);
         `)}/>
     }
 }
