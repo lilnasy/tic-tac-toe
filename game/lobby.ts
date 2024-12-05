@@ -3,7 +3,7 @@ import { generateProjectName as generateWorldName } from "vendor/withastro/cli-k
 import { ServerWorld } from "game/world.server.ts"
 import { Player } from "game/player.ts"
 import type { Receiver } from "game/channel.d.ts"
-import type { JoinWorld, MessageRegistry, NewWorld, Disconnected } from "game/messages.d.ts"
+import type { JoinWorld, MessageRegistry, NewWorld, Disconnected, Messages } from "game/messages.d.ts"
 
 /**
  * The lobby is responsible for creating new worlds where games can be played, and adding newly-connected players to those #worlds.
@@ -17,7 +17,7 @@ export const lobby = new class Lobby implements Receiver {
         player.subscribe(this)
     }
 
-    receive<Message extends keyof MessageRegistry>(message: Message, data: MessageRegistry[Message]) {
+    receive<Message extends Messages>(message: Message, data: MessageRegistry[Message]) {
         if (message === "Disconnected") {
             const { player } = data as Disconnected
             player!.unsubscribe(this)

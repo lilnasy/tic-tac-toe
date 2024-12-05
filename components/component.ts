@@ -1,6 +1,6 @@
 import { Component as Base, createContext, options, type JSX } from "preact"
 import type { ClientWorld } from "game/world.client.ts"
-import type { Data, MessageRegistry } from "game/messages.d.ts"
+import type { Data, Messages } from "game/messages.d.ts"
 
 export const WorldContext = createContext<ClientWorld>({} as any)
 
@@ -10,7 +10,7 @@ export abstract class Component<P = {}, S = {}> extends Base<P, S> {
     
     world = this.context as ClientWorld
     
-    update<Message extends keyof MessageRegistry>(message: Message, ..._data: Data<Message>): void {
+    update<Message extends Messages>(message: Message, ..._data: Data<Message>): void {
         this.world.update(message, ..._data)
     }
 }

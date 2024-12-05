@@ -8,11 +8,11 @@ import type { MessageRegistry } from "game/messages.d.ts"
  * messages from the other side.
  */
 export interface Channel {
-    send<Message extends keyof MessageRegistry>(message: Message, data: MessageRegistry[Message]): unknown
+    send<Message extends Messages>(message: Message, data: MessageRegistry[Message]): unknown
     subscribe(receiver: Receiver): unknown
     unsubscribe(receiver: Receiver): unknown
 }
 
 export interface Receiver {
-    receive<Message extends keyof MessageRegistry>(message: Message, data: MessageRegistry[Message]): unknown
+    receive<Message extends Messages>(message: Message, data: MessageRegistry[Message]): unknown
 }

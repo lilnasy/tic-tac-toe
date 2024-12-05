@@ -1,4 +1,4 @@
-import type { Data, MessageRegistry } from "game/messages.d.ts"
+import type { Data, Messages } from "game/messages.d.ts"
 import type { Channel, Receiver } from "game/channel.d.ts"
 import type * as Animal from "game/animals.ts"
 
@@ -39,7 +39,7 @@ export class Player implements Channel {
         this.#websocket = websocket
     }
 
-    send<Message extends keyof MessageRegistry>(message: Message, ..._data: Data<Message>) {
+    send<Message extends Messages>(message: Message, ..._data: Data<Message>) {
         const [ data = {} ] = _data
         // if the current player was the one who created this message, dont bother echoing it back
         if (Player.get(data) === this) return
@@ -68,7 +68,7 @@ export class Player implements Channel {
         return Sender.get(messageData)
     }
 
-    static notFound(message: keyof MessageRegistry, data: {}) {
+    static notFound(message: Messages, data: {}) {
         return console.error(new Error(`The ${message} message did not have a player associated with it.`, { cause: data }))
     }
 
@@ -99,7 +99,7 @@ export class Player implements Channel {
                     Sender.set(data, this)
                 }
                 for (const receiver of this.#receivers) {
-                    receiver.receive(message as keyof MessageRegistry, data)
+                    receiver.receive(message as Messages, data)
                 }
             }
         }

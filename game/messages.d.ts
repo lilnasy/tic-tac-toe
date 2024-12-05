@@ -1,6 +1,8 @@
 import type { Entity, Line, Place } from "game/entity.d.ts"
 import type { Player, PlayerData } from "game/player.ts"
 
+export type Messages = keyof MessageRegistry
+
 /**
  * All communication between the systems, and between server and
  * the clients must happen in the form of these messages.
@@ -46,7 +48,7 @@ export interface MessageRegistry {
  * used for spread params, allowing the call site to leave out
  * the argument if data is an empty interface.
  */
-export type Data<Message extends keyof MessageRegistry> =
+export type Data<Message extends Messages> =
     {} extends MessageRegistry[Message]
         ? ([] | [data: MessageRegistry[Message]])
         : [data: MessageRegistry[Message]]

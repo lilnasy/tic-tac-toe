@@ -1,7 +1,7 @@
 import { createMutable, store } from "lib/mutable-store.ts"
 import { ReactiveSet } from "lib/reactive-set.ts"
 import type { Channel, Receiver } from "game/channel.d.ts"
-import type { Data, MessageRegistry } from "game/messages.d.ts"
+import type { Data, Messages } from "game/messages.d.ts"
 import type { PlayerData } from "game/player.ts"
 import type { Entity, States } from "game/entity.d.ts"
 import type { World } from "game/world.d.ts"
@@ -42,7 +42,7 @@ export class ClientWorld implements World, Receiver {
         }
     }
 
-    update<Message extends keyof MessageRegistry>(
+    update<Message extends Messages>(
         message: Message,
         ..._data: Data<Message>
     ) {
@@ -136,7 +136,7 @@ class ClientToServerChannel implements Channel {
         websocket.addEventListener("close", this, { once: true })
     }
     
-    send<Message extends keyof MessageRegistry>(message: Message, ..._data: Data<Message>) {
+    send<Message extends Messages>(message: Message, ..._data: Data<Message>) {
         const [ data = {} ] = _data
         const { websocket } = this
         if (websocket.readyState === WebSocket.OPEN) {
@@ -178,9 +178,9 @@ class ClientToServerChannel implements Channel {
                 const data = messageAndData[message]
                 for (const receiver of this.#receivers) {
                     if (import.meta.env.DEV) {
-                        simulateLatency(receiver, message as keyof MessageRegistry, data)
+                        simulateLatency(receiver, message as Messages, data)
                     } else {
-                        receiver.receive(message as keyof MessageRegistry, data)
+                        receiver.receive(message as Messages, data)
                     }
                 }
             } 

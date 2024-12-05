@@ -1,7 +1,7 @@
 import { effect } from "@preact/signals-core"
 import { metadata } from "lib/metadata.ts"
 import { get, set } from "lib/indexed-kv.ts"
-import type { MessageRegistry, UpdateColors } from "game/messages.d.ts"
+import type { MessageRegistry, Messages, UpdateColors } from "game/messages.d.ts"
 import type { Entity, Line, Place } from "game/entity.d.ts"
 import type { ClientWorld } from "game/world.client.ts"
 import type { ServerWorld } from "game/world.server.ts"
@@ -480,7 +480,7 @@ export const connectionSystemServer: System<"server"> = {
 }
 
 export type System<RunsOn extends "server" | "client" | "both" = "both"> = {
-    [M in `on${keyof MessageRegistry}`]?: (
+    [M in `on${Messages}`]?: (
         data: MessageRegistry[RemoveOn<M>],
         world:
             RunsOn extends "server" ? ServerWorld :
