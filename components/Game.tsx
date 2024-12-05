@@ -1,5 +1,6 @@
 import cx from "clsx/lite"
 import { css } from "astro:emotion"
+import { signal } from "lib/signal-decorator.ts"
 import { Component, type Attributes, type Events } from "./component.ts"
 import { Board } from "./Board.tsx"
 import type { ClientWorld } from "game/world.client.ts"
@@ -36,11 +37,11 @@ namespace GameStatusHeader {
     }
 }
 
-class GameStatusHeader extends Component<GameStatusHeader.Props, { editing: boolean }> {
+class GameStatusHeader extends Component<GameStatusHeader.Props> {
     
     #ref = createRef<HTMLElement>()
 
-    state = { editing: false }
+    @signal accessor #editing = false
 
     componentDidMount() {
         const element = this.#ref.current!
@@ -78,24 +79,16 @@ class GameStatusHeader extends Component<GameStatusHeader.Props, { editing: bool
         })
     }
 
-    #handleEvent = (event: Events.button.click | Events.input.keyDown | Events.input.focusOut) => {
-        if (event instanceof MouseEvent) {
-            this.setState({ editing: true })
-        } else if (event instanceof KeyboardEvent) {
-            if (event.key === "Enter")
-                this.setState({ editing: false })
-            else if (event.key === "Escape") {
-                this.setState({ editing: false })
-            }
-        } else if (event instanceof FocusEvent) {
-            this.setState({ editing: false })
+    #onKeyDown = (event: Events.input.keyDown) => {
+        if (event.key === "Enter" || event.key === "Escape") {
+            this.#editing = false
         }
     }
 
     render(props: typeof this.props, state: typeof this.state) {
         const { player: { animal } } = props
         return <game-status
-            data-editing={state.editing}
+            data-editing={this.#editing}
             ref={this.#ref}
             class={cx(props.class, css`
                 display: grid;
@@ -135,14 +128,14 @@ class GameStatusHeader extends Component<GameStatusHeader.Props, { editing: bool
                 }
             `}>{animal.emoji}</div>
             {
-                state.editing
+                this.#editing
                 ? <input
                     type="text"
                     value={animal.name}
                     ref={input => input?.focus()}
                     maxLength={20}
-                    onKeyDown={this.#handleEvent}
-                    onFocusOut={this.#handleEvent}
+                    onKeyDown={this.#onKeyDown}
+                    onFocusOut={() => this.#editing = false}
                     class={css`
                         grid-area: name;
                         background-color: transparent;
@@ -166,8 +159,8 @@ class GameStatusHeader extends Component<GameStatusHeader.Props, { editing: bool
                 colors="on-surface"
                 style="outline"
                 size="small"
-                disabled={state.editing}
-                onClick={this.#handleEvent}
+                disabled={this.#editing}
+                onClick={() => this.#editing = true}
                 class={css`
                     grid-area: edit;
                     overflow: hidden;
