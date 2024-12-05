@@ -42,13 +42,13 @@ export class ClientWorld implements World, Receiver {
         }
     }
 
-    update<Message extends Messages>(
+    async update<Message extends Messages>(
         message: Message,
         ..._data: Data<Message>
     ) {
         const [ data = {} ] = _data
         for (const system of this.systems) {
-            system[`on${message}`]?.(data as any, this as any)
+            await system[`on${message}`]?.(data as any, this)
         }
     }
 

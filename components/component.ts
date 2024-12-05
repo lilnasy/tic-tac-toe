@@ -10,8 +10,8 @@ export abstract class Component<P = {}, S = {}> extends Base<P, S> {
     
     world = this.context as ClientWorld
     
-    update<Message extends Messages>(message: Message, ..._data: Data<Message>): void {
-        this.world.update(message, ..._data)
+    update<Message extends Messages>(message: Message, ..._data: Data<Message>): unknown {
+        return this.world.update(message, ..._data)
     }
 }
 

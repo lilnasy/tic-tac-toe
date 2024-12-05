@@ -9,9 +9,9 @@ export class ColorMixer extends Component<Attributes> {
 
     #colorWheelDialogRef = createRef<HTMLDialogElement>()
 
-    #switchScheme = () => {
-        this.update("UpdateColors", { scheme: "switch" })
-        this.update("SyncColors")
+    #switchScheme = async () => {
+        await this.update("UpdateColors", { scheme: "switch" })
+        await this.update("SyncColors")
     }
 
     #toggleColorWheel = () => {
