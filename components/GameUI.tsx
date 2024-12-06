@@ -58,6 +58,7 @@ namespace LoadingScreen {
 function LoadingScreen(props: RenderableProps<LoadingScreen.Props>) {
     return <loading-screen class={cx(props.class, css`
         display: grid;
+        grid-template-rows: 0;
         transition: opacity 250ms;
         @starting-style {
             opacity: 0;
@@ -125,6 +126,7 @@ class TitleScreen extends Component<Attributes> implements AnimatesOut {
     render(props: typeof this.props) {
         return <title-screen class={cx(props.class, css`
             display: grid;
+            grid-template-rows: 0;
             transition: opacity 250ms;
         `)} ref={this.#container}>
             <TitleText/>
