@@ -1,122 +1,103 @@
 import { createRef } from "preact"
 import cx from "clsx/lite"
 import { css } from "astro:emotion"
-import { Component, type Attributes } from "./component.ts"
+import { Component } from "./component.ts"
 import * as Symbols from "./Symbols.tsx"
 
 
-export class ColorMixer extends Component<Attributes> {
+export class ColorMixer extends Component<{ class?: string }> {
 
-    #colorWheelDialogRef = createRef<HTMLDialogElement>()
+    #dialogRef = createRef<HTMLDialogElement>()
+
+    #openCloseDialog = () => {
+        const dialog = this.#dialogRef.current
+        if (dialog?.open) dialog.close()
+        else dialog?.show()
+    }
 
     #switchScheme = async () => {
         await this.update("UpdateColors", { scheme: "switch" })
         await this.update("SyncColors")
     }
 
-    #toggleColorWheel = () => {
-        const dialog = this.#colorWheelDialogRef.current
-        if (dialog?.open) dialog.close()
-        else dialog?.show()
-    }
-
     render(props: typeof this.props) {
-        return <color-mixer {...props} class={cx(props.class, css`
-            display: grid;
-            grid: "a" "b";
-            margin: 1rem;
-            border-radius: 1rem;
-            background-color: transparent;
-            &:has(dialog[open]) {
-                background-color: var(--secondary-container);
-            }
-            filter: var(--drop-shadow);
-            transition-property: background-color, filter, opacity;
-            transition-duration: 250ms;
-            isolation: isolate;
-            @starting-style { opacity: 0; }
-        `)}>
+        return <color-mixer class={css`display: contents;`}>
             <Symbols.Button
                 icon="palette"
-                style="filled-on-hover"
-                colors="primary"
-                size="large"
-                onClick={this.#toggleColorWheel}
-                class={css`
-                    grid-area: b;
-                    place-self: end;
-                    display: revert-layer;
-                    color-mixer:has(dialog[open]) > & {
-                        display: none;
-                    }
-                `}
+                filled-on-hover
+                primary
+                large
+                onClick={this.#openCloseDialog}
+                class={props.class}
             />
-            <Symbols.Button
-                icon="close"
-                style="filled-on-hover"
-                colors="primary"
-                size="large"
-                onClick={this.#toggleColorWheel}
-                class={css`
-                    grid-area: b;
-                    place-self: end;
-                    display: none;
-                    color-mixer:has(dialog[open]) > & {
-                        display: revert-layer;
-                    }
-                `}
-            />
-            <dialog ref={this.#colorWheelDialogRef} class={css`
+            <dialog ref={this.#dialogRef} class={cx(props.class, css`
+                position: static;
                 &[open] {
                     display: grid;
-                }
-                grid-area: a;
-                position: static;
-                width: 10rem;
-                height: 10rem;
-                background-color: transparent;
+                }                
+                grid-template-areas:
+                    "wheel wheel"
+                    "switch close";
+                place-items: center;
+                gap: 0.5rem;
+                background-color: var(--secondary-container);
+                border: none;
+                padding: 0.5rem;
+                border-radius: 1rem;
+                filter: var(--drop-shadow);
                 transition-behavior: allow-discrete;
                 transition-duration: 250ms;
-                transition-property: background-color, display, opacity, scale, translate;
-                place-items: center;
-                border: none;
-                margin: 0;
-                padding: 0;
+                transition-property: background-color, display, filter, opacity, scale, translate;
                 @starting-style {
                     opacity: 0;
                     scale: 0.75;
-                    translate: 0 3rem;
+                    translate: 1rem 1rem;
                 }
                 &:not([open])  {
                     opacity: 0;
                     scale: 0.75;
-                    translate: 0 3rem;
+                    translate: 1rem 1rem;
                 }
-            `}>
+            `)}>
                 <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" alt="Hue wheel track" class={css`
-                    grid-area: 1 / 1;
+                    grid-area: wheel;
                     pointer-events: none;
-                    height: 8rem;
                     width: 8rem;
+                    aspect-ratio: 1;
+                    margin: 0.5rem;
                     background-image: conic-gradient(in oklch longer hue, oklch(0.7 0.15 0),oklch(0.7 0.15 360));
                     mask-image: radial-gradient(circle farthest-side at center, transparent 36%, white 38%, white 98%, transparent 100%);
                 `}/>
+                <HueWheelThumb class={css`grid-area: wheel;`}/>
                 <Symbols.Button
+                    label="Light Mode"
                     icon="invert_colors"
-                    style="filled-on-hover"
-                    colors="primary"
-                    size="large"
-                    class={css`grid-area: 1 / 1;`}
+                    primary
+                    outline
+                    small
+                    class={css`grid-area: switch;`}
                     onClick={this.#switchScheme}
                 />
-                <HueWheelThumb class={css`grid-area: 1 / 1;`}/>
+                <Symbols.Button
+                    icon="close"
+                    filled-on-hover
+                    primary
+                    small
+                    onClick={this.#openCloseDialog}
+                    class={css`
+                        grid-area: close;
+                        & > span {
+                            font-size: 1.5rem;
+                        }
+                    `}
+                />
             </dialog>
         </color-mixer>
     }
 }
 
 
-class HueWheelThumb extends Component<Attributes.input> {
+class HueWheelThumb extends Component<{ class?: string }> {
     #ref = createRef<HTMLInputElement>()
     #ac: AbortController | undefined
 
@@ -155,7 +136,7 @@ class HueWheelThumb extends Component<Attributes.input> {
             this.#pointer = event
         }
     }
-    
+
     #pointer: PointerEvent | undefined
 
     #updateHue = () => {

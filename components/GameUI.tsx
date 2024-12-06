@@ -2,7 +2,7 @@ import { createRef, type RenderableProps } from "preact"
 import cx from "clsx/lite"
 import { css } from "astro:emotion"
 import { ClientWorld, type WorldData } from "game/world.client.ts"
-import { Component, WorldContext } from "./component.ts"
+import { Component, WorldContext, type Attributes } from "./component.ts"
 import { Game } from "./Game.tsx"
 import { ExitPresence, type AnimatesOut } from "./ExitPresence.ts"
 import { ColorMixer } from "./ColorMixer.tsx"
@@ -16,34 +16,34 @@ export function GameUISSR() {
 export function GameUI() {
     const world = ClientWorld.connect()
     return <WorldContext.Provider value={world}>
-        <ScreenRouter world={world}/>
-        <ColorMixer class={css`place-self: end;`}/>
+        <ScreenRouter world={world} class={css`grid-area: 1 / 1;`}/>
+        <ColorMixer class={css`grid-area: 1 / 1; place-self: end; margin: 1rem;`}/>
     </WorldContext.Provider>
 }
 
-function ScreenRouter({ world }: { world: ClientWorld }) {
+function ScreenRouter({ world, ...props }: { class?: string, world: ClientWorld }) {
 
     const { state } = world
 
     return <ExitPresence timeout={1000}>{
 
         state.connected === "connecting" ?
-            <LoadingScreen text="connecting"/> :
+            <LoadingScreen {...props} text="connecting"/> :
 
         state.connected === "disconnected" ?
-            <LoadingScreen text="disconnected"/> :
+            <LoadingScreen {...props} text="disconnected"/> :
 
         state.connected === "connectingtoworld" ?
-            <LoadingScreen text={`connecting to ${state.world.name.replace("-", " ")}`}/> :
+            <LoadingScreen {...props} text={`connecting to ${state.world.name.replace("-", " ")}`}/> :
 
         state.connected === "tolobby" ?
-            <TitleScreen/> :
+            <TitleScreen {...props}/> :
 
         state.connected === "toworld" ?
-            <WaitingForOpponentScreen world={state.world.name}/> :
+            <WaitingForOpponentScreen {...props} world={state.world.name}/> :
 
         state.connected === "togame" ?
-            <Game state={state}/> : <></>
+            <Game {...props} state={state}/> : <></>
 
     }</ExitPresence>
 }
@@ -56,13 +56,13 @@ namespace LoadingScreen {
 }
 
 function LoadingScreen(props: RenderableProps<LoadingScreen.Props>) {
-    return <loading-screen class={css`
+    return <loading-screen class={cx(props.class, css`
         display: grid;
         transition: opacity 250ms;
         @starting-style {
             opacity: 0;
         }
-    `}>
+    `)}>
         <TitleText/>
         <p class={css`
             height: 8rem;
@@ -81,7 +81,7 @@ function LoadingScreen(props: RenderableProps<LoadingScreen.Props>) {
     </loading-screen>
 }
 
-class TitleScreen extends Component implements AnimatesOut {
+class TitleScreen extends Component<Attributes> implements AnimatesOut {
     
     #container = createRef<HTMLDivElement>()
 
@@ -122,11 +122,11 @@ class TitleScreen extends Component implements AnimatesOut {
         animation.finished.then(leave)
     }
 
-    render() {
-        return <title-screen class={css`
+    render(props: typeof this.props) {
+        return <title-screen class={cx(props.class, css`
             display: grid;
             transition: opacity 250ms;
-        `} ref={this.#container}>
+        `)} ref={this.#container}>
             <TitleText/>
             <ActionButton onClick={this.#newWorld} primary>New Game</ActionButton>
             <ActionButton onClick={this.#joinWorld} secondary>Join</ActionButton>
@@ -238,17 +238,17 @@ class WaitingForOpponentScreen extends Component<WaitingForOpponentScreen.Props>
                 {"clipboard" in navigator && <Symbols.Button
                     icon="content_copy"
                     label="Copy"
-                    colors="on-secondary-container"
-                    style="outline"
-                    size="small"
+                    on-secondary-container
+                    outline
+                    small
                     onClick={this.#copy}
                 />}
                 {"share" in navigator && <Symbols.Button
                     icon="ios_share"
                     label="Share"
-                    colors="on-secondary-container"
-                    style="outline"
-                    size="small"
+                    on-secondary-container
+                    outline
+                    small
                     onClick={this.#share}
                 />}
             </world-name>

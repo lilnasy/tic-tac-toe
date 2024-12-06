@@ -3,36 +3,49 @@ import cx from "clsx/lite"
 import type { Attributes } from "./component.ts"
 
 export namespace Button {
-    export interface Props extends Omit<Attributes.button, "size"> {
+    export type Props = Omit<Attributes.button, "size"> & {
         icon: string
         label?: string
-        colors: "primary" | "on-secondary-container" | "on-surface"
-        style: "filled-on-hover" | "outline"
-        size: "small" | "medium" | "large"
-    }
+        "filled-on-hover"?: true
+        outline?: true
+    } & (
+        | { small?: true, medium?: undefined, large?: undefined }
+        | { small?: undefined, medium?: true, large?: undefined }
+        | { small?: undefined, medium?: undefined, large?: true }
+    ) & (
+        | { primary?: true, "on-secondary-container"?: undefined, "on-surface"?: undefined }
+        | { primary?: undefined, "on-secondary-container"?: true, "on-surface"?: undefined }
+        | { primary?: undefined, "on-secondary-container"?: undefined, "on-surface"?: true }
+    )
 }
 
 export function Button({
     icon,
     label,
-    colors,
-    style,
-    size,
+    "filled-on-hover": filledOnHover,
+    outline,
+    primary,
+    "on-secondary-container": onSecondaryContainer,
+    "on-surface": onSurface,
+    small,
+    medium,
+    large,
     ...props
 }: Button.Props) {
     return <button
         {...props}
-        data-primary={colors === "primary"}
-        data-onsecondarycontainer={colors === "on-secondary-container"}
-        data-onsurface={colors === "on-surface"}
-        data-filledonhover={style === "filled-on-hover"}
-        data-outline={style === "outline"}
-        data-small={size === "small"}
-        data-medium={size === "medium"}
-        data-large={size === "large"}
+        aria-label={label}
+        data-primary={primary}
+        data-on-secondary-container={onSecondaryContainer}
+        data-onsurface={onSurface}
+        data-filled-on-hover={filledOnHover}
+        data-outline={outline}
+        data-small={small}
+        data-medium={medium}
+        data-large={large}
         class={cx(props.class, symbolButtonClass)}>
-        { icon && <span aria-hidden>{icon}</span> }
-        { label && <label aria-hidden>{label}</label> }
+        { icon && <span role="presentation">{icon}</span> }
+        { label && <label>{label}</label> }
     </button>
 }
 
@@ -40,7 +53,7 @@ const symbolButtonClass = css`@layer symbol {
     & {
         display: grid;
         place-items: center;
-        --transition-properties: color, background-color, outline-color, outline-width, padding;
+        --transition-properties: color, background-color, outline-color, padding;
         transition-property: var(--transition-properties);
         transition-duration: 250ms;
         color: var(--fg, inherit);
@@ -105,11 +118,11 @@ const symbolButtonClass = css`@layer symbol {
         --base-color: var(--on-surface);
         --on-base-color: var(--surface);
     }
-    &[data-onsecondarycontainer] {
+    &[data-on-secondary-container] {
         --base-color: var(--on-secondary-container);
         --on-base-color: var(--secondary-container);
     }
-    &[data-filledonhover]{
+    &[data-filled-on-hover]{
         &:not(:hover) {
             --fg: var(--base-color);
             --bg: transparent;
@@ -121,18 +134,19 @@ const symbolButtonClass = css`@layer symbol {
     }
     &[data-outline] {
         --fg: var(--base-color);
-        outline: solid var(--base-color);
+        outline: var(--outline-width) solid var(--base-color);
+        outline-offset: calc(var(--outline-width) * -1);
         &:not(:hover, :focus-within) {
             --bg: transparent;
-            outline-width: thin;
+            --outline-width: 1px;
         }
         &:hover {
             --bg: light-dark(oklch(0 0 0 / 5%), oklch(1 0 0 / 10%));
-            outline-width: thin;
+            --outline-width: 1px;
         }
         &:focus-within {
             --bg: light-dark(oklch(0 0 0 / 5%), oklch(1 0 0 / 10%));
-            outline-width: medium;
+            --outline-width: 4px;
         }
     }
 }`

@@ -12,18 +12,19 @@ import type { PlayerData } from "game/player.ts"
 
 export namespace Game {
     export interface Props {
+        class?: string
         state: Extract<ClientWorld.State, { connected: "togame" }>
     }
 }
 
-export function Game({ state }: Game.Props) {
+export function Game({ state, ...props }: Game.Props) {
     const { game } = state
-    return <game-container class={css`
+    return <game-container class={cx(props.class, css`
         display: grid;
         --board-size: min(100dvw, calc(100dvh - 6rem));
         grid-template-rows: 6rem var(--board-size);
         width: var(--board-size);
-    `}>
+    `)}>
         <GameStatusHeader player={state.player} opponent={state.opponent}/>
         <Board/>
         { game.state === "draw" && <GameEndDialog draw/> }
@@ -158,9 +159,9 @@ class PlayerCard extends Component<PlayerCard.Props> {
                 editable && <Symbols.Button
                     icon="edit"
                     label="Change Name"
-                    colors="on-surface"
-                    style="outline"
-                    size="small"
+                    on-surface
+                    outline
+                    small
                     disabled={this.#editing}
                     onClick={() => this.#editing = true}
                     class={css`
