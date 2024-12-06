@@ -30,7 +30,7 @@ export class ActionButton extends Component<ActionButton.Props> {
             background-color: var(--bg);
             outline-color: var(--bg);
             color: var(--fg);
-            filter: drop-shadow(8px 16px 16px oklch(from var(--bg) l c h / 0.5));
+            filter: var(--drop-shadow);
             border-radius: 1.5rem;
             margin: 0.5rem;
             padding: 0;

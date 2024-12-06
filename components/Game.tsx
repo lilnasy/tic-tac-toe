@@ -8,6 +8,7 @@ import { createRef } from "preact"
 import { getKeyframesForChildren } from "./animation.ts"
 import * as Symbols from "./Symbols.tsx"
 import { ActionButton } from "./ActionButton.tsx"
+import type { PlayerData } from "game/player.ts"
 
 export namespace Game {
     export interface Props {
@@ -23,7 +24,7 @@ export function Game({ state }: Game.Props) {
         grid-template-rows: 6rem var(--board-size);
         width: var(--board-size);
     `}>
-        <GameStatusHeader player={state.player}/>
+        <GameStatusHeader player={state.player} opponent={state.opponent}/>
         <Board/>
         { game.state === "draw" && <GameEndDialog draw/> }
         { game.state === "victory" && <GameEndDialog victory={game.winner}/> }
@@ -32,52 +33,37 @@ export function Game({ state }: Game.Props) {
 
 namespace GameStatusHeader {
     export interface Props {
-        class?: string
-        player: Extract<ClientWorld.State, { connected: "togame" }>["player"]
+        player: PlayerData.WithSign
+        opponent: PlayerData.WithSign
     }
 }
 
-class GameStatusHeader extends Component<GameStatusHeader.Props> {
+function GameStatusHeader(props: GameStatusHeader.Props) {
+    const { player, opponent } = props
+    return <game-status class={css`
+        display: grid;
+        grid-template-areas: "player opponent";
+    `}>
+        <PlayerCard player={player} left onTurn="Your Turn" editable/>
+        <PlayerCard player={opponent} right onTurn="Their Turn"/>
+    </game-status>
+}
+
+namespace PlayerCard {
+    export type Props = {
+        class?: string
+        editable?: true
+        onTurn: PlayerBadge.Props["onTurn"]
+        player: PlayerData.WithSign
+    } & (
+        | { left: true, right?: undefined }
+        | { left?: undefined, right: true }
+    )
+}
+
+class PlayerCard extends Component<PlayerCard.Props> {
     
-    #ref = createRef<HTMLElement>()
-
     @signal accessor #editing = false
-
-    componentDidMount() {
-        const element = this.#ref.current!
-        const elementRect = element.getBoundingClientRect()
-        const parentRect = element.parentElement!.getBoundingClientRect()
-        const centerY = parentRect.top + parentRect.height / 2 - elementRect.height / 2
-        const showProminentlyInTheCenter = {
-            gridTemplateAreas: '"avatar avatar" "name edit"',
-            gridTemplateColumns: "auto 0",
-            scale: "1.5",
-            translate: `0 ${centerY}px`
-        }
-        /**
-         * eased, quick at the start, slow at the end
-         */
-        const easing = "cubic-bezier(0.3, 0, 0, 1)"
-
-        element.animate([
-            { ...showProminentlyInTheCenter, translate: `-5rem ${centerY}px`, opacity: 0 },
-            showProminentlyInTheCenter,
-        ], {
-            duration: 500,
-            easing
-        }).finished.then(_ => {
-            const keyframes = getKeyframesForChildren(element, showProminentlyInTheCenter)
-            for (let i = 0; i < element.children.length; i++) {
-                element.children[i].animate([keyframes[i], {}], {
-                    composite: "add",
-                    delay: 1500,
-                    fill: "backwards",
-                    duration: 2000,
-                    easing
-                })
-            }
-        })
-    }
 
     #onKeyDown = (event: Events.input.keyDown) => {
         if (event.key === "Enter" || event.key === "Escape") {
@@ -85,20 +71,30 @@ class GameStatusHeader extends Component<GameStatusHeader.Props> {
         }
     }
 
-    render(props: typeof this.props, state: typeof this.state) {
-        const { player: { animal } } = props
-        return <game-status
+    render(props: typeof this.props) {
+        const { editable, player } = props
+        const { animal } = player
+        return <player-card
+            data-editable={editable}
             data-editing={this.#editing}
-            ref={this.#ref}
+            data-left={props.left}
+            data-right={props.right}
             class={cx(props.class, css`
                 display: grid;
-                grid-template-areas: "avatar gap name gap2 edit";
-                grid-template-columns: auto 1rem auto 0 auto;
                 place-items: center;
-                place-self: start center;
+                place-self: stretch;
                 text-align: center;
                 padding: 1rem 2rem;
-                &:is(:hover, :focus-within):not([data-editing]) {
+                filter: var(--drop-shadow);
+                &[data-left] {
+                    grid-template-areas: "avatar gap name gap2 edit";
+                    grid-template-columns: auto 1rem auto 0rem auto;
+                }
+                &[data-right] {
+                    grid-template-areas: "edit gap2 name gap avatar";
+                    grid-template-columns: auto 0rem auto 1rem auto;
+                }
+                &[data-editable]:is(:hover, :focus-within):not([data-editing]) {
                     grid-template-columns: auto 1rem auto 1rem auto;
                 }
             `)}
@@ -113,7 +109,7 @@ class GameStatusHeader extends Component<GameStatusHeader.Props> {
                 transition-property: background-color, color;
                 transition-duration: 250ms;
             `}/>
-            <div data-flip={animal.facingLeft} class={css`
+            <div data-facing-left={animal.facingLeft} class={css`
                 grid-area: avatar;
                 color-scheme: light;
                 background-color: var(--surface);
@@ -123,10 +119,15 @@ class GameStatusHeader extends Component<GameStatusHeader.Props> {
                 font-size: 2rem;
                 transition-property: background-color;
                 transition-duration: 250ms;
-                &[data-flip] {
+                [data-left] > &[data-facing-left] {
                     scale: -1 1;
                 }
-            `}>{animal.emoji}</div>
+            `}>{animal.emoji}
+            </div>
+            <PlayerBadge onTurn={props.onTurn} sign={player.sign} class={css`
+                grid-area: avatar;
+                isolation: isolate;
+            `}/>
             {
                 this.#editing
                 ? <input
@@ -153,31 +154,66 @@ class GameStatusHeader extends Component<GameStatusHeader.Props> {
                     transition: color 250ms;
                 `}>{animal.name}</p>
             }
-            <Symbols.Button
-                icon="edit"
-                label="Change Name"
-                colors="on-surface"
-                style="outline"
-                size="small"
-                disabled={this.#editing}
-                onClick={() => this.#editing = true}
-                class={css`
-                    grid-area: edit;
-                    overflow: hidden;
-                    opacity: 0;
-                    width: 0;
-                    padding: 0;
-                    outline-width: 0;
-                    transition-property: var(--transition-properties), opacity, width;
-                    :is(:hover, :focus-within):not([data-editing]) > & {
-                        opacity: revert-layer;
-                        width: revert-layer;
-                        outline-width: revert-layer;
-                        padding: revert-layer;
-                    }
-                `}
-            />
-        </game-status>
+            {
+                editable && <Symbols.Button
+                    icon="edit"
+                    label="Change Name"
+                    colors="on-surface"
+                    style="outline"
+                    size="small"
+                    disabled={this.#editing}
+                    onClick={() => this.#editing = true}
+                    class={css`
+                        grid-area: edit;
+                        overflow: hidden;
+                        opacity: 0;
+                        width: 0;
+                        padding: 0;
+                        outline-color: transparent;
+                        transition-property: var(--transition-properties), opacity, outline-color, padding, width;
+                        :is(:hover, :focus-within):not([data-editing]) > & {
+                            opacity: revert-layer;
+                            width: revert-layer;
+                            outline-color: revert-layer;
+                            padding: revert-layer;
+                        }
+                    `}
+                />
+            }
+        </player-card>
+    }
+}
+
+
+namespace PlayerBadge {
+    export type Props = {
+        class?: string
+        onTurn: "Your Turn" | "Their Turn"
+        sign: "X" | "O"
+    }
+}
+
+class PlayerBadge extends Component<PlayerBadge.Props> {
+    render(props: typeof this.props) {
+        const { state } = this.world
+        const turn =
+            state.connected === "togame" &&
+            state.game.state === "active" &&
+            state.game.turn
+        return turn && turn === props.sign && <player-badge
+            role="status"
+            class={cx(props.class, css`
+                text-transform: uppercase;
+                background-color: var(--primary);
+                color: var(--on-primary);
+                border-radius: 1rem;
+                font-size: 0.75rem;
+                translate: 0 1.5rem;
+                padding: 0 0.5rem;
+                filter: var(--drop-shadow-small);
+                transition-property: background-color, color, filter;
+                transition-duration: 250ms;
+        `)}>{props.onTurn}</player-badge>
     }
 }
 

@@ -40,4 +40,10 @@
         oklch(20% 0.02 calc(var(--base-hue) + 10)),
         oklch(90% 0.02 calc(var(--base-hue) + 10))
     );
+    --shadow-color: light-dark(
+        oklch(25% 0.1 var(--base-hue) / 0.25),
+        oklch(10% 0.1 var(--base-hue) / 0.5)
+    );
+    --drop-shadow: drop-shadow(8px 16px 16px var(--shadow-color));
+    --drop-shadow-small: drop-shadow(4px 8px 8px var(--shadow-color));
 }

@@ -30,7 +30,7 @@ export class ColorMixer extends Component<Attributes> {
             &:has(dialog[open]) {
                 background-color: var(--secondary-container);
             }
-            filter: drop-shadow(8px 16px 16px oklch(from var(--primary) l c h / 0.5));
+            filter: var(--drop-shadow);
             transition-property: background-color, filter, opacity;
             transition-duration: 250ms;
             isolation: isolate;

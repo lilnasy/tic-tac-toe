@@ -223,7 +223,7 @@ class WaitingForOpponentScreen extends Component<WaitingForOpponentScreen.Props>
                 gap: 1rem;
                 border-radius: 1rem;
                 padding: 1rem;
-                filter: drop-shadow(8px 16px 16px oklch(from var(--on-secondary-container) l c h / 0.25));
+                filter: var(--drop-shadow);
                 background-color: var(--secondary-container);
                 color: var(--on-secondary-container);
                 transition: background-color, color, filter;
