@@ -65,6 +65,7 @@ class Square extends Component<ViewProps> {
                 color: var(--primary);
                 font-size: max(19cqh, 19cqw);
                 &:not([disabled]) { cursor: pointer; }
+                transition: color 250ms;
             `}
             style={{
                 gridRow: Math.ceil(Place / 3),
