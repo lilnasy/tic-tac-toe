@@ -6,18 +6,21 @@ declare const self: ServiceWorkerGlobalScope
 self.addEventListener("fetch", event => {
     const url = new URL(event.request.url)
     if (url.pathname !== "/" && url.pathname.match(/\/world\/.+-.+/) === null) return
-    event.respondWith(fetch(event.request).then(transform))
+    event.respondWith(
+        Promise.all([
+            fetch(event.request),
+            get("color.scheme", "color.hue")
+        ])
+        .then(transform)
+    )
 })
 
-async function transform(response: Response) {
-    const { body } = response
-    const [ scheme, hue ] = await get("color.scheme", "color.hue")
-
-    if (body && (scheme || hue)) {
+function transform([ response, [ scheme, hue ] ]: [ Response, [ unknown, unknown ] ]) {
+    if ((scheme || hue) && response.body) {
         const schemeAttr = (scheme === "light" || scheme === "dark") ? ` data-${scheme}` : ""
         const hueStyle = typeof hue === "number" ? ` style="--base-hue: ${hue}"` : ""
         const replacement = `<html lang="en"${schemeAttr}${hueStyle}>`
-        const newBody = body
+        const newBody = response.body
             .pipeThrough(new TextDecoderStream)
             .pipeThrough(new TransformStream({
                 transform(chunk, controller) {
