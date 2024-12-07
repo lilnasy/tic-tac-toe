@@ -65,8 +65,18 @@ export class ColorMixer extends Component<{ class?: string }> {
                     width: 8rem;
                     aspect-ratio: 1;
                     margin: 0.5rem;
-                    background-image: conic-gradient(in oklch longer hue, oklch(0.7 0.15 0),oklch(0.7 0.15 360));
-                    mask-image: radial-gradient(circle farthest-side at center, transparent 36%, white 38%, white 98%, transparent 100%);
+                    background-image: conic-gradient(
+                        in oklch longer hue,
+                        oklch(0.7 0.15 0),
+                        oklch(0.7 0.15 360)
+                    );
+                    mask-image: radial-gradient(
+                        circle farthest-side at center,
+                        transparent 36%,
+                        white 38%,
+                        white 98%,
+                        transparent 100%
+                    );
                 `}/>
                 <HueWheelThumb class={css`grid-area: wheel;`}/>
                 <Symbols.Button
@@ -156,7 +166,13 @@ class HueWheelThumb extends Component<{ class?: string }> {
     render(props: typeof this.props) {
         return <input type="range" min="0" max="360" ref={this.#ref} class={cx(props.class, css`
             --size: 2.5rem;
-            --donut: radial-gradient(circle farthest-side at center, transparent 74%, white 76%, white 98%, transparent 100%);
+            --donut: radial-gradient(
+                circle farthest-side at center,
+                transparent 74%,
+                white 76%,
+                white 98%,
+                transparent 100%
+            );
             background: transparent;
             touch-action: none;
             translate:
