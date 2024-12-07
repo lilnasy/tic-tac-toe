@@ -4,7 +4,7 @@ import type { Attributes } from "./component.ts"
 
 export namespace Button {
     export type Props = Omit<Attributes.button, "size"> & {
-        icon: string
+        icon?: string
         label?: string
         "filled-on-hover"?: true
         outline?: true
@@ -44,8 +44,9 @@ export function Button({
         data-medium={medium}
         data-large={large}
         class={cx(props.class, symbolButtonClass)}>
-        { icon && <span role="presentation">{icon}</span> }
+        { icon && <span aria-hidden>{icon}</span> }
         { label && <label>{label}</label> }
+        { props.children }
     </button>
 }
 
@@ -106,7 +107,7 @@ const symbolButtonClass = css`@layer symbol {
         grid-template-areas: "icon label";
     }
     &[data-small]:has(label) {
-        gap: 0.25rem;
+        column-gap: 0.25rem;
         padding: 0 0.75rem;
     }
 

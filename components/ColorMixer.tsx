@@ -79,15 +79,61 @@ export class ColorMixer extends Component<{ class?: string }> {
                     );
                 `}/>
                 <HueWheelThumb class={css`grid-area: wheel;`}/>
-                <Symbols.Button
-                    label="Light Mode"
-                    icon="invert_colors"
-                    primary
-                    outline
-                    small
-                    class={css`grid-area: switch;`}
-                    onClick={this.#switchScheme}
-                />
+                <Symbols.Button primary outline small onClick={this.#switchScheme} class={css`
+                    grid-area: switch;
+                    container-type: size;
+                    contain: paint;
+                    width: 6.75rem;
+                    --down: 0 65cqh;
+                    --up: 0 -65cqh;
+                    & > span {
+                        grid-area: 1 / 1;
+                    }
+                    & > label {
+                        grid-area: 1 / 2;
+                        justify-self: end;
+                    }
+                    & > :is(label, span) {
+                        transition: display, translate;
+                        transition-behavior: allow-discrete;
+                        transition-duration: 250ms;
+                    }
+                    @starting-style {
+                        & > [data-if-light] {
+                            translate: var(--down);
+                        }
+                        & > [data-if-dark] {
+                            translate: var(--up);
+                        }
+                    }
+                    :root[data-light] & > [data-if-dark] {
+                        display: none;
+                        translate: var(--up);
+                    }
+                    :root[data-dark] & > [data-if-light] {
+                        display: none;
+                        translate: var(--down);
+                    }
+                    :root:not([data-light]):not([data-dark]) {
+                        @media (prefers-color-scheme: dark) {
+                            & > [data-if-light] {
+                                display: none;
+                                translate: var(--down);
+                            }
+                        }
+                        @media (prefers-color-scheme: light) {
+                            & > [data-if-dark] {
+                                display: none;
+                                translate: var(--up);
+                            }
+                        }
+                    }
+                `}>
+                    <span data-if-dark aria-hidden>light_mode</span>
+                    <label data-if-dark>Light Mode</label>
+                    <span data-if-light aria-hidden>dark_mode</span>
+                    <label data-if-light>Dark Mode</label>
+                </Symbols.Button>
                 <Symbols.Button
                     icon="close"
                     filled-on-hover
