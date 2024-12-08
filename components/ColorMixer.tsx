@@ -47,6 +47,7 @@ export class ColorMixer extends Component<{ class?: string }> {
                 clip-path: circle(var(--reveal) at 85% 88%);
                 border-radius: 1rem;
                 filter: var(--drop-shadow);
+                will-change: filter;
                 transition-behavior: allow-discrete;
                 transition-duration: 250ms;
                 transition-property: background-color, clip-path, display, filter;
