@@ -112,7 +112,7 @@ export class ColorMixer extends Component<{ class?: string }> {
                         display: none;
                         translate: var(--down);
                     }
-                    :root:not([data-light]):not([data-dark]) {
+                    :root:not([data-light]):not([data-dark]) & {
                         @media (prefers-color-scheme: dark) {
                             & > [data-if-light] {
                                 display: none;
