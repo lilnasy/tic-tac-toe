@@ -43,20 +43,18 @@ export class ColorMixer extends Component<{ class?: string }> {
                 background-color: var(--secondary-container);
                 border: none;
                 padding: 0.5rem;
+                --reveal: 15rem;
+                clip-path: circle(var(--reveal) at 85% 88%);
                 border-radius: 1rem;
                 filter: var(--drop-shadow);
                 transition-behavior: allow-discrete;
                 transition-duration: 250ms;
-                transition-property: background-color, display, filter, opacity, scale, translate;
+                transition-property: background-color, clip-path, display, filter;
                 @starting-style {
-                    opacity: 0;
-                    scale: 0.75;
-                    translate: 1rem 1rem;
+                    --reveal: 0;
                 }
                 &:not([open])  {
-                    opacity: 0;
-                    scale: 0.75;
-                    translate: 1rem 1rem;
+                    --reveal: 0;
                 }
             `)}>
                 <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" alt="Hue wheel track" class={css`
