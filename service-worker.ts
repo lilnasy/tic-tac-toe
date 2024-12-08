@@ -3,16 +3,36 @@ import { get } from "./lib/indexed-kv.ts"
 
 declare const self: ServiceWorkerGlobalScope
 
+self.addEventListener("install", event => {
+    if ("addRoutes" in event && typeof event.addRoutes === "function") {
+        /**
+         * Opt-out service worker of irrelevant requests
+         */
+        event.addRoutes({
+            condition: {
+                not: {
+                    or: [
+                        { requestMethod: "GET", requestDestination: "document", urlPattern: "/" },
+                        { requestMethod: "GET", requestDestination: "document", urlPattern: "/world/:name" }
+                    ]
+                }
+            },
+            source: "network"
+        })
+    }
+})
+
 self.addEventListener("fetch", event => {
     const url = new URL(event.request.url)
-    if (url.pathname !== "/" && url.pathname.match(/\/world\/.+-.+/) === null) return
-    event.respondWith(
-        Promise.all([
-            fetch(event.request),
-            get("color.scheme", "color.hue")
-        ])
-        .then(transform)
-    )
+    if (url.pathname === "/" || url.pathname.match(/\/world\/.+-.+/)) {
+        event.respondWith(
+            Promise.all([
+                fetch(event.request),
+                get("color.scheme", "color.hue")
+            ])
+            .then(transform)
+        )
+    }
 })
 
 function transform([ response, [ scheme, hue ] ]: [ Response, [ unknown, unknown ] ]) {
