@@ -70,9 +70,8 @@ class PlayerCard extends Component<PlayerCard.Props> {
             class={cx(props.class, css`
                 display: grid;
                 place-items: center;
-                place-self: stretch;
                 text-align: center;
-                padding: 1rem 2rem;
+                padding: 1rem;
                 filter: var(--drop-shadow);
                 &[data-place-avatar=left] {
                     grid-template-areas: "avatar gap name gap2 edit";
@@ -92,7 +91,7 @@ class PlayerCard extends Component<PlayerCard.Props> {
                 height: 100%;
                 width: 100%;
                 background-color: var(--secondary-container);
-                padding: 1rem 2rem;
+                padding: 1rem;
                 border-radius: 1rem;
                 transition-property: background-color, color;
                 transition-duration: 250ms;
@@ -249,7 +248,9 @@ class PopUp extends Component<Attributes.dialog> {
             width: min(20rem, 100dvw);
             background: var(--secondary-container);
             color: var(--on-secondary-container);
+            border: none;
             border-radius: 1rem;
+            filter: var(--drop-shadow) var(--drop-shadow);
             transition-property: opacity, translate;
             transition-duration: 1s;
             @starting-style {
