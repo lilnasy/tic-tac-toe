@@ -169,7 +169,7 @@ namespace WaitingForOpponentScreen {
     }
 }
 
-class WaitingForOpponentScreen extends Component<WaitingForOpponentScreen.Props> {
+class WaitingForOpponentScreen extends Component<WaitingForOpponentScreen.Props> implements AnimatesOut {
     
     #copy = () =>
         navigator.clipboard.writeText(this.props.world.replace(" ", "-"))
@@ -180,8 +180,18 @@ class WaitingForOpponentScreen extends Component<WaitingForOpponentScreen.Props>
             url: location.href
         }).catch(() => {})
 
+    #container = createRef<HTMLDivElement>()
+
+    componentWillLeave(leave: () => void) {
+        const animation = this.#container.current!.animate(
+            [{}, { opacity: 0 }],
+            { duration: 250 }
+        )
+        animation.finished.then(leave)
+    }
+
     render(props: typeof this.props) {
-        return <waiting-screen class={cx(props.class, css`
+        return <waiting-screen ref={this.#container} class={cx(props.class, css`
             display: grid;
             place-items: center;
             grid-template-areas:
