@@ -46,32 +46,47 @@ interface ViewProps {
 }
 
 class Square extends Component<ViewProps> {
-    render({ entity }: typeof this.props) {
-        const { state } = this.world
+    render(
+        { entity }: typeof this.props,
+        _: unknown,
+        world: typeof this.world
+    ) {
+        const { state } = world
         const { Marked, Place } = entity as Entity<"Place">
 
-        const playable = Marked === undefined &&
-            state.connected === "togame" &&
-            state.game.state === "active" &&
-            state.player.sign === state.game.turn
+        const playerSign = state.connected === "togame" && state.game.state === "active" && state.player.sign
+        const turnSign = state.connected === "togame" && state.game.state === "active" && state.game.turn
+
+        const playable =
+            Marked === undefined &&
+            playerSign &&
+            turnSign &&
+            playerSign === turnSign
 
         return <button
+            onClick={() => world.update("Mark", { place: entity.Place! })}
             class={css`
                 font-family: inherit;
                 background-color: initial;
                 border: initial;
                 padding: initial;
                 contain: strict;
-                color: var(--primary);
                 font-size: max(19cqh, 19cqw);
-                &:not([disabled]) { cursor: pointer; }
+                color: var(--primary);
                 transition: color 250ms;
+                &:not([disabled]) {
+                    cursor: pointer;
+                    &:hover::before {
+                        content: attr(data-hover-content);
+                        opacity: 0.25;
+                    }
+                }
             `}
             style={{
                 gridRow: Math.ceil(Place / 3),
                 gridColumn: ((Place - 1) % 3) + 1
             }}
-            onClick={() => this.update("Mark", { place: this.props.entity.Place! })}
+            data-hover-content={playable && playerSign}
             disabled={ playable === false }
         >{Marked || null}</button>
     }
