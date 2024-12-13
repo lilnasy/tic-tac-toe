@@ -1,4 +1,3 @@
-import { WebSocket } from "@withastro/node/websocket"
 import { generateProjectName as generateWorldName } from "vendor/withastro/cli-kit"
 import { ServerWorld } from "game/world.server.ts"
 import { Player } from "game/player.ts"

@@ -1,12 +1,11 @@
-import { defineConfig, type ViteUserConfig } from "astro/config"
-import node from "@withastro/node"
+import { defineConfig } from "astro/config"
+import nodeWs from "astro-node-websocket"
 import preact from "@preact/preset-vite"
 import emotion from "astro-emotion"
 import precompress from "./lib/precompress.ts"
 import fontLoader from "./lib/font-loader.ts"
 
-
-const vite: ViteUserConfig = {
+const vite: import("vite").UserConfig = {
     assetsInclude: "font:*",
     plugins: [
         fontLoader(),
@@ -39,7 +38,7 @@ const vite: ViteUserConfig = {
 export default defineConfig({
     srcDir: ".",
     integrations: [ emotion({ stylisPlugins: [] }), precompress ],
-    adapter: node({ mode: "standalone" }),
+    adapter: nodeWs({ mode: "standalone" }),
     output: "server",
     server: {
         host: import.meta.env.DEV ? "0.0.0.0" : "127.0.0.1",

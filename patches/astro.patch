@@ -1,8 +1,8 @@
 diff --git a/dist/core/build/plugins/plugin-css.js b/dist/core/build/plugins/plugin-css.js
-index 43088c2470ced954dbd6c1ed3e603d649b3d56e1..46fd543e971e12fd1591375588ed1760c67dfa44 100644
+index 839ab99dd2b8c743bd7f635216a4ed2b692ba34c..82002de26bdc4289db671ee7760527a401ea8a65 100644
 --- a/dist/core/build/plugins/plugin-css.js
 +++ b/dist/core/build/plugins/plugin-css.js
-@@ -14,7 +14,7 @@ import {
+@@ -10,7 +10,7 @@
  import { extendManualChunks, shouldInlineAsset } from "./util.js";
  function pluginCSS(options, internals) {
    return {

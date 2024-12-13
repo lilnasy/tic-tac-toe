@@ -1,13 +1,13 @@
-diff --git a/dist/node/chunks/dep-BWSbWtLw.js b/dist/node/chunks/dep-BWSbWtLw.js
-index d7bddd3da64618901cbaa96f64dd05c2a0daa934..169ab8a65ffe74ed01b9558445676c68fe5718e2 100644
---- a/dist/node/chunks/dep-BWSbWtLw.js
-+++ b/dist/node/chunks/dep-BWSbWtLw.js
-@@ -64602,7 +64602,7 @@ function preload(baseModule, deps, importerUrl) {
- function buildImportAnalysisPlugin(config) {
-   const ssr = !!config.build.ssr;
-   const isWorker = config.isWorker;
--  const insertPreload = !(ssr || !!config.build.lib || isWorker);
-+  const insertPreload = false;
-   const renderBuiltUrl = config.experimental.renderBuiltUrl;
-   const isRelativeBase = config.base === "./" || config.base === "";
-   const { modulePreload } = config.build;
+diff --git a/dist/node/chunks/dep-yUJfKD1i.js b/dist/node/chunks/dep-yUJfKD1i.js
+index 57759ca8c9eb2362b67c078ea0504aafd888b44c..a6c09afd9e40a9a86ae2f2ad65af9559b3d7838d 100644
+--- a/dist/node/chunks/dep-yUJfKD1i.js
++++ b/dist/node/chunks/dep-yUJfKD1i.js
+@@ -49775,7 +49775,7 @@ function buildImportAnalysisPlugin(config) {
+       if (!imports.length) {
+         return null;
+       }
+-      const insertPreload = getInsertPreload(this.environment);
++      const insertPreload = false;
+       const dynamicImports = {};
+       if (insertPreload) {
+         let match;

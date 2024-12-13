@@ -29,7 +29,7 @@ index b39d40371ec6e156678fb9ca2a2719aa94bb1b1b..5260b84312057693b76002dd7b79d036
 +export const HOOK_ARGS = '_args';
 +export const HOOK_CLEANUP = '_cleanup';
 diff --git a/src/index.js b/src/index.js
-index 6c80ef4ed9ca406299c2ed0271c87eb19e6011d5..0ca44d43722191e9adfd31e6bb331daf9b9c6341 100644
+index 6c80ef4ed9ca406299c2ed0271c87eb19e6011d5..2617a21eb4a6ba036768b4383bd13b0498f06c72 100644
 --- a/src/index.js
 +++ b/src/index.js
 @@ -54,7 +54,7 @@ function replaceComponent(OldType, NewType, resetHookState) {
@@ -37,7 +37,31 @@ index 6c80ef4ed9ca406299c2ed0271c87eb19e6011d5..0ca44d43722191e9adfd31e6bb331daf
  
    vnodes.forEach(vnode => {
 -    if (!vnode.__c || !vnode.__c.__P) return;
-+    if (!vnode._component || !vnode._component._parentDom) return;
++    if (!vnode[VNODE_COMPONENT] || !vnode[VNODE_COMPONENT]._parentDom) return;
      // update the type in-place to reference the new component
      vnode.type = NewType;
  
+@@ -165,8 +165,8 @@ function replaceComponent(OldType, NewType, resetHookState) {
+         );
+ 
+         vnode[VNODE_COMPONENT][COMPONENT_HOOKS][HOOKS_LIST].forEach(hook => {
+-          if (hook.__H && Array.isArray(hook.__H)) {
+-            hook.__H = undefined;
++          if (hook[HOOK_ARGS] && Array.isArray(hook[HOOK_ARGS])) {
++            hook[HOOK_ARGS] = undefined;
+           }
+         });
+       }
+diff --git a/src/runtime/vnode.js b/src/runtime/vnode.js
+index 01c77d5146d9341816e2cd4e636854196a922c6c..0a37307497e88760ff934a9695d9f548dc5c2f56 100644
+--- a/src/runtime/vnode.js
++++ b/src/runtime/vnode.js
+@@ -48,7 +48,7 @@ options.diffed = vnode => {
+   if (vnode && typeof vnode.type === 'function') {
+     const vnodes = vnodesForComponent.get(vnode.type);
+     if (vnodes) {
+-      const matchingDom = vnodes.filter(p => p.__c === vnode.__c);
++      const matchingDom = vnodes.filter(p => p[VNODE_COMPONENT] === vnode[VNODE_COMPONENT]);
+       if (matchingDom.length > 1) {
+         const i = vnodes.findIndex(p => p === matchingDom[0]);
+         vnodes.splice(i, 1);
