@@ -4,15 +4,33 @@ import { css } from "astro:emotion"
 import { Component } from "./component.ts"
 import * as Symbols from "./Symbols.tsx"
 
-
 export class ColorMixer extends Component<{ class?: string }> {
 
-    #dialogRef = createRef<HTMLDialogElement>()
+    current: HTMLDialogElement | null = null
 
-    #openCloseDialog = () => {
-        const dialog = this.#dialogRef.current
-        if (dialog?.open) dialog.close()
-        else dialog?.show()
+    #openDialog = (event: Event) => {
+        event.stopPropagation()
+        this.current?.show()
+        this.current?.previousElementSibling?.setAttribute("aria-expanded", "true")
+        addEventListener("click", this.#lightDismiss, { passive: true })
+        addEventListener("keydown", this.#lightDismiss, { passive: true })
+    }
+
+    #lightDismiss = (event: Event) => {
+        const dialog = this.current
+        const target = event.target
+        if (event.type === "click") {
+            if (target && dialog && (target === dialog || (target instanceof Node && dialog.contains(target)))) return
+            this.#closeDialog()
+        } else if (event instanceof KeyboardEvent && event.key === "Escape") {
+            this.#closeDialog()
+        }
+    }
+
+    #closeDialog = () => {
+        this.current?.close()
+        this.current?.previousElementSibling?.setAttribute("aria-expanded", "false")
+        removeEventListener("click", this.#lightDismiss)
     }
 
     #switchScheme = async () => {
@@ -24,13 +42,16 @@ export class ColorMixer extends Component<{ class?: string }> {
         return <color-mixer class={css`display: contents;`}>
             <Symbols.Button
                 icon="palette"
+                aria-expanded="false"
+                aria-label="Show color mixer"
+                aria-controls="color-mixer-dialog"
                 filled-on-hover
                 primary
                 large
-                onClick={this.#openCloseDialog}
+                onClick={this.#openDialog}
                 class={props.class}
             />
-            <dialog ref={this.#dialogRef} class={cx(props.class, css`
+            <dialog id="color-mixer-dialog" ref={this} class={cx(props.class, css`
                 position: static;
                 &[open] {
                     display: grid;
@@ -135,10 +156,11 @@ export class ColorMixer extends Component<{ class?: string }> {
                 </Symbols.Button>
                 <Symbols.Button
                     icon="close"
+                    aria-label="Close color mixer"
                     filled-on-hover
                     primary
                     small
-                    onClick={this.#openCloseDialog}
+                    onClick={this.#closeDialog}
                     class={css`
                         grid-area: close;
                         & > span {

@@ -33,8 +33,8 @@ export function Button({
     ...props
 }: Button.Props) {
     return <button
-        {...props}
         aria-label={label}
+        {...props}
         data-primary={primary}
         data-on-secondary-container={onSecondaryContainer}
         data-onsurface={onSurface}
