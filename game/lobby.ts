@@ -5,25 +5,42 @@ import type { Receiver } from "game/channel.d.ts"
 import type { JoinWorld, MessageRegistry, NewWorld, Disconnected, Messages } from "game/messages.d.ts"
 
 /**
- * The lobby is responsible for creating new worlds where games can be played, and adding newly-connected players to those #worlds.
+ * The lobby is responsible for creating new worlds where games can be played,
+ * and adding newly-connected players to those worlds.
  */
 export const lobby = new class Lobby implements Receiver {
     
     #worlds = new Map<string, ServerWorld>()
 
+    /**
+     * Creates a new player for the given connection and
+     * starts listening for messages from it.
+     */
     enter(weboscket: WebSocket) {
         const player = new Player(weboscket)
         player.subscribe(this)
     }
 
+    /**
+     * There are only three messages that the lobby is interested in.
+     * 
+     * - `NewWorld` is sent by a player when they click on "New Game".
+     * 
+     * - `JoinWorld` is sent by a player when they want to join an existing world
+     *  whose name they have.
+     * 
+     * - `Disconnected` is sent implicitly when the connection is closed or is severed.
+     */
     receive<Message extends Messages>(message: Message, data: MessageRegistry[Message]) {
         if (message === "Disconnected") {
-            const { player } = data as Disconnected
+            // @ts-expect-error: we know this is a Disconnected message
+            const { player }: Disconnected = data
             player!.unsubscribe(this)
         } else if (message === "NewWorld") {
-            this.#newWorld(data as NewWorld)
+            this.#newWorld(data)
         } else if (message === "JoinWorld") {
-            this.#joinWorld(data as JoinWorld)
+            // @ts-expect-error: we know this is a JoinWorld message
+            this.#joinWorld(data satisfies JoinWorld)
         }
     }
 
