@@ -21,7 +21,7 @@ patchedDependencies:
     hash: xiuejejj65xr5cg35suzzj4kmi
     path: patches/@prefresh__core.patch
   astro:
-    hash: acdwwnapeksi2w5wsppbeobtpq
+    hash: lujum26nhqta7hil7hwqpsaluu
     path: patches/astro.patch
   preact:
     hash: pu2xh54fust2rxsjbdauaiavzq
@@ -48,7 +48,7 @@ importers:
         version: 1.8.0(patch_hash=sgvdq66g4dw3nts646pvafuaqi)
       astro:
         specifier: ^5.0.4
-        version: 5.0.4(patch_hash=acdwwnapeksi2w5wsppbeobtpq)(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.7.2)
+        version: 5.0.4(patch_hash=lujum26nhqta7hil7hwqpsaluu)(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.7.2)
       astro-emotion:
         specifier: ^3.0.0
         version: 3.0.0
@@ -2834,7 +2834,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  astro@5.0.4(patch_hash=acdwwnapeksi2w5wsppbeobtpq)(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.7.2):
+  astro@5.0.4(patch_hash=lujum26nhqta7hil7hwqpsaluu)(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.7.2):
     dependencies:
       '@astrojs/compiler': 2.10.3
       '@astrojs/internal-helpers': 0.4.2
