@@ -21,7 +21,7 @@ patchedDependencies:
     hash: xiuejejj65xr5cg35suzzj4kmi
     path: patches/@prefresh__core.patch
   astro:
-    hash: lujum26nhqta7hil7hwqpsaluu
+    hash: ebly6eh7xvmdic75ph2phxz2km
     path: patches/astro.patch
   preact:
     hash: pu2xh54fust2rxsjbdauaiavzq
@@ -48,13 +48,13 @@ importers:
         version: 1.8.0(patch_hash=sgvdq66g4dw3nts646pvafuaqi)
       astro:
         specifier: ^5.0.4
-        version: 5.0.4(patch_hash=lujum26nhqta7hil7hwqpsaluu)(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.7.2)
+        version: 5.0.4(patch_hash=ebly6eh7xvmdic75ph2phxz2km)(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.7.2)
       astro-emotion:
         specifier: ^3.0.0
         version: 3.0.0
       astro-node-websocket:
-        specifier: ^1.0.0
-        version: 1.0.0
+        specifier: ^1.1.0
+        version: 1.1.0
       canvas-confetti:
         specifier: ^1.9.3
         version: 1.9.3
@@ -901,8 +901,8 @@ packages:
   astro-emotion@3.0.0:
     resolution: {integrity: sha512-1UGyhyuIAISkw0gkQoZ4F3eEGMNJnrGNIjQ35lQVgdNC3pnhWpAWOvL7OOPwDi0XPhtF5aOr5nSVi8xvAmhlaQ==}
 
-  astro-node-websocket@1.0.0:
-    resolution: {integrity: sha512-sCycIJ+AwMXFYxud34x/Uv6wSbKa4itcrBoGCvZN/31TNjfoRr9oSPiJZMIsK7zLYoXrUhSSXSikoeeI4quOLA==}
+  astro-node-websocket@1.1.0:
+    resolution: {integrity: sha512-4TPqRoIMQbwZyoC5N60LJVHc6aVWc/isgAoj8dVz3U59+HYUasK+/dphQrfdXsoMRBgmd/DAluYJ0f5FUZJF4A==}
 
   astro@5.0.4:
     resolution: {integrity: sha512-L8ttsBv6Pu1ZlmSUlbdnQbh9AkkQx8LIfP0psP/wdefJ/dgWOCiHzMw/8jbln3pCi8tAq+EGPvhA1b2bi+B0DQ==}
@@ -2823,7 +2823,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  astro-node-websocket@1.0.0:
+  astro-node-websocket@1.1.0:
     dependencies:
       '@types/ws': 8.5.13
       bufferutil: 4.0.8
@@ -2834,7 +2834,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  astro@5.0.4(patch_hash=lujum26nhqta7hil7hwqpsaluu)(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.7.2):
+  astro@5.0.4(patch_hash=ebly6eh7xvmdic75ph2phxz2km)(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.7.2):
     dependencies:
       '@astrojs/compiler': 2.10.3
       '@astrojs/internal-helpers': 0.4.2
