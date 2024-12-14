@@ -15,13 +15,13 @@ export class ClientWorld implements World, Receiver {
     channel: ClientToServerChannel
     entities = new ReactiveSet<Entity>
     systems: System<"both" | "client">[] = [
-        colorSystemClient,
         connectionSystemClient,
         gameLoopSystemClient,
         markerSystemClient,
         lineCheckSystem,
         turnSystemClient,
-        syncSystemClient
+        syncSystemClient,
+        colorSystemClient,
     ]
 
     @store accessor state: ClientWorld.State = { connected: "connecting" }
