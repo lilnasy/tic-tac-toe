@@ -100,7 +100,7 @@ type ClientWorldState =
 type GameState =
     | { state: "active", turn: XO }
     | { state: "draw" }
-    | { state: "victory", winner: XO }
+    | { state: "victory", winningSign: XO }
 
 export interface WorldData {
     name: string

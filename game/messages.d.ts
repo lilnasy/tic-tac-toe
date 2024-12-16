@@ -104,7 +104,7 @@ export interface Sync extends Entity<"Sync"> {}
  * on the tic tac toe board.
  */
 export interface Victory {
-    winner: "X" | "O"
+    winningSign: "X" | "O"
     line: Line
 }
 

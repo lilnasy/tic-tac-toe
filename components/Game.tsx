@@ -4,10 +4,10 @@ import { signal } from "lib/signal-decorator.ts"
 import { Component, type Attributes, type Events } from "./component.ts"
 import { Board } from "./Board.tsx"
 import type { ClientWorld } from "game/world.client.ts"
-import { createRef } from "preact"
 import { getKeyframesForChildren } from "./animation.ts"
 import * as Symbols from "./Symbols.tsx"
 import { ActionButton } from "./ActionButton.tsx"
+import { create } from "canvas-confetti"
 import type { PlayerData } from "game/player.ts"
 
 export namespace Game {
@@ -36,7 +36,11 @@ export function Game({ state, ...props }: Game.Props) {
         <PlayerCard player={state.opponent} placeAvatar="right" onTurnText="Their Turn"/>
         <Board class={css`grid-area: board;`}/>
         { game.state === "draw" && <GameEndDialog draw/> }
-        { game.state === "victory" && <GameEndDialog victory={game.winner}/> }
+        { game.state === "victory" && <GameEndDialog winner={
+            game.winningSign === state.player.sign
+                ? state.player
+                : state.opponent
+        }/> }
     </game-container>
 }
 
@@ -212,63 +216,93 @@ class PlayerBadge extends Component<PlayerBadge.Props> {
 }
 
 namespace GameEndDialog {
-    export type Props = { class?: string } & (
-        | { draw: true, victory?: undefined }
-        | { draw?: undefined, victory: "X" | "O" }
-    )
+    export type Props =
+        | { draw: true, winner?: undefined }
+        | { draw?: undefined, winner: PlayerData }
 }
 
-class GameEndDialog extends Component<GameEndDialog.Props> {
-    render(props: typeof this.props) {
-        return <PopUp class={props.class}>
-            <p>{ props.draw ? "Draw" : "You Win!" }</p>
-            <ActionButton secondary onClick={() => this.update("RequestRematch")}>Play Again</ActionButton>
-        </PopUp>
-    }
-}
+export class GameEndDialog extends Component<GameEndDialog.Props> {
 
-class PopUp extends Component<Attributes.dialog> {
-    
-    #ref = createRef<HTMLDialogElement>()
-    
+    current: HTMLDialogElement | null = null
+
     componentDidMount() {
-        this.#ref.current?.showModal()
+        const dialog = this.current!
+        dialog.showModal()
+        if (this.props.winner) {
+            const canvas = dialog.lastElementChild as HTMLCanvasElement
+            const confetti = create(canvas, { resize: true })
+            confetti({
+                decay: 0.93,
+                drift: (Math.random() - 0.5) * 2,
+                origin: { x: 0.5, y: 0.7 },
+                particleCount: 100,
+                spread: 40,
+                startVelocity: 35,
+            })
+        }
     }
-    
+
     componentWillUnmount() {
-        this.#ref.current?.close()
+        this.current!.close()
     }
-    
+
+    #requestRematch = () => this.update("RequestRematch")
+
     render(props: typeof this.props) {
-        return <dialog {...props} ref={this.#ref} class={cx(props.class, css`
+        return <dialog ref={this} class={css`
             &[open] {
                 display: grid;
             }
+            margin: 0;
+            padding: 0;
+            width: 100dvw;
+            height: 100dvh;
+            background-color: initial;
+            max-height: initial;
+            max-width: initial;
             place-items: center;
-            width: min(20rem, 100dvw);
-            background: var(--secondary-container);
-            color: var(--on-secondary-container);
             border: none;
-            border-radius: 1rem;
-            filter: var(--drop-shadow) var(--drop-shadow);
-            transition-property: opacity, translate;
-            transition-duration: 1s;
-            @starting-style {
-                opacity: 0;
-                translate: 0 4rem;
-            }
             &::backdrop {
-                background: light-dark(
+                background-color: light-dark(
                     oklch(20% 0 0 / .2),
                     oklch(90% 0 0 / .3)
                 );
                 backdrop-filter: blur(0.5rem);
-                transition: background 1s, backdrop-filter 250ms;
+                transition-property: background-color, backdrop-filter;
+                transition-duration: 1s;
                 @starting-style {
-                    background: transparent;
+                    background-color: transparent;
                     backdrop-filter: blur(0);
                 }
             }
-        `)}/>
+        `}>
+            <section class={css`
+                grid-area: 1 / 1;
+                display: grid;
+                place-items: center;
+                width: min(20rem, 100dvw);
+                padding: 2rem;
+                background-color: var(--secondary-container);
+                color: var(--on-secondary-container);
+                border-radius: 1rem;
+                filter: var(--drop-shadow) var(--drop-shadow);
+                transition-property: opacity, translate;
+                transition-duration: 1s;
+                @starting-style {
+                    opacity: 0;
+                    translate: 0 4rem;
+                }
+            `}>
+                <p>{ props.draw ? "Draw" : `${ props.winner.name ?? props.winner.animal.name } Wins!` }</p>
+                <ActionButton primary onClick={this.#requestRematch}>Play Again</ActionButton>
+            </section>
+            <canvas class={css`
+                grid-area: 1 / 1;
+                isolation: isolate;
+                pointer-events: none;
+                width: 95%;
+                height: 95%;
+            `}/>
+        </dialog>
     }
 }

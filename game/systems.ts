@@ -86,14 +86,14 @@ export const lineCheckSystem: System = {
         }
 
         for (const line of lines) {
-            let winner: "X" | "O" | undefined = undefined
-            if (makesLine(line, markedWithX)) winner = "X"
-            if (makesLine(line, markedWithO)) winner = "O"
-            if (winner !== undefined) {
+            let winningSign: "X" | "O" | undefined = undefined
+            if (makesLine(line, markedWithX)) winningSign = "X"
+            if (makesLine(line, markedWithO)) winningSign = "O"
+            if (winningSign !== undefined) {
                 if (world.server) {
-                    return world.channel.send("Victory", { winner, line })
+                    return world.channel.send("Victory", { winningSign, line })
                 } else {
-                    return world.update("Victory", { winner, line })
+                    return world.update("Victory", { winningSign, line })
                 }
             }
         }
@@ -184,7 +184,7 @@ export const gameLoopSystemClient: System<"client"> = {
         }
         state.game = { state: "draw" }
     },
-    onVictory({ line }, world) {
+    onVictory({ line, winningSign }, world) {
         const { state } = world
         if (
             state.connected !== "togame" ||
@@ -194,7 +194,7 @@ export const gameLoopSystemClient: System<"client"> = {
         }
         state.game = {
             state: "victory",
-            winner: state.game.turn
+            winningSign
         }
         world.spawn({
             Line: line,

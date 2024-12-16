@@ -93,8 +93,7 @@ class Square extends Component<ViewProps> {
 }
 
 function Strikethrough({ entity }: ViewProps) {
-    if (entity.Line === undefined) return <></>
-    const [ a, b, c ] = entity.Line
+    const [ a, b, c ] = entity.Line!
     const placement = a * 100 + b * 10 + c
 
     return <svg
@@ -117,8 +116,15 @@ function Line(props: Attributes.svg.line) {
     return <line {...props} class={css`
         fill: none;
         stroke: var(--primary);
+        stroke-dasharray: 100%;
+        stroke-dashoffset: 0%;
         stroke-linecap: round;
         stroke-width: 1rem;
-        transition: stroke 250ms;
+        transition-duration: 500ms;
+        transition-property: display, stroke, stroke-dashoffset;
+        transition-timing-function: cubic-bezier(0.5, 0, 0, 1);;
+        @starting-style {
+            stroke-dashoffset: 100%;
+        }
     `}/>
 }

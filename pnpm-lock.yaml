@@ -46,6 +46,9 @@ importers:
       '@preact/signals-core':
         specifier: ^1.8.0
         version: 1.8.0(patch_hash=sgvdq66g4dw3nts646pvafuaqi)
+      '@types/canvas-confetti':
+        specifier: ^1.6.4
+        version: 1.6.4
       astro:
         specifier: ^5.0.2
         version: 5.0.2(patch_hash=ebly6eh7xvmdic75ph2phxz2km)(@types/node@22.4.2)(rollup@4.24.0)(typescript@5.7.2)
@@ -824,6 +827,9 @@ packages:
 
   '@shikijs/vscode-textmate@9.3.0':
     resolution: {integrity: sha512-jn7/7ky30idSkd/O5yDBfAnVt+JJpepofP/POZ1iMOxK59cOfqIgg/Dj0eFsjOTMw+4ycJN0uhZH/Eb0bs/EUA==}
+
+  '@types/canvas-confetti@1.6.4':
+    resolution: {integrity: sha512-fNyZ/Fdw/Y92X0vv7B+BD6ysHL4xVU5dJcgzgxLdGbn8O3PezZNIJpml44lKM0nsGur+o/6+NZbZeNTt00U1uA==}
 
   '@types/cookie@0.6.0':
     resolution: {integrity: sha512-4Kh9a6B2bQciAhf7FSuMRRkUWecJgJu9nPnx3yzpsfXX/c50REIqpHY4C82bXP90qrLtXtkDxTZosYO3UpOwlA==}
@@ -2752,6 +2758,8 @@ snapshots:
       '@types/hast': 3.0.4
 
   '@shikijs/vscode-textmate@9.3.0': {}
+
+  '@types/canvas-confetti@1.6.4': {}
 
   '@types/cookie@0.6.0': {}
 
