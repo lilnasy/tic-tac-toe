@@ -10,6 +10,8 @@ import * as Animal from "game/animals.ts"
 import faviconXO from "assets/xo.svg"
 import faviconX from "assets/x.svg"
 import faviconO from "assets/o.svg"
+import confettiPop from "assets/confetti pop.webm"
+import childrenCheering from "assets/children cheering.webm"
 
 export const markerSystemClient: System<"client"> = {
     onMark(marked, world) {
@@ -493,6 +495,36 @@ export const faviconSystemClient: System<"client"> = {
                     : faviconX
             : faviconXO
         document.head.querySelector("link[rel=icon]")!.setAttribute("href", src)
+    }
+}
+
+export const soundSystemClient: System<"client"> = {
+    onVictory(_) {
+        playAudio(confettiPop, { volume: 0.7 })
+        .then(() =>
+            playAudio(childrenCheering, { volume: 0.05, delay: 1000 })
+        )
+    }
+}
+
+/**
+ * The systems may be called twice: first, optimistically by the local
+ * world; and then, finally by the host world. To avoid playing overlapping
+ * sound effects, we throttle each audio to run at most once in 5 seconds.
+ */
+const lastPlayedMap = new Map<string, number>();
+
+async function playAudio(src: string, { volume, delay }: { volume?: number, delay?: number } = {}) {
+    const now = Date.now()
+    const lastPlayed = lastPlayedMap.get(src)
+
+    if (lastPlayed === undefined || now - lastPlayed > 5000) {
+        lastPlayedMap.set(src, now)
+        const audio = new Audio
+        audio.src = src
+        if (volume) audio.volume = volume
+        if (delay) await new Promise(resolve => setTimeout(resolve, delay))
+        await audio.play()
     }
 }
 

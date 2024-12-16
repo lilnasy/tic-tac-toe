@@ -2,6 +2,8 @@
 import favicon from "assets/xo.svg"
 import faviconX from "assets/x.svg"
 import faviconO from "assets/o.svg"
+import confettiPop from "assets/confetti pop.webm"
+import childrenCheering from "assets/children cheering.webm"
 import { h } from "preact"
 import { renderToString } from "preact-render-to-string"
 import { GameUISSR } from "components/GameUI.tsx"
@@ -17,6 +19,8 @@ import font from "font:family=Sue Ellen Francisco"
 		<link rel="icon" type="image/svg+xml" href={favicon.src} />
 		<link rel="prefetch" href={faviconX.src}/>
 		<link rel="prefetch" href={faviconO.src}/>
+		<link rel="prefetch" href={confettiPop}/>
+		<link rel="prefetch" href={childrenCheering}/>
 		<link rel="preload" as="font" type="font/woff2" href={font} crossorigin/>
 		<style is:global>
 			@import url("../tokens.css") layer(tokens);
