@@ -1,5 +1,7 @@
 ---
 import favicon from "assets/xo.svg"
+import faviconX from "assets/x.svg"
+import faviconO from "assets/o.svg"
 import { h } from "preact"
 import { renderToString } from "preact-render-to-string"
 import { GameUISSR } from "components/GameUI.tsx"
@@ -13,6 +15,8 @@ import font from "font:family=Sue Ellen Francisco"
 		<title>Tic Tac Toe</title>
 		<meta name="description" content="Enjoy the classic game of Tic Tac Toe in your browser! Play against friends or use random matchmaking and beat them all to pulp!."/>
 		<link rel="icon" type="image/svg+xml" href={favicon.src} />
+		<link rel="prefetch" href={faviconX.src}/>
+		<link rel="prefetch" href={faviconO.src}/>
 		<link rel="preload" as="font" type="font/woff2" href={font} crossorigin/>
 		<style is:global>
 			@import url("../tokens.css") layer(tokens);

@@ -5,7 +5,7 @@ import type { Data, Messages } from "game/messages.d.ts"
 import type { PlayerData } from "game/player.ts"
 import type { Entity, States } from "game/entity.d.ts"
 import type { World } from "game/world.d.ts"
-import { type System, colorSystemClient, connectionSystemClient, gameLoopSystemClient, lineCheckSystem, markerSystemClient, syncSystemClient, turnSystemClient } from "game/systems.ts"
+import { type System, colorSystemClient, connectionSystemClient, faviconSystemClient, gameLoopSystemClient, lineCheckSystem, markerSystemClient, syncSystemClient, turnSystemClient } from "game/systems.ts"
 
 export class ClientWorld implements World, Receiver {
 
@@ -22,6 +22,7 @@ export class ClientWorld implements World, Receiver {
         turnSystemClient,
         syncSystemClient,
         colorSystemClient,
+        faviconSystemClient
     ]
 
     @store accessor state: ClientWorld.State = { connected: "connecting" }

@@ -7,6 +7,9 @@ import type { ClientWorld } from "game/world.client.ts"
 import type { ServerWorld } from "game/world.server.ts"
 import { Player } from "game/player.ts"
 import * as Animal from "game/animals.ts"
+import faviconXO from "assets/xo.svg"
+import faviconX from "assets/x.svg"
+import faviconO from "assets/o.svg"
 
 export const markerSystemClient: System<"client"> = {
     onMark(marked, world) {
@@ -476,6 +479,20 @@ export const connectionSystemServer: System<"server"> = {
             world.disconnectedPlayers.add(player)
             player.unsubscribe(world)
         }
+    }
+}
+
+export const faviconSystemClient: System<"client"> = {
+    onSwitch({ to }, { state }) {
+        const { src } =
+            to === "X" ? faviconX :
+            to === "O" ? faviconO :
+            state.connected === "togame" && state.game.state === "active"
+                ? state.game.turn === "X"
+                    ? faviconO
+                    : faviconX
+            : faviconXO
+        document.head.querySelector("link[rel=icon]")!.setAttribute("href", src)
     }
 }
 
