@@ -500,7 +500,7 @@ export const faviconSystemClient: System<"client"> = {
 
 export const soundSystemClient: System<"client"> = {
     onVictory(_) {
-        playAudio(confettiPop, { volume: 0.7 })
+        playAudio(confettiPop)
         .then(() =>
             playAudio(childrenCheering, { volume: 0.05, delay: 1000 })
         )
@@ -512,7 +512,7 @@ export const soundSystemClient: System<"client"> = {
  * world; and then, finally by the host world. To avoid playing overlapping
  * sound effects, we throttle each audio to run at most once in 5 seconds.
  */
-const lastPlayedMap = new Map<string, number>();
+const lastPlayedMap = new Map<string, number>()
 
 async function playAudio(src: string, { volume, delay }: { volume?: number, delay?: number } = {}) {
     const now = Date.now()
@@ -520,11 +520,31 @@ async function playAudio(src: string, { volume, delay }: { volume?: number, dela
 
     if (lastPlayed === undefined || now - lastPlayed > 5000) {
         lastPlayedMap.set(src, now)
-        const audio = new Audio
-        audio.src = src
-        if (volume) audio.volume = volume
-        if (delay) await new Promise(resolve => setTimeout(resolve, delay))
-        await audio.play()
+        /**
+         * Fetching the audio file (from disk cache),
+         * may be take non-negligible amount of time.
+         * And then decoding it is an async operation
+         * too.
+         * 
+         * If there's a delay, it is adjusted to include
+         * this preparation time.
+         */
+        const delayAdjustmentStart = Date.now()
+        const audioContext = new AudioContext
+        const audioBufferSourceNode = audioContext.createBufferSource()
+        const response = await fetch(src)
+        audioBufferSourceNode.buffer = await audioContext.decodeAudioData(await response.arrayBuffer())
+        if (volume !== undefined) {
+            const gainNode = audioContext.createGain()
+            gainNode.gain.value = volume
+            audioBufferSourceNode.connect(gainNode).connect(audioContext.destination)
+        } else {
+            audioBufferSourceNode.connect(audioContext.destination)
+        }
+        const delayAdjustment = Date.now() - delayAdjustmentStart
+        const adjustedDelay = delay ?? 0 - delayAdjustment
+        if (adjustedDelay > 0) await new Promise(resolve => setTimeout(resolve, delay))
+        audioBufferSourceNode.start(0)
     }
 }
 

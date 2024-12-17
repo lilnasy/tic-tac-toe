@@ -225,12 +225,13 @@ export class GameEndDialog extends Component<GameEndDialog.Props> {
 
     current: HTMLDialogElement | null = null
 
-    componentDidMount() {
+    async componentDidMount() {
         const dialog = this.current!
         dialog.showModal()
         if (this.props.winner) {
             const canvas = dialog.lastElementChild as HTMLCanvasElement
             const confetti = create(canvas, { resize: true })
+            await new Promise(resolve => setTimeout(resolve, 500))
             confetti({
                 decay: 0.93,
                 drift: (Math.random() - 0.5) * 2,
