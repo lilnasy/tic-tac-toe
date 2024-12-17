@@ -7,9 +7,9 @@ import type { ClientWorld } from "game/world.client.ts"
 import type { ServerWorld } from "game/world.server.ts"
 import { Player } from "game/player.ts"
 import * as Animal from "game/animals.ts"
-import faviconXO from "assets/xo.svg"
-import faviconX from "assets/x.svg"
-import faviconO from "assets/o.svg"
+import faviconXO from "assets/xo.svg?url"
+import faviconX from "assets/x.svg?url"
+import faviconO from "assets/o.svg?url"
 import confettiPop from "assets/confetti pop.webm"
 import childrenCheering from "assets/children cheering.webm"
 
@@ -486,7 +486,7 @@ export const connectionSystemServer: System<"server"> = {
 
 export const faviconSystemClient: System<"client"> = {
     onSwitch({ to }, { state }) {
-        const { src } =
+        const src =
             to === "X" ? faviconX :
             to === "O" ? faviconO :
             state.connected === "togame" && state.game.state === "active"
