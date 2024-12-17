@@ -7,6 +7,7 @@ export function Board(props: Attributes) {
     return <xo-board {...props} class={cx(props.class, css`
         display: grid;
         container-type: size;
+        grid: 1fr 1fr 1fr / 1fr 1fr 1fr;
     `)}>
         <CrissCrossFrame class={css`grid-area: 1 / 1 / span 3 / span 3;`}/>
         <EntitiesView/>
