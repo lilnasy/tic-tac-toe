@@ -1,8 +1,8 @@
-import { createRef } from "preact"
 import cx from "clsx/lite"
 import { css } from "astro:emotion"
 import { Component } from "./component.ts"
 import * as Symbols from "./Symbols.tsx"
+import { get } from "lib/indexed-kv.ts"
 
 export class ColorMixer extends Component<{ class?: string }> {
 
@@ -42,24 +42,24 @@ export class ColorMixer extends Component<{ class?: string }> {
         return <color-mixer class={css`display: contents;`}>
             <Symbols.Button
                 icon="palette"
-                aria-expanded="false"
                 aria-label="Show color mixer"
-                aria-controls="color-mixer-dialog"
                 filled-on-hover
                 primary
                 large
                 onClick={this.#openDialog}
                 class={props.class}
             />
-            <dialog id="color-mixer-dialog" ref={this} class={cx(props.class, css`
+            <dialog ref={this} class={cx(props.class, css`
                 position: static;
                 &[open] {
                     display: grid;
                 }                
-                grid-template-areas:
-                    "wheel wheel"
+                grid-template:
+                    "wheel wheel" 9rem
                     "switch close";
                 place-items: center;
+                width: 10rem;
+                contain: paint;
                 gap: 0.5rem;
                 background-color: var(--secondary-container);
                 border: none;
@@ -79,12 +79,11 @@ export class ColorMixer extends Component<{ class?: string }> {
                     --reveal: 0;
                 }
             `)}>
-                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" alt="Hue wheel track" class={css`
+                <div aria-hidden class={css`
                     grid-area: wheel;
                     pointer-events: none;
                     width: 8rem;
                     aspect-ratio: 1;
-                    margin: 0.5rem;
                     background-image: conic-gradient(
                         in oklch longer hue,
                         oklch(0.7 0.15 0),
@@ -98,7 +97,7 @@ export class ColorMixer extends Component<{ class?: string }> {
                         transparent 100%
                     );
                 `}/>
-                <HueWheelThumb class={css`grid-area: wheel;`}/>
+                <HueWheelInput aria-label="Hue wheel" class={css`grid-area: wheel;`}/>
                 <Symbols.Button primary outline small onClick={this.#switchScheme} class={css`
                     grid-area: switch;
                     container-type: size;
@@ -174,105 +173,140 @@ export class ColorMixer extends Component<{ class?: string }> {
 }
 
 
-class HueWheelThumb extends Component<{ class?: string }> {
-    #ref = createRef<HTMLInputElement>()
-    #ac: AbortController | undefined
+class HueWheelInput extends Component<{ class?: string }> {
+
+    current: HTMLInputElement | null = null
 
     componentDidMount() {
-        this.#ref.current!.addEventListener("pointerdown", this)
+        const input = this.current!
+        const options = { passive: true }
+        const hue = document.documentElement.style.getPropertyValue("--base-hue")
+        if (hue) input.value = hue
+        if (import.meta.env.DEV) {
+            get("color.hue").then(hue => {
+                if (typeof hue === "number" && 0 <= hue && hue <= 359) {
+                    input.value = String(hue)
+                }
+            })
+        }
+        input.addEventListener("input", this, options)
+        input.addEventListener("change", this, options)
     }
 
     handleEvent(event: Event) {
-        if (event instanceof PointerEvent === false) return
-        const input = this.#ref.current!
+        const input = this.current!
         const { type } = event
-        if (type === "pointerdown") {
-            const ac = this.#ac ??= new AbortController
-            const options = { signal: ac.signal }
-            addEventListener("pointermove", this, options)
-            addEventListener("pointerup", this, options)
-            addEventListener("pointercancel", this, options)
-            addEventListener("pointerleave", this, options)
-            input.toggleAttribute("data-grabbing", true)
-        } else if (
-            type === "pointerup" ||
-            type === "pointercancel" ||
-            type === "pointerleave"
-        ) {
-            this.#ac?.abort()
-            this.#ac = undefined
-            input.toggleAttribute("data-grabbing", false)
+        if (type === "input") {
+            let { value } = input
+            if (value === "360") {
+                /**
+                 * Clockwise wraparound
+                 */
+                input.value = value = "0"
+            } else if (value === "-4") {
+                /**
+                 * Counter-clockwise wraparound
+                 */
+                input.value = value = "356"
+            }
+            this.update("UpdateColors", { hue: Number.parseInt(value) })
+        } else if (type === "change") {
             this.update("SyncColors")
-        } else if (type === "pointermove") {
-            /**
-             * Schedule updating of hue for later to ensure that multiple
-             * multiple pointer events dispatched in the same frame result
-             * in only one update to `document`.
-             */
-            if (this.#pointer === undefined) requestAnimationFrame(this.#updateHue)
-            this.#pointer = event
         }
     }
 
-    #pointer: PointerEvent | undefined
-
-    #updateHue = () => {
-        if (!this.#pointer) return
-        const input = this.#ref.current!
-        const wheel = input.previousElementSibling!.getBoundingClientRect()
-        const centerX = wheel.left + wheel.width / 2
-        const centerY = wheel.top + wheel.height / 2
-        const { x , y } = this.#pointer!
-        const radians = Math.atan2(centerY - y, x - centerX);
-        const updatedBaseHue = Math.round(90 - (180 / Math.PI) * radians)
-        input.value = String(updatedBaseHue)
-        this.update("UpdateColors", { hue: updatedBaseHue })
-        this.#pointer = undefined
-    }
-
     render(props: typeof this.props) {
-        return <input type="range" min="0" max="360" ref={this.#ref} class={cx(props.class, css`
-            --size: 2.5rem;
-            --donut: radial-gradient(
+        return <input
+            {...props}
+            type="range"
+            min="-4"
+            max="360"
+            step="4"
+            ref={this}
+            class={cx(props.class, css`
+            --wheel-size: 8rem;
+            --thumb-size: 2.5rem;
+            --hollow-mask: radial-gradient(
                 circle farthest-side at center,
                 transparent 74%,
-                white 76%,
-                white 98%,
-                transparent 100%
+                white 76%
             );
-            background: transparent;
-            touch-action: none;
-            translate:
-                calc(sin(var(--base-hue) * 1deg) * 2.75rem)
-                calc(cos(var(--base-hue) * 1deg) * -2.75rem);
+            outline: initial;
+            margin: initial;
+            background: initial;
+            width: var(--wheel-size);
+            transform:
+                translate(var(--track-translate))
+                rotate(calc(var(--base-hue) * 1deg))
+                translate(var(--track-counter-translate), 0)
+                scaleX(var(--widen-track));
+            /**
+             * Widening the track prevents pointer issues as the track
+             * moves around underneath the pointer, which would cause
+             * the input value to oscillate on every pointer movement.
+             */
+            --widen-track: 4;
+            --max-track-translate: calc(var(--wheel-size) / 2 - var(--thumb-size) / 2);
+            /**
+             * At 0 degrees, the thumb will be on the left of the track.
+             * At 360 degrees, it will be on the right.
+             * It should appear in the center, so a "counter-translate"
+             * is applied on the track to make the thumb appear in the
+             * center. The transform moves the track to the right at 0
+             * degrees, and to the left at 360 degrees.
+             */
+            --track-counter-translate: calc(
+                (var(--base-hue) / 180 - 1) *
+                var(--widen-track) *
+                var(--max-track-translate) * -1
+            );
+            --track-translate:
+                calc(sin(var(--base-hue) * 1deg) * var(--max-track-translate)),
+                calc(cos(var(--base-hue) * 1deg) * var(--max-track-translate) * -1);
             &, &::-webkit-slider-container, &::-webkit-slider-runnable-track, &::-webkit-slider-thumb {
                 appearance: none;
-                height: var(--size);
-                width: var(--size);
-            }
-            &::-moz-range-progress, &::-moz-range-track, &::-moz-range-thumb {
-                appearance: none;
-                height: var(--size);
-                width: var(--size);
             }
             &::-webkit-slider-thumb {
-                position: absolute;
-                background: var(--primary);
-                transition: background 250ms;
-                cursor: grab;
-                mask-image: var(--donut);
+                background-color: var(--primary);
+                mask-image: var(--hollow-mask);
+                border-radius: 50%;
+                width: var(--thumb-size);
+                aspect-ratio: 1;
+                transition: background-color 250ms;
+                scale: calc(1 / var(--widen-track)) 1;
             }
-            &::-moz-range-thumb {
-                position: absolute;
-                background: var(--primary);
-                transition: background 250ms;
+            &:not(:active)::-webkit-slider-thumb {
                 cursor: grab;
-                mask-image: var(--donut);
             }
-            &[data-grabbing]::-webkit-slider-thumb  {
+            &:active::-webkit-slider-thumb  {
                 cursor: grabbing;
             }
-            &[data-grabbing]::-moz-range-thumb {
+            
+            /**
+             * Vendor-specific selectors are used in separate rules because
+             * not only do they fail to match in a non-supported browser, they
+             * are deemed completely invalid syntax-wise during parsing.
+             * 
+             * For example, on encountering ::-moz-* in a selector list, chrome
+             * throws away the entire rule, even if other selectors could match.
+             */
+            &::-moz-range-progress, &::-moz-range-track, &::-moz-range-thumb {
+                appearance: none;
+            }
+            &::-moz-range-thumb {
+                border: initial;
+                background-color: var(--primary);
+                mask-image: var(--hollow-mask);
+                border-radius: 50%;
+                width: var(--thumb-size);
+                height: var(--thumb-size);
+                transition: background-color 250ms;
+                scale: calc(1 / var(--widen-track)) 1;
+            }
+            &:not(:active)::-moz-range-thumb {
+                cursor: grab;
+            }
+            &:active::-moz-range-thumb  {
                 cursor: grabbing;
             }
         `)}/>
