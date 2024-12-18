@@ -80,7 +80,7 @@ import font from "font:family=Sue Ellen Francisco"
 			import { GameUI } from "components/GameUI.tsx"
 			
 			if (import.meta.env.DEV) await import("preact/debug")
-			if ("Iterator" in window === false) await import("iterator-helpers-polyfill")
+			if ("Iterator" in window === false) await import("lib/iterator-helpers-polyfill.ts")
 
 			render(h(GameUI, {}), document.body)
 		</script>
