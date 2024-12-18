@@ -1,8 +1,8 @@
-import { createRef } from "preact"
 import cx from "clsx/lite"
 import { css } from "astro:emotion"
 import { Component } from "./component.ts"
 import * as Symbols from "./Symbols.tsx"
+import { get } from "lib/indexed-kv.ts"
 
 export class ColorMixer extends Component<{ class?: string }> {
 
@@ -10,27 +10,46 @@ export class ColorMixer extends Component<{ class?: string }> {
 
     #openDialog = (event: Event) => {
         event.stopPropagation()
-        this.current?.show()
-        this.current?.previousElementSibling?.setAttribute("aria-expanded", "true")
-        addEventListener("click", this.#lightDismiss, { passive: true })
-        addEventListener("keydown", this.#lightDismiss, { passive: true })
+        const dialog = this.current!
+        dialog.show()
+        dialog.previousElementSibling?.setAttribute("aria-expanded", "true")
+        const options = { passive: true }
+        addEventListener("click", this, options)
+        addEventListener("keydown", this, options)
+        dialog.addEventListener("focusout", this, options)
     }
 
-    #lightDismiss = (event: Event) => {
-        const dialog = this.current
+    handleEvent(event: Event) {
+        const dialog = this.current!
         const target = event.target
-        if (event.type === "click") {
-            if (target && dialog && (target === dialog || (target instanceof Node && dialog.contains(target)))) return
-            this.#closeDialog()
+        if (event.type === "click" && target) {
+            if (target === dialog || (target instanceof Node && dialog.contains(target))) {
+                // keep open
+            } else {
+                // light dismiss
+                this.#closeDialog()
+            }
         } else if (event instanceof KeyboardEvent && event.key === "Escape") {
             this.#closeDialog()
+        } else if (event instanceof FocusEvent) {
+            const focusReceiver = event.relatedTarget
+            if (
+                focusReceiver === null ||
+                focusReceiver instanceof Node === false ||
+                dialog.contains(focusReceiver) === false
+            ) {
+                this.#closeDialog()
+            }
         }
     }
 
     #closeDialog = () => {
-        this.current?.close()
-        this.current?.previousElementSibling?.setAttribute("aria-expanded", "false")
-        removeEventListener("click", this.#lightDismiss)
+        const dialog = this.current!
+        dialog.close()
+        dialog.previousElementSibling?.setAttribute("aria-expanded", "false")
+        removeEventListener("click", this)
+        removeEventListener("keydown", this)
+        dialog.removeEventListener("focusout", this)
     }
 
     #switchScheme = async () => {
@@ -42,24 +61,24 @@ export class ColorMixer extends Component<{ class?: string }> {
         return <color-mixer class={css`display: contents;`}>
             <Symbols.Button
                 icon="palette"
-                aria-expanded="false"
                 aria-label="Show color mixer"
-                aria-controls="color-mixer-dialog"
                 filled-on-hover
                 primary
                 large
                 onClick={this.#openDialog}
                 class={props.class}
             />
-            <dialog id="color-mixer-dialog" ref={this} class={cx(props.class, css`
+            <dialog ref={this} class={cx(props.class, css`
                 position: static;
                 &[open] {
                     display: grid;
                 }                
-                grid-template-areas:
-                    "wheel wheel"
+                grid-template:
+                    "wheel wheel" 9rem
                     "switch close";
                 place-items: center;
+                width: 10rem;
+                contain: paint;
                 gap: 0.5rem;
                 background-color: var(--secondary-container);
                 border: none;
@@ -79,12 +98,11 @@ export class ColorMixer extends Component<{ class?: string }> {
                     --reveal: 0;
                 }
             `)}>
-                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" alt="Hue wheel track" class={css`
+                <div aria-hidden class={css`
                     grid-area: wheel;
                     pointer-events: none;
                     width: 8rem;
                     aspect-ratio: 1;
-                    margin: 0.5rem;
                     background-image: conic-gradient(
                         in oklch longer hue,
                         oklch(0.7 0.15 0),
@@ -98,7 +116,7 @@ export class ColorMixer extends Component<{ class?: string }> {
                         transparent 100%
                     );
                 `}/>
-                <HueWheelThumb class={css`grid-area: wheel;`}/>
+                <HueWheelThumb aria-label="Hue wheel" class={css`grid-area: wheel;`}/>
                 <Symbols.Button primary outline small onClick={this.#switchScheme} class={css`
                     grid-area: switch;
                     container-type: size;
@@ -175,105 +193,135 @@ export class ColorMixer extends Component<{ class?: string }> {
 
 
 class HueWheelThumb extends Component<{ class?: string }> {
-    #ref = createRef<HTMLInputElement>()
-    #ac: AbortController | undefined
+
+    current: HTMLInputElement | null = null
 
     componentDidMount() {
-        this.#ref.current!.addEventListener("pointerdown", this)
+        const input = this.current!
+        const hue = document.documentElement.style.getPropertyValue("--base-hue")
+        if (hue) input.value = hue
+        if (import.meta.env.DEV) {
+            get("color.hue").then(hue => {
+                if (typeof hue === "number" && 0 <= hue && hue <= 359) {
+                    input.value = String(hue)
+                }
+            })
+        }
+        input.addEventListener("input", this, { passive: true })
+        input.addEventListener("change", this, { passive: true })
+        input.addEventListener("pointerdown", this)
+        input.addEventListener("touchstart", this)
     }
 
     handleEvent(event: Event) {
-        if (event instanceof PointerEvent === false) return
-        const input = this.#ref.current!
+        const input = this.current!
         const { type } = event
-        if (type === "pointerdown") {
-            const ac = this.#ac ??= new AbortController
-            const options = { signal: ac.signal }
-            addEventListener("pointermove", this, options)
-            addEventListener("pointerup", this, options)
-            addEventListener("pointercancel", this, options)
-            addEventListener("pointerleave", this, options)
-            input.toggleAttribute("data-grabbing", true)
-        } else if (
-            type === "pointerup" ||
-            type === "pointercancel" ||
-            type === "pointerleave"
-        ) {
-            this.#ac?.abort()
-            this.#ac = undefined
-            input.toggleAttribute("data-grabbing", false)
+        if (type === "input") {
+            let { value } = input
+            /** Clockwise wraparound */
+            if (value === "360") input.value = value = "0"
+            /** Counter-clockwise wraparound */
+            else if (value === "-5") input.value = value = "355"
+            this.update("UpdateColors", { hue: Number.parseInt(value) })
+        } else if (type === "change") {
             this.update("SyncColors")
-        } else if (type === "pointermove") {
-            /**
-             * Schedule updating of hue for later to ensure that multiple
-             * multiple pointer events dispatched in the same frame result
-             * in only one update to `document`.
-             */
-            if (this.#pointer === undefined) requestAnimationFrame(this.#updateHue)
-            this.#pointer = event
+        } else if (type === "touchstart") {
+            /** prevent touch actions (native back/forward gestures) */
+            event.preventDefault()
+        } else if (event instanceof PointerEvent) {
+            if (type === "pointerdown" && event.buttons === 1) {
+                /** prevent input events on pointermove and change event on pointerup */
+                event.preventDefault()
+                input.addEventListener("pointermove", this, { passive: true })
+                input.addEventListener("pointerup", this, { passive: true })
+                input.setPointerCapture(event.pointerId)
+            } else if (type === "pointermove") {
+                const wheelImage = input.previousElementSibling!.getBoundingClientRect()
+                const centerX = wheelImage.left + wheelImage.width / 2
+                const centerY = wheelImage.top + wheelImage.height / 2
+                const { x , y } = event
+                const hueRadians = Math.atan2(centerY - y, x - centerX);
+                const hueAngle = 90 - Math.round(180 * hueRadians / Math.PI)
+                const hue = hueAngle < 0 ? hueAngle + 360 : hueAngle
+                input.value = String(hue)
+                this.update("UpdateColors", { hue })
+            } else if (type === "pointerup") {
+                input.removeEventListener("pointermove", this)
+                input.removeEventListener("pointerup", this)
+                input.releasePointerCapture(event.pointerId)
+                this.update("SyncColors")
+            }
         }
     }
 
-    #pointer: PointerEvent | undefined
-
-    #updateHue = () => {
-        if (!this.#pointer) return
-        const input = this.#ref.current!
-        const wheel = input.previousElementSibling!.getBoundingClientRect()
-        const centerX = wheel.left + wheel.width / 2
-        const centerY = wheel.top + wheel.height / 2
-        const { x , y } = this.#pointer!
-        const radians = Math.atan2(centerY - y, x - centerX);
-        const updatedBaseHue = Math.round(90 - (180 / Math.PI) * radians)
-        input.value = String(updatedBaseHue)
-        this.update("UpdateColors", { hue: updatedBaseHue })
-        this.#pointer = undefined
-    }
-
     render(props: typeof this.props) {
-        return <input type="range" min="0" max="360" ref={this.#ref} class={cx(props.class, css`
-            --size: 2.5rem;
-            --donut: radial-gradient(
-                circle farthest-side at center,
-                transparent 74%,
-                white 76%,
-                white 98%,
-                transparent 100%
-            );
-            background: transparent;
-            touch-action: none;
+        /**
+         * There is a step value of 5 to make it easier to
+         * control the hue using keyboard. Lower values would
+         * result in movement taking too long.
+         * 
+         * On mouse and touch interactions, the step value is
+         * irrelevant because the default behavior is overriden.
+         */
+        return <input {...props} type="range" min="-5" defaultValue="0" max="360" step="5" ref={this} class={cx(props.class, css`
+            --wheel-size: 8rem;
+            --thumb-size: 2.5rem;
+            --max-translate: calc(var(--wheel-size) / 2 - var(--thumb-size) / 2);
+            --inner-ring-offset: -0.25rem;
+            margin: initial;
+            background: initial;
+            width: var(--thumb-size);
+            aspect-ratio: 1;
             translate:
-                calc(sin(var(--base-hue) * 1deg) * 2.75rem)
-                calc(cos(var(--base-hue) * 1deg) * -2.75rem);
+                calc(sin(var(--base-hue) * 1deg) * var(--max-translate))
+                calc(cos(var(--base-hue) * 1deg) * var(--max-translate) * -1);
+            rotate: calc(var(--base-hue) * 1deg);
+            border-radius: 50%;
+            outline: var(--primary) solid 0.25rem;
+            outline-offset: -0.25rem;
+            transition: outline-offset 250ms;
+            &:focus-within {
+                outline-offset: initial;
+                --inner-ring-offset: -0.5rem;
+            }
+            &:not(:active) {
+                cursor: grab;
+            }
+            &:active  {
+                cursor: grabbing;
+            }
             &, &::-webkit-slider-container, &::-webkit-slider-runnable-track, &::-webkit-slider-thumb {
                 appearance: none;
-                height: var(--size);
-                width: var(--size);
-            }
-            &::-moz-range-progress, &::-moz-range-track, &::-moz-range-thumb {
-                appearance: none;
-                height: var(--size);
-                width: var(--size);
             }
             &::-webkit-slider-thumb {
-                position: absolute;
-                background: var(--primary);
-                transition: background 250ms;
-                cursor: grab;
-                mask-image: var(--donut);
+                background: initial;
+                outline: var(--primary) solid 0.25rem;
+                outline-offset: var(--inner-ring-offset);
+                border-radius: 50%;
+                width: var(--thumb-size);
+                aspect-ratio: 1;
+                transition: outline-offset 250ms;
+            }
+            /**
+             * Vendor-specific selectors are used in separate rules because
+             * not only do they fail to match in a non-supported browser, they
+             * are deemed completely invalid syntax-wise during parsing.
+             * 
+             * For example, on encountering ::-moz-* in a selector list, chrome
+             * throws away the entire rule, even if other selectors could match.
+             */
+            &::-moz-range-progress, &::-moz-range-track, &::-moz-range-thumb {
+                appearance: none;
             }
             &::-moz-range-thumb {
-                position: absolute;
-                background: var(--primary);
-                transition: background 250ms;
-                cursor: grab;
-                mask-image: var(--donut);
-            }
-            &[data-grabbing]::-webkit-slider-thumb  {
-                cursor: grabbing;
-            }
-            &[data-grabbing]::-moz-range-thumb {
-                cursor: grabbing;
+                background: initial;
+                outline: var(--primary) solid 0.25rem;
+                outline-offset: var(--inner-ring-offset);
+                border-radius: 50%;
+                width: var(--thumb-size);
+                height: var(--thumb-size);
+                transition: outline-offset 250ms;
+                border: initial;
             }
         `)}/>
     }
