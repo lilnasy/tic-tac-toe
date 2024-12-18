@@ -1,12 +1,12 @@
 diff --git a/package.json b/package.json
-index 970307782916aeee9d430b191a054294eed75577..888caa5ee6fe02767b5d836ece7897d2592bb925 100644
+index 686b1d1e29ae667baeb5bfc4cf2f52bed1b6202d..bbc57073ca848c265f80c21072bbccdcd0087cf6 100644
 --- a/package.json
 +++ b/package.json
 @@ -1,5 +1,6 @@
  {
    "name": "@preact/signals",
 +  "type": "module",
-   "version": "1.3.1",
+   "version": "2.0.0",
    "license": "MIT",
    "description": "Manage state with style in Preact",
 @@ -18,18 +19,12 @@
@@ -33,10 +33,10 @@ index 970307782916aeee9d430b191a054294eed75577..888caa5ee6fe02767b5d836ece7897d2
    },
    "mangle": "../../mangle.json",
 diff --git a/src/index.ts b/src/index.ts
-index 79550801c3b180eb13712d734e280cafc7d2e911..0bbf511c76305d343337d4961b52285dd20c8004 100644
+index cc24fd5179a6f35c8bbafdcac669ad9153f69028..ba1d22140843d541391f8c36626e89e30c905136 100644
 --- a/src/index.ts
 +++ b/src/index.ts
-@@ -9,15 +9,15 @@ import {
+@@ -9,15 +9,17 @@ import {
  	type ReadonlySignal,
  	untracked,
  } from "@preact/signals-core";
@@ -51,13 +51,15 @@ index 79550801c3b180eb13712d734e280cafc7d2e911..0bbf511c76305d343337d4961b52285d
  	AugmentedElement as Element,
 -} from "./internal";
 +} from "./internal.d.ts";
-+import { OptionsTypes } from "./internal.d.ts";
++// @ts-expect-error there is a runtime value (an enum)
++// being imported from a declaration file
++import { OptionsTypes } from "./internal.d.ts"
  
  export {
  	signal,
-@@ -81,10 +81,10 @@ function SignalValue(this: AugmentedComponent, { data }: { data: Signal }) {
- 
+@@ -82,10 +84,10 @@ function SignalValue(this: AugmentedComponent, { data }: { data: Signal }) {
  	const s = useMemo(() => {
+ 		let self = this;
  		// mark the parent component as having computeds so it gets optimized
 -		let v = this.__v;
 -		while ((v = v.__!)) {
@@ -70,7 +72,7 @@ index 79550801c3b180eb13712d734e280cafc7d2e911..0bbf511c76305d343337d4961b52285d
  				break;
  			}
  		}
-@@ -125,7 +125,7 @@ Object.defineProperties(Signal.prototype, {
+@@ -137,7 +139,7 @@ Object.defineProperties(Signal.prototype, {
  	// Setting a VNode's _depth to 1 forces Preact to clone it before modifying:
  	// https://github.com/preactjs/preact/blob/d7a433ee8463a7dc23a05111bb47de9ec729ad4d/src/diff/children.js#L77
  	// @todo remove this for Preact 11
@@ -79,7 +81,7 @@ index 79550801c3b180eb13712d734e280cafc7d2e911..0bbf511c76305d343337d4961b52285d
  });
  
  /** Inject low-level property/attribute bindings for Signals into Preact's diff */
-@@ -155,7 +155,7 @@ hook(OptionsTypes.RENDER, (old, vnode) => {
+@@ -167,7 +169,7 @@ hook(OptionsTypes.RENDER, (old, vnode) => {
  
  	let updater;
  
@@ -88,7 +90,7 @@ index 79550801c3b180eb13712d734e280cafc7d2e911..0bbf511c76305d343337d4961b52285d
  	if (component) {
  		component._updateFlags &= ~HAS_PENDING_UPDATE;
  
-@@ -189,7 +189,7 @@ hook(OptionsTypes.DIFFED, (old, vnode) => {
+@@ -201,7 +203,7 @@ hook(OptionsTypes.DIFFED, (old, vnode) => {
  
  	// vnode._dom is undefined during string rendering,
  	// so we use this to skip prop subscriptions during SSR.
@@ -97,7 +99,7 @@ index 79550801c3b180eb13712d734e280cafc7d2e911..0bbf511c76305d343337d4961b52285d
  		let props = vnode.__np;
  		let renderedProps = vnode.props;
  		if (props) {
-@@ -261,7 +261,7 @@ function createPropUpdater(
+@@ -275,7 +277,7 @@ function createPropUpdater(
  /** Unsubscribe from Signals when unmounting components/vnodes */
  hook(OptionsTypes.UNMOUNT, (old, vnode: VNode) => {
  	if (typeof vnode.type === "string") {
@@ -106,7 +108,7 @@ index 79550801c3b180eb13712d734e280cafc7d2e911..0bbf511c76305d343337d4961b52285d
  		// vnode._dom is undefined during string rendering
  		if (dom) {
  			const updaters = dom._updaters;
-@@ -274,7 +274,7 @@ hook(OptionsTypes.UNMOUNT, (old, vnode: VNode) => {
+@@ -288,7 +290,7 @@ hook(OptionsTypes.UNMOUNT, (old, vnode: VNode) => {
  			}
  		}
  	} else {
@@ -116,10 +118,10 @@ index 79550801c3b180eb13712d734e280cafc7d2e911..0bbf511c76305d343337d4961b52285d
  			const updater = component._updater;
  			if (updater) {
 diff --git a/src/internal.d.ts b/src/internal.d.ts
-index 436ac029ad499c5ed5a865d4fec4fc540240b14c..cf8e03dd91eed0345291c2585fb417c12bbf24ee 100644
+index 7fe89290fc040c505549fa349ad186387c8dcd55..75454075766aaf4217c07fc79357e1fda56577f8 100644
 --- a/src/internal.d.ts
 +++ b/src/internal.d.ts
-@@ -18,28 +18,28 @@ export interface AugmentedElement extends HTMLElement {
+@@ -19,28 +19,28 @@ export interface AugmentedElement extends HTMLElement {
  }
  
  export interface AugmentedComponent extends Component<any, any> {
