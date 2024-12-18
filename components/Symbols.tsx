@@ -61,6 +61,8 @@ const symbolButtonClass = css`@layer symbol {
         background-color: var(--bg, inherit);
         border: none;
         padding: 0;
+        outline: var(--outline-width, 0.25rem) solid var(--outline-color, transparent);
+        outline-offset: calc(var(--outline-width, 0.25rem) * -1);
     }
     &:not([disabled]) {
         cursor: pointer;
@@ -72,6 +74,9 @@ const symbolButtonClass = css`@layer symbol {
     &[data-medium], &[data-large] {
         border-radius: 1.5rem;
         height: 3rem;
+    }
+    &:focus-within {
+        --outline-color: var(--base-color);
     }
 
     & > span {
@@ -135,19 +140,18 @@ const symbolButtonClass = css`@layer symbol {
     }
     &[data-outline] {
         --fg: var(--base-color);
-        outline: var(--outline-width) solid var(--base-color);
-        outline-offset: calc(var(--outline-width) * -1);
+        --outline-color: var(--fg);
+        &:not(:focus-within) {
+            --outline-width: 1px;
+        }
         &:not(:hover, :focus-within) {
             --bg: transparent;
-            --outline-width: 1px;
         }
         &:hover {
             --bg: light-dark(oklch(0 0 0 / 5%), oklch(1 0 0 / 10%));
-            --outline-width: 1px;
         }
         &:focus-within {
             --bg: light-dark(oklch(0 0 0 / 5%), oklch(1 0 0 / 10%));
-            --outline-width: 4px;
         }
     }
 }`
