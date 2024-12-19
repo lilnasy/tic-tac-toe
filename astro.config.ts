@@ -6,7 +6,6 @@ import precompress from "./lib/precompress.ts"
 import fontLoader from "./lib/font-loader.ts"
 
 const vite: import("vite").UserConfig = {
-    assetsInclude: "font:*",
     plugins: [
         fontLoader(),
         preact({

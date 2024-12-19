@@ -77,9 +77,11 @@ class Square extends Component<ViewProps> {
                 transition: color 250ms;
                 &:not([disabled]) {
                     cursor: pointer;
-                    &:hover::before {
-                        content: attr(data-hover-content);
-                        opacity: 0.25;
+                    @media (hover: hover) and (pointer: fine) {
+                        &:hover::before {
+                            content: attr(data-hover-content);
+                            opacity: 0.25;
+                        }
                     }
                 }
             `}
