@@ -207,8 +207,8 @@ class HueWheelThumb extends Component<{ class?: string }> {
                 }
             })
         }
-        input.addEventListener("input", this, { passive: true })
-        input.addEventListener("change", this, { passive: true })
+        input.addEventListener("input", this)
+        input.addEventListener("change", this)
         input.addEventListener("pointerdown", this)
         input.addEventListener("touchstart", this)
     }
