@@ -3,6 +3,14 @@
     "compilerOptions": {
         "baseUrl": ".",
         "jsx": "react-jsx",
-        "jsxImportSource": "preact"
+        "jsxImportSource": "preact",
+        "plugins": [
+            {
+                "name": "@styled/typescript-styled-plugin",
+                "lint": {
+                    "unknownAtRules": "ignore"
+                }
+            }
+        ]
     }
 }
