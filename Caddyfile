@@ -1,28 +1,33 @@
+# docker run --rm -it --name caddy-builder golang:1.23.4-alpine3.21
+## apk add git
+## go install github.com/caddyserver/xcaddy/cmd/xcaddy@eb894be
+## xcaddy build --with github.com/caddyserver/caddy/v2=github.com/lilnasy/caddy/v2@header-match --with github.com/abiosoft/caddy-exec@521d873
+# docker cp caddy-builder:/go/caddy /usr/local/bin/caddy && docker stop caddy-builder
+# echo "72303b8c905dd3f50ac886f84c68314fb076781e31c2e96531a0e58b52bfcd1e /usr/local/bin/caddy" | sha256sum --check && chmod +x /usr/local/bin/caddy
 sillystring.party:443 {
-        @static path /_astro/*
-        @service_worker path /_astro/service-worker-*.js
-        @redeploy {
-                method PATCH
-                path /redeploy
-                query artifact_id=*
-                header Authorization {$DEPLOY_TOKEN}
-        }
-        @ssr {
-                not path /redeploy
-                not path /_astro/*
-        }
-        route {
-                header @static Cache-Control "public, max-age=31536000, immutable"
-                header @service_worker Service-Worker-Allowed "/"
-                file_server @static {
-                        root /app/dist/client
-                        precompressed br gzip
-                }
-                exec @redeploy {
-                        directory /app
-                        command ash
-                        args -c "rm -rf dist && curl -o dist.zip --location --header 'Authorization: token {env.GITHUB_PAT}' https://api.github.com/repos/lilnasy/ttt/actions/artifacts/{query.artifact_id}/zip && unzip -d dist dist.zip && rm dist.zip && service tictactoe restart"
-                }
-                reverse_proxy @ssr 127.0.0.1:4321
-        }
+	route /_astro/* {
+		header Cache-Control "public, max-age=31536000, immutable" {
+			match status 200
+		}
+		header /_astro/service-worker-*.js Service-Worker-Allowed "/" {
+			match status 200
+		}
+		file_server {
+			root /app/dist/client
+			precompressed br gzip
+		}
+	}
+	route /redeploy {
+		@auth {
+			method PATCH
+			query artifact_id=*
+			header Authorization {$DEPLOY_TOKEN}
+		}
+		exec @auth {
+			directory /app
+			command ash
+			args -c "curl --silent --location --header 'Authorization: token {env.GITHUB_PAT}' --output dist.zip https://api.github.com/repos/lilnasy/tic-tac-toe/actions/artifacts/{query.artifact_id}/zip && unzip -q -o -d dist dist.zip && rm dist.zip && service tictactoe restart"
+		}
+	}
+	reverse_proxy 127.0.0.1:4321
 }
