@@ -2,6 +2,7 @@ import path from "node:path"
 import crypto from "node:crypto"
 import fs from "node:fs"
 import type { Plugin } from "vite"
+import "./font-loader.d.ts"
 
 export default function (): Plugin {
     let root: string

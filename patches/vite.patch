@@ -1,8 +1,8 @@
-diff --git a/dist/node/chunks/dep-yUJfKD1i.js b/dist/node/chunks/dep-yUJfKD1i.js
-index 57759ca8c9eb2362b67c078ea0504aafd888b44c..a6c09afd9e40a9a86ae2f2ad65af9559b3d7838d 100644
---- a/dist/node/chunks/dep-yUJfKD1i.js
-+++ b/dist/node/chunks/dep-yUJfKD1i.js
-@@ -49775,7 +49775,7 @@ function buildImportAnalysisPlugin(config) {
+diff --git a/dist/node/chunks/dep-BJP6rrE_.js b/dist/node/chunks/dep-BJP6rrE_.js
+index a7b3e26f3a24f75d26a7df6231479948e761ecbf..837fb9758024f27ef7fb464eb9ce874aa9018590 100644
+--- a/dist/node/chunks/dep-BJP6rrE_.js
++++ b/dist/node/chunks/dep-BJP6rrE_.js
+@@ -50090,7 +50090,7 @@ function buildImportAnalysisPlugin(config) {
        if (!imports.length) {
          return null;
        }
