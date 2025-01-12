@@ -1,7 +1,7 @@
 import cx from "clsx/lite"
 import { css } from "astro:emotion"
 import { Component } from "./component.ts"
-import * as Symbols from "./Symbols.tsx"
+import { IconButton } from "./IconButton.tsx"
 import { get } from "lib/indexed-kv.ts"
 
 export class ColorMixer extends Component<{ class?: string }> {
@@ -59,7 +59,7 @@ export class ColorMixer extends Component<{ class?: string }> {
 
     render(props: typeof this.props) {
         return <color-mixer class={css`display: contents;`}>
-            <Symbols.Button
+            <IconButton
                 icon="palette"
                 aria-label="Show color mixer"
                 filled-on-hover
@@ -117,62 +117,69 @@ export class ColorMixer extends Component<{ class?: string }> {
                     );
                 `}/>
                 <HueWheelThumb aria-label="Hue wheel" class={css`grid-area: wheel;`}/>
-                <Symbols.Button primary outline small onClick={this.#switchScheme} class={css`
-                    grid-area: switch;
-                    container-type: size;
-                    contain: paint;
-                    width: 6.75rem;
-                    --down: 0 65cqh;
-                    --up: 0 -65cqh;
-                    & > span {
-                        grid-area: 1 / 1;
-                    }
-                    & > label {
-                        grid-area: 1 / 2;
-                        justify-self: end;
-                    }
-                    & > :is(label, span) {
-                        transition: display, translate;
-                        transition-behavior: allow-discrete;
-                        transition-duration: 250ms;
-                    }
-                    @starting-style {
-                        & > [data-if-light] {
-                            translate: var(--down);
+                <IconButton
+                    aria-label="Hue wheel"
+                    primary
+                    outline
+                    small
+                    onClick={this.#switchScheme}
+                    class={css`
+                        grid-area: switch;
+                        container-type: size;
+                        contain: paint;
+                        width: 6.75rem;
+                        --down: 0 65cqh;
+                        --up: 0 -65cqh;
+                        & > span {
+                            grid-area: 1 / 1;
                         }
-                        & > [data-if-dark] {
-                            translate: var(--up);
+                        & > label {
+                            grid-area: 1 / 2;
+                            justify-self: end;
                         }
-                    }
-                    :root[data-light] & > [data-if-dark] {
-                        display: none;
-                        translate: var(--up);
-                    }
-                    :root[data-dark] & > [data-if-light] {
-                        display: none;
-                        translate: var(--down);
-                    }
-                    :root:not([data-light]):not([data-dark]) & {
-                        @media (prefers-color-scheme: dark) {
+                        & > :is(label, span) {
+                            transition: display, translate;
+                            transition-behavior: allow-discrete;
+                            transition-duration: 250ms;
+                        }
+                        @starting-style {
                             & > [data-if-light] {
-                                display: none;
                                 translate: var(--down);
                             }
-                        }
-                        @media (prefers-color-scheme: light) {
                             & > [data-if-dark] {
-                                display: none;
                                 translate: var(--up);
                             }
                         }
-                    }
-                `}>
+                        :root[data-light] & > [data-if-dark] {
+                            display: none;
+                            translate: var(--up);
+                        }
+                        :root[data-dark] & > [data-if-light] {
+                            display: none;
+                            translate: var(--down);
+                        }
+                        :root:not([data-light]):not([data-dark]) & {
+                            @media (prefers-color-scheme: dark) {
+                                & > [data-if-light] {
+                                    display: none;
+                                    translate: var(--down);
+                                }
+                            }
+                            @media (prefers-color-scheme: light) {
+                                & > [data-if-dark] {
+                                    display: none;
+                                    translate: var(--up);
+                                }
+                            }
+                        }
+                    `}
+                >
                     <span data-if-dark aria-hidden>light_mode</span>
                     <label data-if-dark>Light Mode</label>
                     <span data-if-light aria-hidden>dark_mode</span>
                     <label data-if-light>Dark Mode</label>
-                </Symbols.Button>
-                <Symbols.Button
+                </IconButton>
+                <IconButton
                     icon="close"
                     aria-label="Close color mixer"
                     filled-on-hover

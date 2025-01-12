@@ -1,6 +1,7 @@
 import type { Data, Messages } from "game/messages.d.ts"
 import type { Channel, Receiver } from "game/channel.d.ts"
 import type * as Animal from "game/animals.ts"
+import { metadata } from "lib/metadata.ts"
 
 export interface PlayerData {
     name?: string
@@ -12,6 +13,8 @@ export namespace PlayerData {
         sign: "X" | "O"
     }
 }
+
+const sendingPlayer = metadata<Player>()
 
 export type PlayerState = 
     | { connection: "pending" }
@@ -65,7 +68,7 @@ export class Player implements Channel {
      * from a message originally created by that Player.
      */
     static get(messageData: {}): Player | undefined {
-        return Sender.get(messageData)
+        return sendingPlayer.get(messageData)
     }
 
     static notFound(message: Messages, data: {}) {
@@ -96,30 +99,13 @@ export class Player implements Channel {
                     message === "JoinWorld" ||
                     message === "RequestRematch"
                 ) {
-                    Sender.set(data, this)
+                    sendingPlayer.set(data, this)
                 }
                 for (const receiver of this.#receivers) {
                     receiver.receive(message as Messages, data)
                 }
             }
         }
-    }
-}
-
-class Sender extends class { constructor(x: {}) { return x } } {
-    #sender: Player | undefined
-    static #attach(object: {}) {
-        return new Sender(object)
-    }
-    static set(object: Sender, sender: Player) {
-        if (#sender in object) {
-            object.#sender = sender
-        } else {
-            Sender.#attach(object).#sender = sender
-        }
-    }
-    static get(object: {}): Player | undefined {
-        if (#sender in object) return object.#sender
     }
 }
 

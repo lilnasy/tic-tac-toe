@@ -1,4 +1,3 @@
-import { createRef } from "preact"
 import cx from "clsx/lite"
 import { css } from "astro:emotion"
 import { ClientWorld, type WorldData } from "game/world.client.ts"
@@ -6,14 +5,14 @@ import { Component, WorldContext } from "./component.ts"
 import { Game } from "./Game.tsx"
 import { ExitPresence, type AnimatesOut } from "./ExitPresence.ts"
 import { ColorMixer } from "./ColorMixer.tsx"
-import * as Symbols from "./Symbols.tsx"
+import { IconButton } from "./IconButton.tsx"
 import { ActionButton } from "./ActionButton.tsx"
 
-export function GameUISSR() {
+export function MainMenuSSR() {
     return <TitleScreen nobuttons text="loading"/>
 }
 
-export function GameUI() {
+export function MainMenu() {
     const world = ClientWorld.connect()
     return <WorldContext.Provider value={world}>
         <ScreenRouter world={world} class={css`grid-area: 1 / 1;`}/>
@@ -48,18 +47,14 @@ function ScreenRouter({ world, ...props }: { class?: string, world: ClientWorld 
     }</ExitPresence>
 }
 
-namespace TitleScreen {
-    export type Props = {
-        class?: string
-    } & (
-        | { nobuttons: true, text: string }
-        | { nobuttons?: undefined }
-    )
-}
-
-class TitleScreen extends Component<TitleScreen.Props> implements AnimatesOut {
+class TitleScreen extends Component<{
+    class?: string
+} & (
+    | { nobuttons: true, text: string }
+    | { nobuttons?: undefined }
+)> implements AnimatesOut {
     
-    #container = createRef<HTMLDivElement>()
+    current: HTMLDivElement | null = null
 
     #newWorld = () => this.update("NewWorld")
 
@@ -76,7 +71,7 @@ class TitleScreen extends Component<TitleScreen.Props> implements AnimatesOut {
         
         // to prevent visual noise, we animate differently when in a loading state
         const leaveQuickly = false
-        const container = this.#container.current
+        const container = this.current!
         
         if (!leaveQuickly) {
             const options: KeyframeAnimationOptions = {
@@ -85,11 +80,11 @@ class TitleScreen extends Component<TitleScreen.Props> implements AnimatesOut {
                 easing: "cubic-bezier(0.75, -0.75, 0.25, 1)"
             }
 
-            for (const element of container!.querySelectorAll("h1")) {
+            for (const element of container.querySelectorAll("h1")) {
                 element.animate(upwards, options)
             }
             
-            for (const button of container!.querySelectorAll("button")) {
+            for (const button of container.querySelectorAll("button")) {
                 button.animate(downwards, options)
             }
         }
@@ -106,7 +101,7 @@ class TitleScreen extends Component<TitleScreen.Props> implements AnimatesOut {
             @starting-style {
                 opacity: 0;
             }
-        `)} ref={this.#container}>
+        `)} ref={this}>
             <TitleText/>
             {
                 props.nobuttons
@@ -162,14 +157,10 @@ function TitleText() {
     </>
 }
 
-namespace WaitingForOpponentScreen {
-    export interface Props {
-        class?: string
-        world: WorldData["name"]
-    }
-}
-
-class WaitingForOpponentScreen extends Component<WaitingForOpponentScreen.Props> implements AnimatesOut {
+class WaitingForOpponentScreen extends Component<{
+    class?: string
+    world: WorldData["name"]
+}> implements AnimatesOut {
     
     #copy = () =>
         navigator.clipboard.writeText(this.props.world.replace(" ", "-"))
@@ -180,10 +171,10 @@ class WaitingForOpponentScreen extends Component<WaitingForOpponentScreen.Props>
             url: location.href
         }).catch(() => {})
 
-    #container = createRef<HTMLDivElement>()
+    current: HTMLElement | null = null
 
     componentWillLeave(leave: () => void) {
-        const animation = this.#container.current!.animate(
+        const animation = this.current!.animate(
             [{}, { opacity: 0 }],
             { duration: 250 }
         )
@@ -191,7 +182,7 @@ class WaitingForOpponentScreen extends Component<WaitingForOpponentScreen.Props>
     }
 
     render(props: typeof this.props) {
-        return <waiting-screen ref={this.#container} class={cx(props.class, css`
+        return <waiting-screen ref={this} class={cx(props.class, css`
             display: grid;
             place-items: center;
             grid-template-areas:
@@ -244,7 +235,7 @@ class WaitingForOpponentScreen extends Component<WaitingForOpponentScreen.Props>
                     margin: 0;
                     transition: color 250ms;
                 `}>{props.world.replace("-", " ")}</h6>
-                {"clipboard" in navigator && <Symbols.Button
+                {"clipboard" in navigator && <IconButton
                     icon="content_copy"
                     label="Copy"
                     on-secondary-container
@@ -252,10 +243,10 @@ class WaitingForOpponentScreen extends Component<WaitingForOpponentScreen.Props>
                     small
                     onClick={this.#copy}
                 />}
-                {"share" in navigator && <Symbols.Button
+                {"share" in navigator && <IconButton
                     icon="ios_share"
                     label="Share"
-                    on-secondary-container
+                    on-secondary-containers
                     outline
                     small
                     onClick={this.#share}

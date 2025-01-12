@@ -1,9 +1,9 @@
 # docker run --rm -it --name caddy-builder golang:1.23.4-alpine3.21
 ## apk add git
 ## go install github.com/caddyserver/xcaddy/cmd/xcaddy@eb894be
-## xcaddy build --with github.com/caddyserver/caddy/v2=github.com/lilnasy/caddy/v2@header-match --with github.com/abiosoft/caddy-exec@521d873
+## xcaddy build v2.9.1 --with github.com/abiosoft/caddy-exec@521d873
 # docker cp caddy-builder:/go/caddy /usr/local/bin/caddy && docker stop caddy-builder
-# echo "72303b8c905dd3f50ac886f84c68314fb076781e31c2e96531a0e58b52bfcd1e /usr/local/bin/caddy" | sha256sum --check && chmod +x /usr/local/bin/caddy
+# echo "7e2ce81f457438ab096671deba5a526d18a5383a3ea6aba5b5f8af2d01b71c4a /usr/local/bin/caddy" | sha256sum --check && chmod +x /usr/local/bin/caddy
 sillystring.party:443 {
 	route /_astro/* {
 		header Cache-Control "public, max-age=31536000, immutable" {
@@ -17,6 +17,9 @@ sillystring.party:443 {
 			precompressed br gzip
 		}
 	}
+	# Simple and fast self-hosted deploy-on-git-push
+	# A github action builds the project, uploads it as an artifact, and calls this endpoint.
+	# This endpoint downloads the artifact, and restarts Node.js with it.
 	route /redeploy {
 		@auth {
 			method PATCH
@@ -30,4 +33,13 @@ sillystring.party:443 {
 		}
 	}
 	reverse_proxy 127.0.0.1:4321
+}
+testing.sillystring.party:443 {
+	handle_errors 502 {
+		respond "The testing environment is offline. The website must not be being tested right now."
+	}
+	# I have a wireguard tunnel between the server and my laptop.
+	# The dev server running on my laptop would be avaialble to
+	# the server here
+	reverse_proxy 192.168.4.2:4321
 }

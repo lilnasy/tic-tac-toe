@@ -45,5 +45,8 @@
         oklch(10% 0.1 var(--base-hue) / 0.5)
     );
     --drop-shadow: drop-shadow(8px 16px 16px var(--shadow-color));
-    --drop-shadow-small: drop-shadow(4px 8px 8px var(--shadow-color));
+    --drop-shadow-double:
+        drop-shadow(8px 16px 16px var(--shadow-color))
+        drop-shadow(8px 16px 16px var(--shadow-color));
+    --drop-shadow-subtle: drop-shadow(4px 8px 8px var(--shadow-color));
 }

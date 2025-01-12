@@ -47,11 +47,21 @@ export namespace Attributes {
 
 export interface Attributes extends JSX.HTMLAttributes<HTMLElement> {}
 
+/**
+ * Shorthands for getting event types for on* handlers.
+ * Allows using `Events.button.click` instead of `JSX.TargetedMouseEvent<HTMLButtonElement>`.
+ */
 export namespace Events {
+    export interface change extends JSX.TargetedEvent<HTMLElement> {}
+    export interface click extends JSX.TargetedMouseEvent<HTMLElement> {}
     export namespace button {
         export interface click extends JSX.TargetedMouseEvent<HTMLButtonElement> {}
     }
+    export namespace dialog {
+        export interface close extends JSX.TargetedEvent<HTMLDialogElement> {}
+    }
     export namespace input {
+        export interface change extends JSX.TargetedEvent<HTMLInputElement> {}
         export interface keyDown extends JSX.TargetedKeyboardEvent<HTMLInputElement> {}
         export interface focusOut extends JSX.TargetedFocusEvent<HTMLInputElement> {}
     }

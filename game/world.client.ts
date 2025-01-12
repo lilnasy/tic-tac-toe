@@ -26,7 +26,7 @@ export class ClientWorld implements World, Receiver {
         soundSystemClient
     ]
 
-    @store accessor state: ClientWorld.State = { connected: "connecting" }
+    @store accessor state: ClientWorldState = { connected: "connecting" }
 
     constructor(websocket: WebSocket) {
         const channel = this.channel = new ClientToServerChannel(websocket)
@@ -72,11 +72,7 @@ export class ClientWorld implements World, Receiver {
     }
 }
 
-export namespace ClientWorld {
-    export type State = ClientWorldState
-}
-
-type ClientWorldState =
+export type ClientWorldState =
     /**
      * The client is waiting for the connection to the server to be established.
      */

@@ -2,24 +2,22 @@ import { css } from "astro:emotion"
 import cx from "clsx/lite"
 import type { Attributes } from "./component.ts"
 
-export namespace Button {
-    export type Props = Omit<Attributes.button, "size"> & {
-        icon?: string
-        label?: string
-        "filled-on-hover"?: true
-        outline?: true
-    } & (
-        | { small?: true, medium?: undefined, large?: undefined }
-        | { small?: undefined, medium?: true, large?: undefined }
-        | { small?: undefined, medium?: undefined, large?: true }
-    ) & (
-        | { primary?: true, "on-secondary-container"?: undefined, "on-surface"?: undefined }
-        | { primary?: undefined, "on-secondary-container"?: true, "on-surface"?: undefined }
-        | { primary?: undefined, "on-secondary-container"?: undefined, "on-surface"?: true }
-    )
-}
+export type Props = Omit<Attributes.button, "size"> & {
+    icon?: string
+    label?: string
+    "filled-on-hover"?: true
+    outline?: true
+} & (
+    | { small?: true, medium?: undefined, large?: undefined }
+    | { small?: undefined, medium?: true, large?: undefined }
+    | { small?: undefined, medium?: undefined, large?: true }
+) & (
+    | { primary?: true, "on-secondary-container"?: undefined, "on-surface"?: undefined }
+    | { primary?: undefined, "on-secondary-container"?: true, "on-surface"?: undefined }
+    | { primary?: undefined, "on-secondary-container"?: undefined, "on-surface"?: true }
+)
 
-export function Button({
+export function IconButton({
     icon,
     label,
     "filled-on-hover": filledOnHover,
@@ -31,7 +29,7 @@ export function Button({
     medium,
     large,
     ...props
-}: Button.Props) {
+}: Props) {
     return <button
         aria-label={label}
         {...props}

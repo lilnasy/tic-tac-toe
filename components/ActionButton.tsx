@@ -3,14 +3,12 @@ import cx from "clsx/lite"
 import { css } from "astro:emotion"
 import type { Attributes } from "./component.ts"
 
-namespace ActionButton {
-    export interface Props extends Attributes.button {
-        primary?: true
-        secondary?: true    
-    }
+export interface Props extends Attributes.button {
+    primary?: true
+    secondary?: true    
 }
 
-export class ActionButton extends Component<ActionButton.Props> {
+export class ActionButton extends Component<Props> {
     #ref = createRef<HTMLButtonElement>()
     componentDidMount() {
         this.#ref.current!.addEventListener("click", this)

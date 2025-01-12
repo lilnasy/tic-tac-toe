@@ -6,7 +6,7 @@ import confettiPop from "assets/confetti pop.webm"
 import childrenCheering from "assets/children cheering.webm"
 import { h } from "preact"
 import { renderToString } from "preact-render-to-string"
-import { GameUISSR } from "components/GameUI.tsx"
+import { MainMenuSSR } from "components/Menus.tsx"
 import font from "font:family=Sue Ellen Francisco"
 ---
 <html lang="en">
@@ -77,12 +77,11 @@ import font from "font:family=Sue Ellen Francisco"
 		<script>
 			import { h, render } from "preact"
 			import "@preact/signals"
-			import { GameUI } from "components/GameUI.tsx"
-			
-			if (import.meta.env.DEV) await import("preact/debug")
+			import { MainMenu } from "components/Menus.tsx"
+
 			if ("Iterator" in window === false) await import("lib/iterator-helpers-polyfill.ts")
 
-			render(h(GameUI, {}), document.body)
+			render(h(MainMenu, {}), document.body)
 		</script>
 		<script>
 			import sw from "../service-worker.ts?worker&url"
@@ -102,6 +101,6 @@ import font from "font:family=Sue Ellen Francisco"
 		</script>
 	</head>
 	<body
-		><Fragment set:html={renderToString(h(GameUISSR, {}))}
+		><Fragment set:html={renderToString(h(MainMenuSSR, {}))}
 	/></body>
 </html>
