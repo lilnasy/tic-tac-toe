@@ -1,11 +1,9 @@
-import type { Data, Messages } from "game/messages.d.ts"
-import type { Entity } from "game/entity.d.ts"
-import type { Channel } from "game/channel.d.ts"
-import type { System } from "game/systems.ts"
+import type { Messages, Data } from "./messages.d.ts"
+import type { Channel } from "./channel.d.ts"
+import type { System } from "./systems.ts"
 
-export interface World {
+export interface World {    
     channel: Channel
-    entities: Set<Entity>
     systems: System<"client" | "server" | "both">[]
     update<Message extends Messages>(
         message: Message,

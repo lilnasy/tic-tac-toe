@@ -2,9 +2,35 @@ import path from "node:path"
 import crypto from "node:crypto"
 import fs from "node:fs"
 import type { Plugin } from "vite"
-import "./font-loader.d.ts"
+import type { AstroIntegration } from "astro"
 
-export default function (): Plugin {
+export default function (): AstroIntegration {
+    return {
+        name: "font-loader",
+        hooks: {
+            "astro:config:setup": ({ updateConfig }) => {
+                updateConfig({
+                    vite: {
+                        plugins: [ vite() ]
+                    }
+                })
+            },
+            "astro:config:done" ({ injectTypes }) {
+                injectTypes({
+                    filename: "types.d.ts",
+                    content: [
+                        `declare module 'font:*' {`,
+                        `    const href: string`,
+                        `    export default href`,
+                        `}`,
+                    ].join("\n")
+                })
+            }
+        }
+    }
+}
+
+function vite(): Plugin {
     let root: string
     let metadata: Record<string, string>
     function metadataFilePath() {

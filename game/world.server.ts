@@ -1,18 +1,24 @@
-import { createMutable } from "lib/mutable-store.ts"
 import type { Channel, Receiver } from "game/channel.d.ts"
 import type { Data, MessageRegistry, Messages } from "game/messages.d.ts"
-import type { Entity, States } from "game/entity.d.ts"
+import type { Board } from "game/board.d.ts"
 import type { World } from "game/world.d.ts"
-import { colorSystemServer, connectionSystemServer, gameLoopSystemServer, lineCheckSystem, markerSystemServer, syncSystemServer, turnSystemServer, type System } from "game/systems.ts"
+import {
+    type System,
+    colorSystemServer,
+    connectionSystemServer,
+    gameLoopSystemServer,
+    lineCheckSystem,
+    markerSystemServer,
+    syncSystemServer,
+    turnSystemServer
+} from "game/systems.ts"
 import { Player } from "game/player.ts"
 
 export class ServerWorld implements World, Receiver {
-
     readonly server = true
     readonly client = false
-    
+
     channel: ServerToClientsChannel
-    entities = new Set<Entity>
     systems: System<"both" | "server">[] = [
         colorSystemServer,
         connectionSystemServer,
@@ -24,16 +30,15 @@ export class ServerWorld implements World, Receiver {
     ]
 
     players = new Set<Player>
-    disconnectedPlayers = new Set<Player>
-    
+
     /**
      * A static object containing global state related to the game.
      */
-    state: Gamestate = { connection: "waiting" }
-    
+    state: ServerWorldState = { connection: "waiting" }
+
     constructor(readonly name: string) {
-        const channel = this.channel = new ServerToClientsChannel(this.players)
-        channel.subscribe(this)
+        this.channel = new ServerToClientsChannel(this.players)
+        this.channel.subscribe(this)
     }
 
     update<Message extends Messages>(
@@ -42,7 +47,7 @@ export class ServerWorld implements World, Receiver {
     ) {
         const [ data = {} ] = _data
         for (const system of this.systems) {
-            system[`on${message}`]?.(data as any, this as any)
+            system[`on${message}`]?.(data as any, this)
         }
     }
     
@@ -55,22 +60,11 @@ export class ServerWorld implements World, Receiver {
     receive<Message extends Messages>(message: Message, data: MessageRegistry[Message]) {
         if (ServerWorld.#messageAllowlist.includes(message)) this.update(message, data)
     }
-
-    spawn<State extends keyof States>(entityData: Entity<State>) {
-        const entity = createMutable(entityData)
-        this.update("Spawn", entity)
-        this.entities.add(entity)
-        return entity
-    }
-
-    despawn(entity: Entity) {
-        this.entities.delete(entity)
-    }
 }
 
-export type Gamestate =
+export type ServerWorldState =
     | { connection: "waiting" }
-    | { connection: "ingame", turn: "X" | "O" }
+    | { connection: "ingame", board: Board, turn: "X" | "O" }
 
 class ServerToClientsChannel implements Channel {
     

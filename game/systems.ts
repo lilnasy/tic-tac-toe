@@ -1,8 +1,7 @@
-import { effect } from "@preact/signals-core"
 import { metadata } from "lib/metadata.ts"
 import { get, set } from "lib/indexed-kv.ts"
 import type { MessageRegistry, Messages, UpdateColors } from "game/messages.d.ts"
-import type { Entity, Line, Place } from "game/entity.d.ts"
+import type { Line, SquarePosition } from "game/board.d.ts"
 import type { ClientWorld } from "game/world.client.ts"
 import type { ServerWorld } from "game/world.server.ts"
 import { Player } from "game/player.ts"
@@ -16,7 +15,7 @@ import childrenCheering from "assets/children cheering.webm"
 export const markerSystemClient: System<"client"> = {
     onMark(marked, world) {
         const { place } = marked
-        const { channel, entities, state } = world
+        const { channel, state } = world
 
         if (
             state.connected !== "togame" ||
@@ -25,13 +24,12 @@ export const markerSystemClient: System<"client"> = {
         ) {
             return
         }
+        const { board } = state
 
-        const unmarkedSquare = entities.values().find(
-            e => e.Place === place && e.Marked === undefined
-        )
+        const currentlyUnmarked = board[place - 1] === null
 
-        if (unmarkedSquare) {
-            unmarkedSquare.Marked = state.game.turn
+        if (currentlyUnmarked) {
+            board[place - 1] = state.game.turn
             channel.send("Mark", marked)
             world.update("Switch")
         }
@@ -53,12 +51,12 @@ export const markerSystemServer: System<"server"> = {
             return
         }
 
-        const unmarkedSquare = world.entities.values().find(
-            e => e.Place === place && e.Marked === undefined
-        )
+        const { board } = world.state
 
-        if (unmarkedSquare) {
-            unmarkedSquare.Marked = player.state.sign
+        const currentlyUnmarked = board[place - 1] === null
+
+        if (currentlyUnmarked) {
+            board[place - 1] = player.state.sign
             return world.update("Switch")
         }
     }
@@ -77,16 +75,25 @@ const lines = [
 
 export const lineCheckSystem: System = {
     onMark(_, world) {
-        const markedWithX = new Array<Place>
-        const markedWithO = new Array<Place>
+        const { state } = world
+        
+        const board =
+            world.server && world.state.connection === "ingame" ? world.state.board :
+            world.client && world.state.connected === "togame" ? world.state.board : null
+
+        if (board === null) return
+
+        const markedWithX = new Array<SquarePosition>
+        const markedWithO = new Array<SquarePosition>
 
         let markedPlaces = 0
 
-        for (const { Marked, Place } of world.entities) {
-            if (Place !== undefined && Marked !== undefined) {
-                if (Marked === "X") markedWithX.push(Place)
-                if (Marked === "O") markedWithO.push(Place)
-                if (Marked !== undefined) markedPlaces++
+        for (let place = 1; place <=9; place++) {
+            const marked = board[place - 1]
+            if (marked !== null) {
+                if (marked === "X") markedWithX.push(place as SquarePosition)
+                if (marked === "O") markedWithO.push(place as SquarePosition)
+                if (marked !== undefined) markedPlaces++
             }
         }
 
@@ -110,7 +117,7 @@ export const lineCheckSystem: System = {
     }
 }
 
-function makesLine(line: Line, board: Array<Place>) {
+function makesLine(line: Line, board: Array<SquarePosition>) {
     if (board.includes(line[0]) && board.includes(line[1]) && board.includes(line[2])) return true
     return false
 }
@@ -144,7 +151,7 @@ export const turnSystemServer: System<"server"> = {
 
 export const gameLoopSystemClient: System<"client"> = {
     onStart({ opponent, sign, turn }, world) {
-        const { entities, state } = world
+        const { state } = world
 
         if (
             state.connected !== "toworld" &&
@@ -153,22 +160,10 @@ export const gameLoopSystemClient: System<"client"> = {
             return
         }
 
-        for (const entity of entities) {
-            world.despawn(entity)
-        }
-
-        for (let place = 1; place <= 9; place++) {
-            const unmarkedSquare: Entity<"Place" | "Sync"> = {
-                Place: place as Place,
-                Sync: { id: `square${place}` },
-                View: "Square"
-            }
-            world.spawn(unmarkedSquare)
-        }
-
         world.state = {
-            ...state,
             connected: "togame",
+            world: state.world,
+            board: [ null, null, null, null, null, null, null, null, null ],
             game: {
                 state: "active",
                 turn,
@@ -199,12 +194,9 @@ export const gameLoopSystemClient: System<"client"> = {
         }
         state.game = {
             state: "victory",
-            winningSign
+            winningSign,
+            line
         }
-        world.spawn({
-            Line: line,
-            View: "Strikethrough"
-        })
     },
     onRequestRematch(_, { channel }) {
         channel.send("RequestRematch")
@@ -216,23 +208,15 @@ export const gameLoopSystemClient: System<"client"> = {
 
 export const gameLoopSystemServer: System<"server"> = {
     onReady(_, world) {
-        const { entities, players } = world
-
-        for (const entity of entities) {
-            world.despawn(entity)
-        }
-
-        for (let place = 1; place <= 9; place++) {
-            const unmarkedSquare: Entity<"Place" | "Sync"> = {
-                Place: place as Place,
-                Sync: { id: `square${place}` }
-            }
-            world.spawn(unmarkedSquare)
-        }
+        const { players } = world
 
         const signs: ("X" | "O")[] = Math.random() < 0.5 ? ["X", "O"] : ["O", "X"]
         const firstTurn = Math.random() < 0.5 ? "X" : "O"
-        world.state = { connection: "ingame", turn: firstTurn }
+        world.state = {
+            connection: "ingame",
+            board: [ null, null, null, null, null, null, null, null, null ],
+            turn: firstTurn
+        }
 
         const participatingPlayers: [Player, Animal.Type, "X" | "O"][] = []
 
@@ -245,7 +229,6 @@ export const gameLoopSystemServer: System<"server"> = {
         }
 
         if (participatingPlayers.length === 2) {
-
             const [
                 [player1, animal1, sign1],
                 [player2, animal2, sign2]
@@ -277,7 +260,7 @@ export const gameLoopSystemServer: System<"server"> = {
             connection: "inworld"
         }
 
-        if (players.size === 2 && players.values().every(p => p.state.connection === "inworld")) {
+        if (players.size === 2 && Array.from(players).every(p => p.state.connection === "inworld")) {
             return world.update("Ready")
         }
         for (const player of players) {
@@ -347,41 +330,23 @@ export const colorSystemServer: System<"server"> = {
 }
 
 export const syncSystemClient: System<"client"> = {
-    onSync(updatedEntity, world) {
-        const { Sync: { id } } = updatedEntity
-        const entity = world.entities.values().find(e => e.Sync?.id === id)
-        if (entity) {
-            for (const key of Object.keys(updatedEntity).concat(Object.keys(entity))) {
-                // View is a client only state, preserve it during sync
-                if (key === "View") continue
-                /** @ts-expect-error */
-                entity[key] = updatedEntity[key]
-            }
-        } else {
-            console.warn(
-                new Error(
-                    "Server sent Sync message for an entity that does not exist in the client world.",
-                    { cause: updatedEntity }
-                )
-            )
+    onSync({ board, turn }, { state }) {
+        if (state.connected !== "togame") return
+        if (board) {
+            state.board = board
+        }
+        if (turn && state.game.state === "active") {
+            state.game.turn = turn
         }
     }
 }
 
 export const syncSystemServer: System<"server"> = {
-    onSpawn(entity, world) {
-        const { Sync } = entity
-        if (Sync !== undefined) {
-            const alreadyNetworked = world.entities.values().some(e => e.Sync?.id === Sync.id)
-            if (alreadyNetworked) {
-                return console.warn(new Error("A networked entity is being spawned with an ID that's already used by another entity in the world.", { cause: entity }))
-            }
-            // server announces all mutations done to networked entities to all connected players
-            effect(() => {
-                const ent = { ...entity, Sync }
-                if (world.state.connection === "ingame") {
-                    world.channel.send("Sync", ent)
-                }
+    onMark(_, world) {
+        if (world.state.connection === "ingame") {
+            world.channel.send("Sync", {
+                board: world.state.board,
+                turn: world.state.turn
             })
         }
     }
@@ -396,10 +361,7 @@ export const connectionSystemClient: System<"client"> = {
                 connected: "connectingtoworld",
                 world: { name: segment2 }
             }
-            world.update("JoinWorld", {
-                world: segment2,
-                reconnectId: sessionStorage.getItem(`reconnectId:${segment2}`) ?? undefined
-            })
+            world.update("JoinWorld", { world: segment2 })
         } else {
             world.state = {
                 connected: "tolobby"
@@ -416,9 +378,6 @@ export const connectionSystemClient: System<"client"> = {
         world.channel.send("JoinWorld", data)
     },
     onJoinedWorld(data, world) {
-        if ("id" in data.reconnect) {
-            sessionStorage.setItem(`reconnectId:${data.world}`, data.reconnect.id)
-        }
         world.state = {
             connected: "toworld",
             world: { name: data.world },
@@ -437,21 +396,14 @@ export const connectionSystemClient: System<"client"> = {
 }
 
 export const connectionSystemServer: System<"server"> = {
-    onAddPlayer({ player, reconnectId }, world) {
-        const { players, disconnectedPlayers, name } = world
+    onAddPlayer({ player }, world) {
+        const { players, name } = world
         if (players.has(player)) return
-        if (reconnectId) {
-            const dplayer = disconnectedPlayers.values()
-                .find(p => p.id === reconnectId)
-            if (dplayer !== undefined) {
-                player.id = reconnectId
-                player.state = { connection: "connected" }
-                disconnectedPlayers.delete(dplayer)
-            }
-        }
+
         if (player.state.connection !== "connected") {
             return
         }
+
         if (players.size < 2) {
             players.add(player)
             player.state = {
@@ -463,10 +415,9 @@ export const connectionSystemServer: System<"server"> = {
                 player: {
                     name: player.state.name,
                     animal: player.state.animal
-                },
-                reconnect: { id: player.id },
+                }
             })
-            if (players.size === 2 && players.values().every(p => p.state.connection === "inworld")) {
+            if (players.size === 2 && Array.from(players).every(p => p.state.connection === "inworld")) {
                 world.update("Ready")
             }
             /** subscribe the world to the message being sent by the player */
@@ -475,11 +426,10 @@ export const connectionSystemServer: System<"server"> = {
             player.send("WorldOccupied", { world: name })
         }
     },
-    onDisconnected({ player }, world) {
-        if (player !== undefined) {
+    onDisconnected({ player }: { player?: Player }, world: ServerWorld) {
+        if (player && player.state.connection === "ingame") {
             world.players.delete(player)
-            world.disconnectedPlayers.add(player)
-            player.unsubscribe(world)
+            world.channel.send("Disconnected", { player })
         }
     }
 }
@@ -541,7 +491,8 @@ async function playAudio(src: string, { volume, delay }: { volume?: number, dela
         } else {
             audioBufferSourceNode.connect(audioContext.destination)
         }
-        const delayAdjustment = Date.now() - delayAdjustmentStart
+        const 
+        delayAdjustment = Date.now() - delayAdjustmentStart
         const adjustedDelay = delay ?? 0 - delayAdjustment
         if (adjustedDelay > 0) await new Promise(resolve => setTimeout(resolve, delay))
         audioBufferSourceNode.start(0)
@@ -557,6 +508,6 @@ export type System<RunsOn extends "server" | "client" | "both" = "both"> = {
             ClientWorld | ServerWorld
     ) => unknown
 }
-
 type RemoveOn<S extends string> =
     S extends `on${infer T}` ? T : S
+

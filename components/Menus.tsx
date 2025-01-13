@@ -246,7 +246,7 @@ class WaitingForOpponentScreen extends Component<{
                 {"share" in navigator && <IconButton
                     icon="ios_share"
                     label="Share"
-                    on-secondary-containers
+                    on-secondary-container
                     outline
                     small
                     onClick={this.#share}

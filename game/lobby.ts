@@ -33,14 +33,12 @@ export const lobby = new class Lobby implements Receiver {
      */
     receive<Message extends Messages>(message: Message, data: MessageRegistry[Message]) {
         if (message === "Disconnected") {
-            // @ts-expect-error: we know this is a Disconnected message
             const { player }: Disconnected = data
             player!.unsubscribe(this)
         } else if (message === "NewWorld") {
             this.#newWorld(data)
         } else if (message === "JoinWorld") {
-            // @ts-expect-error: we know this is a JoinWorld message
-            this.#joinWorld(data satisfies JoinWorld)
+            this.#joinWorld(data)
         }
     }
 
@@ -63,6 +61,6 @@ export const lobby = new class Lobby implements Receiver {
         if (world === undefined) {
             return player.send("WorldNotFound", { world: data.world })
         }
-        world.update("AddPlayer", { player, reconnectId: data.reconnectId })
+        world.update("AddPlayer", { player })
     }
 }

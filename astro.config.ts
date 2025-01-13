@@ -7,7 +7,6 @@ import fontLoader from "./lib/font-loader.ts"
 
 const vite: import("vite").UserConfig = {
     plugins: [
-        fontLoader(),
         preact({
             reactAliasesEnabled: false,
             babel: {
@@ -36,7 +35,11 @@ const vite: import("vite").UserConfig = {
 // https://astro.build/config
 export default defineConfig({
     srcDir: ".",
-    integrations: [ emotion({ stylisPlugins: [] }), precompress ],
+    integrations: [
+        emotion({ stylisPlugins: [] }),
+        fontLoader(),
+        precompress,
+    ],
     adapter: nodeWs({ mode: "standalone" }),
     output: "server",
     server: {

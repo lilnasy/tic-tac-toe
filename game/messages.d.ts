@@ -1,5 +1,6 @@
 import type { Entity, Line, Place } from "game/entity.d.ts"
 import type { Player, PlayerData } from "game/player.ts"
+import type { Board } from "game/board.d.ts"
 
 export type Messages = keyof MessageRegistry
 
@@ -93,11 +94,12 @@ export interface Start {
 
 /**
  * A message sent by the server to all connected players.
- * Contains all details of an entity that has been mutated in
- * the server world. Used to synchronise and update the
- * corresponding entity in the client world.
+ * Contains the current authoritative state of the game.
  */
-export interface Sync extends Entity<"Sync"> {}
+export interface Sync {
+    board?: Board
+    turn?: "X" | "O"
+}
 
 /**
  * A message that one of the players has successfully made a line
@@ -164,12 +166,6 @@ export interface NewWorld {}
  */
 export interface JoinWorld {
     world: string
-    /**
-     * In case the player is reconnecting after being
-     * disconnected, the `reconnectId` is used to
-     * let the player continue where they left off.
-     */
-    reconnectId?: string
 }
 
 /**
@@ -179,7 +175,6 @@ export interface JoinWorld {
  */
 export interface AddPlayer {
     player: Player
-    reconnectId?: string
 }
 
 /**
@@ -189,20 +184,7 @@ export interface AddPlayer {
 export interface JoinedWorld {
     world: string
     player: PlayerData
-    reconnect: {
-        /**
-         * A unique id sent by the server to each player when they
-         * initially connect. Will be used by the player to rejion game
-         * after network issues.
-         */
-        id: string
-    } | Reconnect
 }
-
-/**
- * TODO
- */
-export interface Reconnect {}
 
 /**
  * A message sent by the server to the player when the

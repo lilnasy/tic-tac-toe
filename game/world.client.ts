@@ -1,9 +1,8 @@
 import { createMutable, store } from "lib/mutable-store.ts"
-import { ReactiveSet } from "lib/reactive-set.ts"
 import type { Channel, Receiver } from "game/channel.d.ts"
 import type { Data, Messages } from "game/messages.d.ts"
 import type { PlayerData } from "game/player.ts"
-import type { Entity, States } from "game/entity.d.ts"
+import type { Board, Line } from "game/board.d.ts"
 import type { World } from "game/world.d.ts"
 import { type System, colorSystemClient, connectionSystemClient, faviconSystemClient, gameLoopSystemClient, lineCheckSystem, markerSystemClient, soundSystemClient, syncSystemClient, turnSystemClient } from "game/systems.ts"
 
@@ -13,7 +12,6 @@ export class ClientWorld implements World, Receiver {
     readonly client = true
 
     channel: ClientToServerChannel
-    entities = new ReactiveSet<Entity>
     systems: System<"both" | "client">[] = [
         connectionSystemClient,
         gameLoopSystemClient,
@@ -59,17 +57,6 @@ export class ClientWorld implements World, Receiver {
      * Send all received events directly to all systems using `update()`.
      */
     receive = this.update
-
-    spawn<State extends keyof States = never>(entityData: Entity<State>) {
-        const entity = createMutable(entityData)
-        this.update("Spawn", entity)
-        this.entities.add(entity)
-        return entity
-    }
-
-    despawn(entity: Entity) {
-        this.entities.delete(entity)
-    }
 }
 
 export type ClientWorldState =
@@ -92,13 +79,13 @@ export type ClientWorldState =
     /**
      * The game is on, ready to send and receive moves.
      */
-    | { connected: "togame", world: WorldData, player: PlayerData.WithSign, game: GameState, opponent: PlayerData.WithSign }
+    | { connected: "togame", world: WorldData, board: Board, player: PlayerData.WithSign, game: GameState, opponent: PlayerData.WithSign }
     | { connected: "disconnected" }
 
 type GameState =
     | { state: "active", turn: XO }
     | { state: "draw" }
-    | { state: "victory", winningSign: XO }
+    | { state: "victory", winningSign: XO, line: Line }
 
 export interface WorldData {
     name: string

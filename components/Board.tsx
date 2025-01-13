@@ -1,6 +1,6 @@
 import cx from "clsx/lite"
 import { css } from "astro:emotion"
-import type { Entity } from "game/entity.d.ts"
+import type { SquarePosition } from "game/board.d.ts"
 import { Component, type Attributes } from "./component.ts"
 
 export function Board(props: Attributes) {
@@ -10,7 +10,8 @@ export function Board(props: Attributes) {
         grid: 1fr 1fr 1fr / 1fr 1fr 1fr;
     `)}>
         <CrissCrossFrame class={css`grid-area: 1 / 1 / span 3 / span 3;`}/>
-        <EntitiesView/>
+        <BoardSquares/>
+        <StrikethroughLine/>
     </xo-board>
 }
 
@@ -23,49 +24,31 @@ function CrissCrossFrame(props: Attributes.svg) {
     </svg>
 }
 
-class EntitiesView extends Component {
+class BoardSquares extends Component {
     render() {
-        return this.world.entities
-            .values()
-            .filter(hasView)
-            .map(renderCorrespondingView)
-            .toArray()
+        const { state } = this.world
+        if (state.connected === "togame") {
+            return state.board.map((square, index) => <SquareComponent square={square} place={index + 1 as SquarePosition}/>)
+        }
+        return null
     }
 }
 
-function hasView(entity: Entity): entity is Entity<"View"> {
-    return entity.View !== undefined
-}
-
-function renderCorrespondingView(entity: Entity<"View">) {
-    if (entity.View === "Square") return <Square entity={entity}/>
-    if (entity.View === "Strikethrough") return <Strikethrough entity={entity}/>
-}
-
-interface ViewProps {
-    entity: Entity
-}
-
-class Square extends Component<ViewProps> {
-    render(
-        { entity }: typeof this.props,
-        _: unknown,
-        world: typeof this.world
-    ) {
-        const { state } = world
-        const { Marked, Place } = entity as Entity<"Place">
-
+class SquareComponent extends Component<{ square: "X" | "O" | null, place: SquarePosition}> {
+    render({ square, place }: typeof this.props) {
+        const { state } = this.world
         const playerSign = state.connected === "togame" && state.game.state === "active" && state.player.sign
         const turnSign = state.connected === "togame" && state.game.state === "active" && state.game.turn
 
         const playable =
-            Marked === undefined &&
+            square === null &&
             playerSign &&
             turnSign &&
             playerSign === turnSign
 
         return <button
-            onClick={() => world.update("Mark", { place: entity.Place! })}
+            key={place}
+            onClick={() => this.world.update("Mark", { place })}
             class={css`
                 font-family: inherit;
                 background-color: initial;
@@ -86,33 +69,38 @@ class Square extends Component<ViewProps> {
                 }
             `}
             style={{
-                gridRow: Math.ceil(Place / 3),
-                gridColumn: ((Place - 1) % 3) + 1
+                gridRow: Math.ceil(place / 3),
+                gridColumn: ((place - 1) % 3) + 1
             }}
             data-hover-content={playable && playerSign}
-            disabled={ playable === false }
-        >{Marked || null}</button>
+            disabled={!playable}
+        >{square || null}</button>
     }
 }
 
-function Strikethrough({ entity }: ViewProps) {
-    const [ a, b, c ] = entity.Line!
-    const placement = a * 100 + b * 10 + c
+class StrikethroughLine extends Component {
+    render() {
+        const { state } = this.world
+        if (state.connected !== "togame" || state.game.state !== "victory") return null
 
-    return <svg
-        viewBox="0 0 576 576"
-        xmlns="http://www.w3.org/2000/svg"
-        class={css`grid-area: 1 / 1 / span 3 / span 3;`}
-    >
-        {placement === 123 && <Line x1="64" y1="96" x2="512" y2="96"/>}
-        {placement === 456 && <Line x1="64" y1="288" x2="512" y2="288"/>}
-        {placement === 789 && <Line x1="64" y1="480" x2="512" y2="480"/>}
-        {placement === 147 && <Line x1="96" y1="64" x2="96" y2="512"/>}
-        {placement === 258 && <Line x1="288" y1="64" x2="288" y2="512"/>}
-        {placement === 369 && <Line x1="480" y1="64" x2="480" y2="512"/>}
-        {placement === 159 && <Line x1="64" y1="64" x2="512" y2="512"/>}
-        {placement === 357 && <Line x1="512" y1="64" x2="64" y2="512"/>}
-    </svg>
+        const [ a, b, c ] = state.game.line
+        const placement = a * 100 + b * 10 + c
+
+        return <svg
+            viewBox="0 0 576 576"
+            xmlns="http://www.w3.org/2000/svg"
+            class={css`grid-area: 1 / 1 / span 3 / span 3;`}
+        >
+            {placement === 123 && <Line x1="64" y1="96" x2="512" y2="96"/>}
+            {placement === 456 && <Line x1="64" y1="288" x2="512" y2="288"/>}
+            {placement === 789 && <Line x1="64" y1="480" x2="512" y2="480"/>}
+            {placement === 147 && <Line x1="96" y1="64" x2="96" y2="512"/>}
+            {placement === 258 && <Line x1="288" y1="64" x2="288" y2="512"/>}
+            {placement === 369 && <Line x1="480" y1="64" x2="480" y2="512"/>}
+            {placement === 159 && <Line x1="64" y1="64" x2="512" y2="512"/>}
+            {placement === 357 && <Line x1="512" y1="64" x2="64" y2="512"/>}
+        </svg>
+    }
 }
 
 function Line(props: Attributes.svg.line) {
