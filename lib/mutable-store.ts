@@ -65,7 +65,8 @@ export function createMutable<T extends object>(source: T): T {
     return proxy(
         source,
         k => sourceSignal.value[k],
-        (k, v) => (source[k] = v, sourceSignal.value = { ...source })
+        // @ts-expect-error
+        (k, v) => (source[k] = v, sourceSignal.value = Array.isArray(source) ? [...source] : { ...source })
     )
 }
 
@@ -124,7 +125,8 @@ function proxy<T extends object, K extends keyof T>(
                     const substore = proxy(
                         field,
                         k => (get(key) as typeof field)[k],
-                        (k, v) => set(key, { ...source[key], [k]: v })
+                        // @ts-expect-error
+                        (k, v) => set(key, Array.isArray(source[key]) ? source[key].with(k, v) : { ...source[key], [k]: v })
                     )
                     proxyCache[key] = substore
                     return substore
