@@ -144,7 +144,6 @@ export const turnSystemServer: System<"server"> = {
                 ...world.state,
                 turn: to
             }
-            world.channel.send("Switch", { to })
         }
     }
 }

@@ -64,7 +64,8 @@ export interface Mark {
 
 /**
  * A message to switch turns to the other player after a valid move
- * has been played.
+ * has been played. Optimistic, the actual turn is provided by the
+ * host in the `Sync` message.
  */
 export interface Switch {
     to?: "X" | "O"
