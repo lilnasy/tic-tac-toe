@@ -97,6 +97,7 @@ export class Player implements Channel {
                     message === "Mark" ||
                     message === "NewWorld" ||
                     message === "JoinWorld" ||
+                    message === "PlayerProfile" ||
                     message === "RequestRematch"
                 ) {
                     sendingPlayer.set(data, this)

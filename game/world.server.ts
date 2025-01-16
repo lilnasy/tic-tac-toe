@@ -9,6 +9,7 @@ import {
     gameLoopSystemServer,
     lineCheckSystem,
     markerSystemServer,
+    profileSystemServer,
     syncSystemServer,
     turnSystemServer
 } from "game/systems.ts"
@@ -26,7 +27,8 @@ export class ServerWorld implements World, Receiver {
         markerSystemServer,
         lineCheckSystem,
         turnSystemServer,
-        syncSystemServer
+        syncSystemServer,
+        profileSystemServer
     ]
 
     players = new Set<Player>
@@ -55,7 +57,7 @@ export class ServerWorld implements World, Receiver {
      * To prevent reverse engineering and cheating, only certain messages sent by players
      * are allowed to have an effect on the server world.
      */
-    static #messageAllowlist: ReadonlyArray<Messages> = [ "Disconnected", "UpdateColors", "Mark", "RequestRematch" ]
+    static #messageAllowlist: ReadonlyArray<Messages> = [ "Disconnected", "UpdateColors", "Mark", "PlayerProfile", "RequestRematch" ]
     
     receive<Message extends Messages>(message: Message, data: MessageRegistry[Message]) {
         if (ServerWorld.#messageAllowlist.includes(message)) this.update(message, data)

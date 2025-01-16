@@ -16,7 +16,7 @@ export function MainMenu() {
     const world = ClientWorld.connect()
     return <WorldContext.Provider value={world}>
         <ScreenRouter world={world} class={css`grid-area: 1 / 1;`}/>
-        <ColorMixer class={css`grid-area: 1 / 1; place-self: end; margin: 1rem;`}/>
+        <ColorMixer class={css`grid-area: 1 / 1; place-self: end; margin: 1rem; isolation: isolate;`}/>
     </WorldContext.Provider>
 }
 

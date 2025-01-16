@@ -1,6 +1,7 @@
 import type { Entity, Line, Place } from "game/entity.d.ts"
 import type { Player, PlayerData } from "game/player.ts"
 import type { Board } from "game/board.d.ts"
+import type { Animal } from "game/animals.ts"
 
 export type Messages = keyof MessageRegistry
 
@@ -21,6 +22,10 @@ export interface MessageRegistry {
     Draw: Draw
     RequestRematch: RequestRematch
     RematchRequested: RematachRequested
+
+    /* PLAYER CUSTOMIZATION */
+    PlayerProfile: PlayerProfile
+    OpponentProfile: OpponentProfile
 
     /* COLOR SYNCING */
     SyncColors: SyncColors
@@ -204,3 +209,14 @@ export interface WorldNotFound {
 export interface WorldOccupied {
     world: string
 }
+
+/**
+ * A message sent by the client to update player preferences,
+ * which will be stored in IndexedDB and synced with other players.
+ */
+export interface PlayerProfile {
+    name?: string
+    animal: Animal["emoji"]
+}
+
+export interface OpponentProfile extends PlayerProfile {}

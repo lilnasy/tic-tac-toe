@@ -1,6 +1,6 @@
 import { metadata } from "lib/metadata.ts"
 import { get, set } from "lib/indexed-kv.ts"
-import type { MessageRegistry, Messages, UpdateColors } from "game/messages.d.ts"
+import type { MessageRegistry, Messages, UpdateColors, PlayerProfile } from "game/messages.d.ts"
 import type { Line, SquarePosition } from "game/board.d.ts"
 import type { ClientWorld } from "game/world.client.ts"
 import type { ServerWorld } from "game/world.server.ts"
@@ -433,6 +433,68 @@ export const connectionSystemServer: System<"server"> = {
     }
 }
 
+export const profileSystemClient: System<"client"> = {
+    async onConnected(_, world) {
+        const [ name, animal ] = await get("player.name", "player.animal")
+        
+        if ((name === undefined || typeof name === "string") && typeof animal === "string") {
+            const update: PlayerProfile = { name, animal }
+            world.update("PlayerProfile", update)
+            world.channel.send("PlayerProfile", update)
+        }
+    },
+    async onPlayerProfile(update, world) {
+        if (update.name !== undefined) {
+            await set("player.name", update.name)
+        }
+        if (update.animal !== undefined) {
+            await set("player.animal", update.animal)
+        }
+        const { state } = world
+        if (state.connected === "togame") {
+            state.player.name = update.name
+            state.player.animal = Animal.list.find(a => a.emoji === update.animal)!
+            world.channel.send("PlayerProfile", update)
+        }
+    },
+    onOpponentProfile(opponent, world) {
+        const { state } = world
+        if (state.connected === "togame") {
+            state.opponent.name = opponent.name
+            state.opponent.animal = Animal.list.find(a => a.emoji === opponent.animal)!
+        }
+    }
+}
+
+export const profileSystemServer: System<"server"> = {
+    onAddPlayer({ player }, world) {
+        const profile = playerProfiles.get(world)?.get(player.id)
+        if (profile !== undefined) {
+            player.send("PlayerProfile", profile)
+        }
+    },
+    onPlayerProfile(profile, world) {
+        const player = Player.get(profile)
+        if (!player) return Player.notFound("PlayerProfile", profile)
+
+        let profiles = playerProfiles.get(world)
+        if (!profiles) {
+            profiles = new Map()
+            playerProfiles.set(world, profiles)
+        }
+        profiles.set(player.id, profile)
+
+        // Broadcast to other players only
+        for (const otherPlayer of world.players) {
+            if (otherPlayer !== player) {
+                otherPlayer.send("OpponentProfile", profile)
+            }
+        }
+    }
+}
+
+const playerProfiles = metadata<Map<string, PlayerProfile>>()
+
 export const faviconSystemClient: System<"client"> = {
     onSwitch({ to }, { state }) {
         const src =
@@ -509,4 +571,3 @@ export type System<RunsOn extends "server" | "client" | "both" = "both"> = {
 }
 type RemoveOn<S extends string> =
     S extends `on${infer T}` ? T : S
-

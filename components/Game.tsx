@@ -127,6 +127,8 @@ class EditPlayerDialog extends Component<{
 
     current: HTMLDialogElement | null = null
 
+    #effect: ReturnType<typeof effect> | null = null
+
     componentDidMount() {
         const dialog = this.current!
         /**
@@ -135,7 +137,7 @@ class EditPlayerDialog extends Component<{
          * 
          * The effect has to be set up imperatively.
          */
-        effect(() => {
+        this.#effect = effect(() => {
             if (this.props.open.value) {
                 if (dialog.open) return
                 dialog.showModal()
@@ -167,6 +169,7 @@ class EditPlayerDialog extends Component<{
     }
 
     componentWillUnmount() {
+        this.#effect?.()
         removeEventListener("click", this)
     }
 
@@ -174,7 +177,19 @@ class EditPlayerDialog extends Component<{
      * The browser may close the dialog when escape is pressed.
      * When it does, we update the signal to keep it in sync.
      */
-    #onClose = () => this.props.open.value = false
+    #onClose = (_: Events.dialog.close) => this.props.open.value = false
+
+    #save = () => {
+        const dialog = this.current!
+        const nameInput = dialog.querySelector<HTMLInputElement>("input[name=name]")!
+        const animalInput = dialog.querySelector<HTMLInputElement>("input[name=animal]:checked")!
+        
+        const name = nameInput.value || undefined
+        const animal = animalInput.value
+        
+        this.props.open.value = false
+        this.update("PlayerProfile", { name, animal })
+    }
 
     render({ player }: typeof this.props) {
         return <dialog
@@ -194,11 +209,22 @@ class EditPlayerDialog extends Component<{
                 filter: var(--drop-shadow-double);
                 will-change: filter;
                 isolation: isolate;
-                transition-property: opacity, translate;
+                transition: display allow-discrete, opacity, overlay allow-discrete, translate;
                 transition-duration: 1s;
+                transition-timing-function: cubic-bezier(0.2, 1, 0, 1);
                 @starting-style {
                     opacity: 0;
                     translate: 0 4rem;
+                }
+                &:not([open]) {
+                    opacity: 0;
+                    translate: 0 4rem;
+                    transition-duration: 250ms;
+                    transition-timing-function: initial;
+                    &::backdrop {
+                        background-color: transparent;
+                        backdrop-filter: blur(0);
+                    }
                 }
                 &::backdrop {
                     background-color: light-dark(
@@ -208,6 +234,7 @@ class EditPlayerDialog extends Component<{
                     backdrop-filter: blur(0.5rem);
                     transition-property: background-color, backdrop-filter;
                     transition-duration: 1s;
+                    transition-timing-function: cubic-bezier(0.2, 1, 0, 1);
                     @starting-style {
                         background-color: transparent;
                         backdrop-filter: blur(0);
@@ -269,7 +296,6 @@ class EditPlayerDialog extends Component<{
                             grid-template-rows: repeat(4, 3rem);
                             place-items: center;
                             overflow-x: scroll;
-                            gap: 0.5rem;
                             padding: 0.5rem;
                             background: var(--surface);
                             border-radius: 1rem;
@@ -281,7 +307,6 @@ class EditPlayerDialog extends Component<{
                                 class={css`
                                     cursor: pointer;
                                     contain: strict;
-                                    font-size: 3rem;
                                     width: 3rem;
                                     height: 3rem;
                                     line-height: 3rem;
@@ -303,7 +328,7 @@ class EditPlayerDialog extends Component<{
                         )
                     }</div>
                 </label>
-                <ActionButton primary class={css`place-self: center;`}>Save</ActionButton>
+                <ActionButton onClick={this.#save} primary class={css`place-self: center;`}>Save</ActionButton>
             </section>
             <IconButton
                 icon="close"
