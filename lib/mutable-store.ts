@@ -61,6 +61,33 @@ export const store: AccessorDecorator<{}> = ({ get }) => {
  * automatically created for them.
  */
 export function createMutable<T extends object>(source: T): T {
+    /**
+     * Under the hood, each mutation creates a shallow copy of the source object.
+     * If a nested value is mutated, all objects in the path between the source
+     * object and the mutated value shallow-copied.
+     * 
+     * ```js
+     * const source = { a: { aa: { aaa: 1 } }, b: {} }
+     * const store = createMutable(source)
+     * store.a.aa.aaa = 2
+     * ```
+     * ... is equivalent to:
+     * ```js
+     * const source = { a: { aa: { aaa: 1 } }, b: {} }
+     * const signal = signal(source)
+     * signal.value = {
+     *     // b remains unchanged
+     *     ...signal.value,
+     *     a: {
+     *         ...signal.value.a,
+     *         aa: {
+     *             ...signal.value.a.aa,
+     *             aaa: 2
+     *         }
+     *     }
+     * }
+     * ```
+     */
     const sourceSignal = signal(source)
     return proxy(
         source,

@@ -420,7 +420,7 @@ class PlayerBadge extends Component<{
     }
 }
 
-export class GameEndDialog extends Component<
+class GameEndDialog extends Component<
     | { draw: true, winner?: undefined }
     | { draw?: undefined, winner: PlayerData }
 > {

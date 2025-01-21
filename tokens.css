@@ -1,5 +1,6 @@
 :root {
     --base-hue: 0;
+    /* Design token are loosely based on Material Design 3 */
     --primary: light-dark(
         oklch(30% 0.12 var(--base-hue)),
         oklch(80% 0.12 var(--base-hue))
