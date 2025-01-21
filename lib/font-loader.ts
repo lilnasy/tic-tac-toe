@@ -4,6 +4,30 @@ import fs from "node:fs"
 import type { Plugin } from "vite"
 import type { AstroIntegration } from "astro"
 
+/**
+ * Vite plugin to load fonts from Google Fonts and bundle them as static assets.
+ * 
+ * In CSS:
+ * ```css
+ * @font-face {
+ *     font-family: "Outfit";
+ *     src: url("font:family=Outfit") format("woff2");
+ * }
+ * :root {
+ *     font-family: "Outfit", sans-serif;
+ * }
+ * ```
+ * 
+ * In JSX:
+ * ```tsx
+ * import font from "font:family=Outfit"
+ * 
+ * // the link to the font inside the bundle
+ * font satisfies string
+ * 
+ * <link rel="preload" href={font} as="font" type="font/woff2" crossorigin>
+ * ```
+ */
 export default function (): AstroIntegration {
     return {
         name: "font-loader",

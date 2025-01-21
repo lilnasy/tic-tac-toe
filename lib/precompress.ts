@@ -9,6 +9,10 @@ const gzipOptions = { level: 9 } as const
 const brotliOptions = { [zlib.constants.BROTLI_PARAM_QUALITY]: 11 } as const
 let cacheDir: string
 
+/**
+ * Vite plugin to compress static assets as brotli and gzip.
+ * Similar to sveltekit's precompress options.
+ */
 export default {
     name: "precompress",
     hooks: {
