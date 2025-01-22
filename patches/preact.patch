@@ -1,5 +1,5 @@
 diff --git a/package.json b/package.json
-index 166b927ce89d1ff7ecc259912cfc6ff26fbe5f13..27baf4ea22b3e84464ff4fb8749f1530ef3d5594 100644
+index f92ca82cdddda3b7cd85166c53225db640329165..43bf43a55297054d05dd1965be97183a2189f228 100644
 --- a/package.json
 +++ b/package.json
 @@ -20,56 +20,56 @@
@@ -67,3 +67,16 @@ index 166b927ce89d1ff7ecc259912cfc6ff26fbe5f13..27baf4ea22b3e84464ff4fb8749f1530
        "umd": "./jsx-runtime/dist/jsxRuntime.umd.js",
        "import": "./jsx-runtime/dist/jsxRuntime.mjs",
        "require": "./jsx-runtime/dist/jsxRuntime.js"
+diff --git a/src/diff/index.js b/src/diff/index.js
+index a05c03cc9584ac2ebe30c7ceb132a5771b781469..6f631d6e7fc0e8271272d1de48c2af58677aa812 100644
+--- a/src/diff/index.js
++++ b/src/diff/index.js
+@@ -525,7 +525,7 @@ function diffElementNodes(
+ 			if (oldHtml) dom.innerHTML = '';
+ 
+ 			diffChildren(
+-				dom,
++				newVNode.type === 'template' ? dom.content : dom,
+ 				isArray(newChildren) ? newChildren : [newChildren],
+ 				newVNode,
+ 				oldVNode,
