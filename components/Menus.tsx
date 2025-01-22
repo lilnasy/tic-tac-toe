@@ -1,6 +1,6 @@
 import cx from "clsx/lite"
 import { css } from "astro:emotion"
-import { debounce } from "remeda"
+import { throttle } from "vendor/sindresorhus/throttleit/index.ts"
 import { signal } from "lib/signal-decorator.ts"
 import { ClientWorld, type WorldData } from "game/world.client.ts"
 import type { CursorSync, MessageRegistry, Messages } from "game/messages.d.ts"
@@ -138,17 +138,15 @@ class Cursors extends Component implements Receiver {
 
     @signal accessor #cursors: CursorSync = []
 
-    #sendCursorMove = (event: PointerEvent) => {
+    #sendCursorMove = throttle((event: MouseEvent) => {
         this.world.channel.send("CursorMove", [
             event.clientX - (window.innerWidth / 2),
             event.clientY - (window.innerHeight / 2)
         ])
-    }
-
-    #debounceSendCursorMove = debounce(this.#sendCursorMove, { waitMs: 50, maxWaitMs: 50 })
+    }, 50)
 
     componentDidMount() {
-        addEventListener("pointermove", this.#debounceSendCursorMove.call)
+        addEventListener("mousemove", this.#sendCursorMove)
         this.world.channel.subscribe(this)
     }
 
@@ -159,7 +157,7 @@ class Cursors extends Component implements Receiver {
     }
 
     componentWillUnmount() {
-        removeEventListener("pointermove", this.#debounceSendCursorMove.call)
+        removeEventListener("mousemove", this.#sendCursorMove)
         this.world.channel.unsubscribe(this)
     }
 
@@ -178,7 +176,8 @@ class Cursors extends Component implements Receiver {
                         stroke: white;
                         stroke-width: 0.25rem;
                         filter: var(--drop-shadow-subtle);
-                        transition: translate 50ms;
+                        will-change: translate;
+                        transition: translate 50ms linear;
                     `}
                     style={{
                         // derive hue from id which is also a hexadecimal number

@@ -21,7 +21,6 @@
         "iterator-helpers-polyfill": "^3.0.1",
         "preact": "^10.25.4",
         "preact-render-to-string": "^6.5.12",
-        "remeda": "2.18.0",
         "typescript": "^5.7.2",
         "vite": "^6.0.7"
     },

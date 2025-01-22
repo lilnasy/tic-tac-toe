@@ -73,9 +73,6 @@ importers:
       preact-render-to-string:
         specifier: ^6.5.12
         version: 6.5.12(preact@10.25.4(patch_hash=93fb13b41878c80dc37787c443900442ae96c8f985e6a2a7621f69c305056bdc))
-      remeda:
-        specifier: 2.18.0
-        version: 2.18.0
       typescript:
         specifier: ^5.7.2
         version: 5.7.2
@@ -1833,9 +1830,6 @@ packages:
 
   remark-stringify@11.0.0:
     resolution: {integrity: sha512-1OSmLd3awB/t8qdoEOMazZkNsfVTeY4fTsgzcQFdXNq8ToTN4ZGwrMnlda4K6smTFKD+GRV6O48i6Z4iKgPPpw==}
-
-  remeda@2.18.0:
-    resolution: {integrity: sha512-wvHvaApA7crz46HWhGTotPawkzd45w1iXzPK7r4ECQgbmcSqHLrVio2LOr7ZEp1pu5QDH1U391ZKu+qra7OoLw==}
 
   resolve-from@4.0.0:
     resolution: {integrity: sha512-pb/MYmXstAkysRFx8piNI1tGFNQIFA3vkE3Gq4EuA1dF6gHp/+vgZqsCGJapvy8N3Q+4o7FwvquPJcnZ7RYy4g==}
@@ -4247,10 +4241,6 @@ snapshots:
       '@types/mdast': 4.0.4
       mdast-util-to-markdown: 2.1.2
       unified: 11.0.5
-
-  remeda@2.18.0:
-    dependencies:
-      type-fest: 4.31.0
 
   resolve-from@4.0.0: {}
 

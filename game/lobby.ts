@@ -1,4 +1,4 @@
-import { debounce } from "remeda"
+import { throttle } from "vendor/sindresorhus/throttleit/index.ts"
 import { generateProjectName as generateWorldName } from "vendor/withastro/cli-kit"
 import { ServerWorld } from "game/world.server.ts"
 import { Player } from "game/player.ts"
@@ -11,9 +11,20 @@ import type { JoinWorld, MessageRegistry, NewWorld, Disconnected, Messages, Curs
  */
 export const lobby = new class Lobby implements Receiver {
 
-    #worlds = new Map<string, ServerWorld>()
+    /**
+     * Worlds keyed by their names.
+     */
+    #worlds = new Map<string, ServerWorld>
 
-    #cursors = new Map<Player, [ x: number, y: number ]>()
+    /**
+     * Cursors keyed by the players they belong to.
+     */
+    #cursors = new Map<Player, [ x: number, y: number ]>
+
+    /**
+     * Players currently in the lobby.
+     */
+    #players = new Set<Player>
 
     /**
      * Creates a new player for the given connection and
@@ -21,7 +32,15 @@ export const lobby = new class Lobby implements Receiver {
      */
     enter(weboscket: WebSocket) {
         const player = new Player(weboscket)
+        this.#players.add(player)
         player.subscribe(this)
+    }
+
+    #exit(player: Player) {
+        player.unsubscribe(this)
+        this.#players.delete(player)
+        this.#cursors.delete(player)
+        this.#broadcastCursors()
     }
 
     /**
@@ -35,11 +54,15 @@ export const lobby = new class Lobby implements Receiver {
      * - `Disconnected` is sent implicitly when the connection is closed or is severed.
      */
     receive<Message extends Messages>(message: Message, data: MessageRegistry[Message]) {
-        if (message === "Disconnected") {
+        if (message === "Connected") {
+            const player = Player.get(data)
+            if (player) {
+                const cursors: CursorSync = [...this.#cursors].map(([ { id }, [ x, y ]]) => [ id.slice(0, 8), x, y ])
+                player.send("CursorSync", cursors)
+            }
+        } else if (message === "Disconnected") {
             const { player }: Disconnected = data
-            player!.unsubscribe(this)
-            this.#cursors.delete(player!)
-            this.#broadcastCursors()
+            this.#exit(player!)
         } else if (message === "NewWorld") {
             this.#newWorld(data)
         } else if (message === "JoinWorld") {
@@ -63,8 +86,7 @@ export const lobby = new class Lobby implements Receiver {
         const world = new ServerWorld(worldName)
         this.#worlds.set(world.name, world)
         world.update("AddPlayer", { player })
-        this.#cursors.delete(player)
-        this.#broadcastCursors()
+        this.#exit(player)
     }
 
     #joinWorld(data: JoinWorld) {
@@ -75,15 +97,14 @@ export const lobby = new class Lobby implements Receiver {
             return player.send("WorldNotFound", { world: data.world })
         }
         world.update("AddPlayer", { player })
-        this.#cursors.delete(player)
-        this.#broadcastCursors()
+        this.#exit(player)
     }
 
-    #broadcastCursors = debounce(() => {
+    #broadcastCursors = throttle(() => {
         const cursors: CursorSync = [...this.#cursors].map(([ { id }, [ x, y ]]) => [ id.slice(0, 8), x, y ])
-        for (const [ player ] of this.#cursors) {
+        for (const player of this.#players) {
             const otherPlayers = cursors.filter(p => p[0] !== player.id.slice(0, 8))
             if (otherPlayers.length > 0) player.send("CursorSync", otherPlayers)
         }
-    }, { waitMs: 50, maxWaitMs: 50, }).call
+    }, 50)
 }

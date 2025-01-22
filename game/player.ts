@@ -49,7 +49,7 @@ export class Player implements Channel {
         if (this.#websocket.readyState === WebSocket.OPEN) {
             this.#websocket.send(JSON.stringify({ [message]: data }))
         } else {
-            console.error(new Error(`There was an attempt to send a message to a closed connection.`, { cause: this }))
+            console.error(new Error(`There was an attempt to send a message to a "${readableReadyState(this.#websocket.readyState)}" websocket.`, { cause: this }))
         }
     }
 
