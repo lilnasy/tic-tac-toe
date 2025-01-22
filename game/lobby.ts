@@ -1,16 +1,19 @@
+import { debounce } from "remeda"
 import { generateProjectName as generateWorldName } from "vendor/withastro/cli-kit"
 import { ServerWorld } from "game/world.server.ts"
 import { Player } from "game/player.ts"
 import type { Receiver } from "game/channel.d.ts"
-import type { JoinWorld, MessageRegistry, NewWorld, Disconnected, Messages } from "game/messages.d.ts"
+import type { JoinWorld, MessageRegistry, NewWorld, Disconnected, Messages, CursorMove, CursorSync } from "game/messages.d.ts"
 
 /**
  * The lobby is responsible for creating new worlds where games can be played,
  * and adding newly-connected players to those worlds.
  */
 export const lobby = new class Lobby implements Receiver {
-    
+
     #worlds = new Map<string, ServerWorld>()
+
+    #cursors = new Map<Player, [ x: number, y: number ]>()
 
     /**
      * Creates a new player for the given connection and
@@ -35,10 +38,18 @@ export const lobby = new class Lobby implements Receiver {
         if (message === "Disconnected") {
             const { player }: Disconnected = data
             player!.unsubscribe(this)
+            this.#cursors.delete(player!)
+            this.#broadcastCursors()
         } else if (message === "NewWorld") {
             this.#newWorld(data)
         } else if (message === "JoinWorld") {
             this.#joinWorld(data)
+        } else if (message === "CursorMove") {
+            const player = Player.get(data)
+            if (player) {
+                this.#cursors.set(player, data as CursorMove)
+                this.#broadcastCursors()
+            }
         }
     }
 
@@ -52,6 +63,8 @@ export const lobby = new class Lobby implements Receiver {
         const world = new ServerWorld(worldName)
         this.#worlds.set(world.name, world)
         world.update("AddPlayer", { player })
+        this.#cursors.delete(player)
+        this.#broadcastCursors()
     }
 
     #joinWorld(data: JoinWorld) {
@@ -62,5 +75,15 @@ export const lobby = new class Lobby implements Receiver {
             return player.send("WorldNotFound", { world: data.world })
         }
         world.update("AddPlayer", { player })
+        this.#cursors.delete(player)
+        this.#broadcastCursors()
     }
+
+    #broadcastCursors = debounce(() => {
+        const cursors: CursorSync = [...this.#cursors].map(([ { id }, [ x, y ]]) => [ id.slice(0, 8), x, y ])
+        for (const [ player ] of this.#cursors) {
+            const otherPlayers = cursors.filter(p => p[0] !== player.id.slice(0, 8))
+            if (otherPlayers.length > 0) player.send("CursorSync", otherPlayers)
+        }
+    }, { waitMs: 50, maxWaitMs: 50, }).call
 }

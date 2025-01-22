@@ -1,6 +1,10 @@
 import cx from "clsx/lite"
 import { css } from "astro:emotion"
+import { debounce } from "remeda"
+import { signal } from "lib/signal-decorator.ts"
 import { ClientWorld, type WorldData } from "game/world.client.ts"
+import type { CursorSync, MessageRegistry, Messages } from "game/messages.d.ts"
+import type { Receiver } from "game/channel.d.ts"
 import { Component, WorldContext } from "./component.ts"
 import { Game } from "./Game.tsx"
 import { ExitPresence, type AnimatesOut } from "./ExitPresence.ts"
@@ -36,7 +40,7 @@ function ScreenRouter({ world, ...props }: { class?: string, world: ClientWorld 
             <TitleScreen {...props} nobuttons text={`connecting to ${state.world.name.replace("-", " ")}`}/> :
 
         state.connected === "tolobby" ?
-            <TitleScreen {...props}/> :
+            <TitleScreen {...props} cursors/> :
 
         state.connected === "toworld" ?
             <WaitingForOpponentScreen {...props} world={state.world.name}/> :
@@ -49,6 +53,7 @@ function ScreenRouter({ world, ...props }: { class?: string, world: ClientWorld 
 
 class TitleScreen extends Component<{
     class?: string
+    cursors?: true
 } & (
     | { nobuttons: true, text: string }
     | { nobuttons?: undefined }
@@ -124,7 +129,79 @@ class TitleScreen extends Component<{
                         <ActionButton onClick={this.#joinWorld} secondary>Join</ActionButton>
                     </>
             }
+            { props.cursors && <Cursors/> }
         </title-screen>
+    }
+}
+
+class Cursors extends Component implements Receiver {
+
+    @signal accessor #cursors: CursorSync = []
+
+    #sendCursorMove = (event: PointerEvent) => {
+        this.world.channel.send("CursorMove", [
+            event.clientX - (window.innerWidth / 2),
+            event.clientY - (window.innerHeight / 2)
+        ])
+    }
+
+    #debounceSendCursorMove = debounce(this.#sendCursorMove, { waitMs: 50, maxWaitMs: 50 })
+
+    componentDidMount() {
+        addEventListener("pointermove", this.#debounceSendCursorMove.call)
+        this.world.channel.subscribe(this)
+    }
+
+    receive<Message extends Messages>(message: Message, data: MessageRegistry[Message]) {
+        if (message === "CursorSync") {
+            this.#cursors = data as CursorSync
+        }
+    }
+
+    componentWillUnmount() {
+        removeEventListener("pointermove", this.#debounceSendCursorMove.call)
+        this.world.channel.unsubscribe(this)
+    }
+
+    render() {
+        return <>{
+            this.#cursors.map(([ id, x, y ]) =>
+                <svg
+                    key={id}
+                    class={css`
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        pointer-events: none;
+                        height: 1rem;
+                        fill: oklch(from var(--id) 0.7 0.15 h);
+                        stroke: white;
+                        stroke-width: 0.25rem;
+                        filter: var(--drop-shadow-subtle);
+                        transition: translate 50ms;
+                    `}
+                    style={{
+                        // derive hue from id which is also a hexadecimal number
+                        "--id": `#${id.slice(0, 6)}`,
+                        translate: `${x + window.innerWidth / 2}px ${y + window.innerHeight / 2}px`
+                    }}
+                    viewBox="0 0 32 36"
+                    xmlns="http://www.w3.org/2000/svg"
+                >
+                    <path d="
+                        M28.7422 20.6515
+                        C30.6498 20.1539 31.0119 17.6029 29.3184 16.594
+                        L5.51804 2.41502
+                        C3.82888 1.40872 1.76147 2.93154 2.22168 4.84316
+                        L8.80478 32.1883
+                        C9.27967 34.161 11.9329 34.5163 12.9105 32.7388
+                        L18.0202 23.4486
+                        L28.7422 20.6515
+                        Z
+                    "/>
+                </svg>
+            )
+        }</>
     }
 }
 

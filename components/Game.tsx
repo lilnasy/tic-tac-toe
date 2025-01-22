@@ -5,7 +5,7 @@ import { effect, Signal, signal } from "@preact/signals-core"
 import type { ClientWorldState } from "game/world.client.ts"
 import type { PlayerData } from "game/player.ts"
 import * as Animal from "game/animals.ts"
-import { Component, type Events } from "./component.ts"
+import { Component } from "./component.ts"
 import { Board } from "./Board.tsx"
 import { ActionButton } from "./ActionButton.tsx"
 import { IconButton } from "./IconButton.tsx"
@@ -177,7 +177,7 @@ class EditPlayerDialog extends Component<{
      * The browser may close the dialog when escape is pressed.
      * When it does, we update the signal to keep it in sync.
      */
-    #onClose = (_: Events.dialog.close) => this.props.open.value = false
+    #onClose = (_: Event) => this.props.open.value = false
 
     #save = () => {
         const dialog = this.current!
@@ -353,7 +353,7 @@ class EditPlayerDialog extends Component<{
  * Prevents the first input element from being selected
  * when the parent label element is clicked anywhere.
  */
-function preventClickTransfer(event: Events.click) {
+function preventClickTransfer(event: MouseEvent) {
     if (event.target === event.currentTarget) {
         event.preventDefault()
     }
@@ -363,7 +363,7 @@ function preventClickTransfer(event: Events.click) {
  * Scrolls the selected avatar into the center if it's visually
  * close to the edges of the horizontally-scrolling container.
  */
-function scrollCheckedIntoView(event: Events.change) {
+function scrollCheckedIntoView(event: Event) {
     const target = event.target!
     if (target instanceof HTMLInputElement && target.checked) {
         const label = target.parentElement!

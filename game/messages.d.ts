@@ -31,6 +31,10 @@ export interface MessageRegistry {
     SyncColors: SyncColors
     UpdateColors: UpdateColors
 
+    /* CURSORS */
+    CursorMove: CursorMove
+    CursorSync: CursorSync
+
     /* CLIENT-ONLY CONNECTION-MANAGEMENT MESSAGE */
     Connected: Connected
 
@@ -220,3 +224,15 @@ export interface PlayerProfile {
 }
 
 export interface OpponentProfile extends PlayerProfile {}
+
+/**
+ * A message sent by the client to the server when the cursor
+ * moves.
+ */
+export type CursorMove = [ x: number, y: number ]
+
+/**
+ * A message sent by the server to all clients with the current
+ * cursor positions of all other players.
+ */
+export type CursorSync = Array<[ id: string, x: number, y: number ]>
