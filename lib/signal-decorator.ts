@@ -1,4 +1,4 @@
-import { type Signal, signal as preactSignal } from "@preact/signals"
+import { type Signal, signal as preactSignal } from "@preact/signals-core"
 
 // The function is described in terms of this interface to
 // keep hover info from becoming too noisy.

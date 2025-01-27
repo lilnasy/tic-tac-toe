@@ -1,0 +1,118 @@
+diff --git a/dist/esm/features/utils/instrument-base.js b/dist/esm/features/utils/instrument-base.js
+index 371deac611d1a9a214546908c550f0aea96456a4..47bb3bfca43ac26af49c8db54597b7d1c4f98ac3 100644
+--- a/dist/esm/features/utils/instrument-base.js
++++ b/dist/esm/features/utils/instrument-base.js
+@@ -13,6 +13,7 @@ import { FEATURE_NAMES } from '../../loaders/features/features';
+ import { hasReplayPrerequisite } from '../session_replay/shared/utils';
+ import { canEnableSessionTracking } from './feature-gates';
+ import { single } from '../../common/util/invoke';
++import { lazyFeatureLoader } from './lazy-feature-loader';
+ 
+ /**
+  * Base class for instrumenting a feature.
+@@ -76,13 +77,7 @@ export class InstrumentBase extends FeatureBase {
+     const importLater = async () => {
+       let session;
+       try {
+-        if (canEnableSessionTracking(this.agentIdentifier)) {
+-          // would require some setup before certain features start
+-          const {
+-            setupAgentSession
+-          } = await import(/* webpackChunkName: "session-manager" */'./agent-session');
+-          session = setupAgentSession(agentRef);
+-        }
++
+       } catch (e) {
+         warn(20, e);
+         this.ee.emit('internal-error', [e]);
+@@ -99,12 +94,7 @@ export class InstrumentBase extends FeatureBase {
+           loadedSuccessfully(false); // aggregate module isn't loaded at all
+           return;
+         }
+-        const {
+-          lazyFeatureLoader
+-        } = await import(/* webpackChunkName: "lazy-feature-loader" */'./lazy-feature-loader');
+-        const {
+-          Aggregate
+-        } = await lazyFeatureLoader(this.featureName, 'aggregate');
++        const Aggregate = lazyFeatureLoader(this.featureName, 'aggregate');
+         this.featAggregate = new Aggregate(agentRef, argsObjFromInstrument);
+         agentRef.runtime.harvester.initializedAggregates.push(this.featAggregate); // "subscribe" the feature to future harvest intervals (PVE will start the timer)
+         loadedSuccessfully(true);
+diff --git a/dist/esm/features/utils/lazy-feature-loader.js b/dist/esm/features/utils/lazy-feature-loader.js
+index 5a495f4d06e30d36946baec0e94c53f3e2763aa6..b100067efced651b1b2d72a3d5a5c97ffbfbbf7a 100644
+--- a/dist/esm/features/utils/lazy-feature-loader.js
++++ b/dist/esm/features/utils/lazy-feature-loader.js
+@@ -1,4 +1,11 @@
+ import { FEATURE_NAMES } from '../../loaders/features/features';
++import { Aggregate as JsErrorsAggregate } from '../jserrors/aggregate'
++import { Aggregate as GenericEventsAggregate } from '../generic_events/aggregate'
++import { Aggregate as LoggingAggregate } from '../logging/aggregate'
++import { Aggregate as MetricsAggregate } from '../metrics/aggregate'
++import { Aggregate as PageViewEventAggregate } from '../page_view_event/aggregate'
++import { Aggregate as PageViewTimingAggregate } from '../page_view_timing/aggregate'
++import { Aggregate as SoftNavAggregate } from '../soft_navigations/aggregate'
+ 
+ /**
+  * Centralizes the lazy loading of agent feature aggregate and instrument sources.
+@@ -14,28 +21,20 @@ import { FEATURE_NAMES } from '../../loaders/features/features';
+ export function lazyFeatureLoader(featureName, featurePart) {
+   if (featurePart === 'aggregate') {
+     switch (featureName) {
+-      case FEATURE_NAMES.ajax:
+-        return import(/* webpackChunkName: "ajax-aggregate" */'../ajax/aggregate');
+       case FEATURE_NAMES.jserrors:
+-        return import(/* webpackChunkName: "jserrors-aggregate" */'../jserrors/aggregate');
++        return JsErrorsAggregate;
+       case FEATURE_NAMES.genericEvents:
+-        return import(/* webpackChunkName: "generic_events-aggregate" */'../generic_events/aggregate');
++        return GenericEventsAggregate;
+       case FEATURE_NAMES.logging:
+-        return import(/* webpackChunkName: "logging-aggregate" */'../logging/aggregate');
++        return LoggingAggregate;
+       case FEATURE_NAMES.metrics:
+-        return import(/* webpackChunkName: "metrics-aggregate" */'../metrics/aggregate');
++        return MetricsAggregate;
+       case FEATURE_NAMES.pageViewEvent:
+-        return import(/* webpackChunkName: "page_view_event-aggregate" */'../page_view_event/aggregate');
++        return PageViewEventAggregate;
+       case FEATURE_NAMES.pageViewTiming:
+-        return import(/* webpackChunkName: "page_view_timing-aggregate" */'../page_view_timing/aggregate');
+-      case FEATURE_NAMES.sessionReplay:
+-        return import(/* webpackChunkName: "session_replay-aggregate" */'../session_replay/aggregate');
+-      case FEATURE_NAMES.sessionTrace:
+-        return import(/* webpackChunkName: "session_trace-aggregate" */'../session_trace/aggregate');
+-      case FEATURE_NAMES.spa:
+-        return import(/* webpackChunkName: "spa-aggregate" */'../spa/aggregate');
++        return PageViewTimingAggregate;
+       case FEATURE_NAMES.softNav:
+-        return import(/* webpackChunkName: "basic-spa-aggregate" */'../soft_navigations/aggregate');
++        return SoftNavAggregate;
+       default:
+         throw new Error("Attempted to load unsupported agent feature: ".concat(featureName, " ").concat(featurePart));
+     }
+diff --git a/dist/esm/loaders/api/api.js b/dist/esm/loaders/api/api.js
+index d90c0013f3a3835c313fa6a901e473c7f7aca4f1..67703695621c839fc127543ac5cab48c6eb0012b 100644
+--- a/dist/esm/loaders/api/api.js
++++ b/dist/esm/loaders/api/api.js
+@@ -20,6 +20,7 @@ import { MODE } from '../../common/session/constants';
+ import { LOG_LEVELS } from '../../features/logging/constants';
+ import { bufferLog } from '../../features/logging/shared/utils';
+ import { wrapLogger } from '../../common/wrap/wrap-logger';
++import { setAPI as asyncSetAPI } from './apiAsync';
+ export function setTopLevelCallers() {
+   const nr = gosCDN();
+   apiMethods.forEach(f => {
+@@ -206,10 +207,8 @@ export function setAPI(agentIdentifier, forceDrain, runSoftNavOverSpa = false) {
+   // try to stay out of the way of the window.load event, lazy load once that has finished.
+   else onWindowLoad(() => lazyLoad(), true);
+   function lazyLoad() {
+-    import(/* webpackChunkName: "async-api" */'./apiAsync').then(({
+-      setAPI
+-    }) => {
+-      setAPI(agentIdentifier);
++    Promise.resolve().then(() => {
++      asyncSetAPI(agentIdentifier);
+       drain(agentIdentifier, 'api');
+     }).catch(err => {
+       warn(27, err);

@@ -84,6 +84,16 @@ import font from "font:family=Sue Ellen Francisco"
 			render(h(MainMenu, {}), document.body)
 		</script>
 		<script>
+			if (import.meta.env.PROD) {
+				const load = () => import("lib/new-relic.ts")
+				if (typeof requestIdleCallback === "function") {
+					requestIdleCallback(load, { timeout: 2000 })
+				} else {
+					load()
+				}
+			}
+		</script>
+		<script>
 			import sw from "../service-worker.ts?worker&url"
 
 			if (import.meta.env.PROD) {

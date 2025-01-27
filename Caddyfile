@@ -33,6 +33,9 @@ sillystring.party:443 {
 	}
 	reverse_proxy 127.0.0.1:4321
 }
+www.sillystring.party:443 {
+	redir https://sillystring.party{uri} 308
+}
 testing.sillystring.party:443 {
 	handle_errors 502 {
 		respond "The testing environment is offline. The website must not be being tested right now."

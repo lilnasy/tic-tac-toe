@@ -11,24 +11,24 @@
  * @returns A throttled function.
  */
 export function throttle<T extends (...args: any[]) => any>(callback: T, wait: number) {
-	let timeoutId: ReturnType<typeof setTimeout> 
-	let lastCallTime = 0 
+	let timeoutId: ReturnType<typeof setTimeout>
+	let lastCallTime = 0
+
+	function apply(this_: ThisParameterType<T>, arguments_: Parameters<T>) {
+		lastCallTime = Date.now()
+		callback.apply(this_, arguments_)
+	}
 
 	return function throttled(this: ThisParameterType<T>, ...arguments_: Parameters<T>) {
-		clearTimeout(timeoutId) 
+		clearTimeout(timeoutId)
 
-		const now = Date.now() 
-		const timeSinceLastCall = now - lastCallTime 
-		const delayForNextCall = wait - timeSinceLastCall 
+		const timeSinceLastCall = Date.now() - lastCallTime
+		const delayForNextCall = wait - timeSinceLastCall
 
 		if (delayForNextCall <= 0) {
-			lastCallTime = now 
-			callback.apply(this, arguments_) 
+			apply(this, arguments_)
 		} else {
-			timeoutId = setTimeout(() => {
-				lastCallTime = Date.now() 
-				callback.apply(this, arguments_) 
-			}, delayForNextCall) 
+			timeoutId = setTimeout(apply, delayForNextCall, this, arguments_)
 		}
 	} 
 }

@@ -1,0 +1,26 @@
+{
+    "init": {
+        "privacy": {
+            "cookies_enabled": false
+        },
+        "ajax": {
+            "deny_list": [
+                "apm.sillystring.party"
+            ]
+        }
+    },
+    "info": {
+        "beacon": "apm.sillystring.party",
+        "errorBeacon": "apm.sillystring.party",
+        "licenseKey": "NRJS-5133b64a7ff7ef712b1",
+        "applicationID": "538678167",
+        "sa": 1
+    },
+    "loader_config": {
+        "accountID": "6381530",
+        "trustKey": "6381530",
+        "agentID": "538678167",
+        "licenseKey": "NRJS-5133b64a7ff7ef712b1",
+        "applicationID": "538678167"
+    }
+}
